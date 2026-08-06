@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { documentAnimationDuration, evaluateDocumentAtTime } from '../animation/evaluate';
 import { createEffect, EFFECT_KINDS, type EffectKind } from '../effects/defaults';
 import { downloadAnimation, exportAnimation } from '../export/animation';
+import { exportErrorMessage } from '../export/errors';
 import { downloadPng, exportPng } from '../export/png';
 import { createDefaultDocument, createDefaultTextElement } from '../model/defaults';
 import { PRESET_WARP_IDS, type Effect, type TextElement } from '../model/types';
@@ -335,7 +336,7 @@ export function App() {
         pushToast(`Exported ${result.frameCount}-frame ${exportFormat.toUpperCase()}`, 'success');
       }
     } catch (error) {
-      pushToast(error instanceof Error ? error.message : 'Export failed', 'error');
+      pushToast(exportErrorMessage(error), 'error');
     } finally {
       setIsExporting(false);
       setExportProgress(0);
