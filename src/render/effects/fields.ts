@@ -77,23 +77,29 @@ function euclideanDistanceTransform(features: Uint8Array, width: number, height:
   const output = new Float32Array(features.length);
   const source = new Float64Array(Math.max(width, height));
   const transformed = new Float64Array(Math.max(width, height));
+  const locations = new Int32Array(Math.max(width, height));
+  const boundaries = new Float64Array(Math.max(width, height) + 1);
 
   for (let x = 0; x < width; x += 1) {
     for (let y = 0; y < height; y += 1) source[y] = features[y * width + x] ? 0 : maximum;
-    edt1d(source, transformed, height);
+    edt1d(source, transformed, height, locations, boundaries);
     for (let y = 0; y < height; y += 1) temporary[y * width + x] = transformed[y]!;
   }
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) source[x] = temporary[y * width + x]!;
-    edt1d(source, transformed, width);
+    edt1d(source, transformed, width, locations, boundaries);
     for (let x = 0; x < width; x += 1) output[y * width + x] = Math.sqrt(transformed[x]!);
   }
   return output;
 }
 
-function edt1d(source: Float64Array, output: Float64Array, length: number): void {
-  const locations = new Int32Array(length);
-  const boundaries = new Float64Array(length + 1);
+function edt1d(
+  source: Float64Array,
+  output: Float64Array,
+  length: number,
+  locations: Int32Array,
+  boundaries: Float64Array,
+): void {
   let last = 0;
   locations[0] = 0;
   boundaries[0] = Number.NEGATIVE_INFINITY;
