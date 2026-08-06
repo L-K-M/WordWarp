@@ -5,7 +5,7 @@ import { decode } from 'fast-png';
 
 test('edits text, applies a preset, and exports transparent PNG', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium');
-  await page.goto('/');
+  await page.goto('./');
   await expect(page.getByRole('button', { name: 'WORDWARP TYPE EFFECTS LAB' })).toBeVisible();
 
   const content = page.getByLabel('Content');
@@ -33,7 +33,7 @@ test('edits text, applies a preset, and exports transparent PNG', async ({ page 
 test('starts mobile panels closed and exposes touch-sized controls', async ({ page }, testInfo) => {
   test.skip(!testInfo.project.name.startsWith('mobile-'));
   await page.setViewportSize({ width: 320, height: 568 });
-  await page.goto('/');
+  await page.goto('./');
   const inspector = page.getByLabel('Inspector');
   await expect(inspector).not.toBeVisible();
   const inspectButton = page.getByRole('button', { name: 'Inspect' });
@@ -60,7 +60,7 @@ test('saves pending edits before opening a shared document', async ({ page }, te
       },
     });
   });
-  await page.goto('/');
+  await page.goto('./');
   await page.getByLabel('Content').fill('Shared copy');
   await page.getByRole('button', { name: 'Share', exact: true }).click();
   await expect.poll(() => page.evaluate(() => sessionStorage.getItem('captured-share-url'))).not.toBeNull();
@@ -89,7 +89,7 @@ test('saves pending edits before opening a shared document', async ({ page }, te
 test('exports APNG and GIF through the animation worker', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium');
   test.setTimeout(120_000);
-  await page.goto('/');
+  await page.goto('./');
   await page.getByLabel('Content').fill('A');
   await page.getByRole('spinbutton', { name: 'Size' }).fill('48');
   await page.getByRole('button', { name: 'Glitter Text' }).click();
@@ -117,7 +117,7 @@ test('exports APNG and GIF through the animation worker', async ({ page }, testI
 
 test('loads from the production service worker while offline', async ({ page, context }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium');
-  await page.goto('/');
+  await page.goto('./');
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
   await page.reload();
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
@@ -128,4 +128,30 @@ test('loads from the production service worker while offline', async ({ page, co
   } finally {
     await context.setOffline(false);
   }
+});
+
+test('uses the configured PWA base path', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  await page.goto('./');
+
+  const expectedPath = new URL(page.url()).pathname;
+  const manifest = await page.evaluate(async () => {
+    const href = document.querySelector<HTMLLinkElement>('link[rel="manifest"]')?.href;
+    if (!href) throw new Error('Manifest link is unavailable');
+    const response = await fetch(href);
+    const data: unknown = await response.json();
+    if (typeof data !== 'object' || data === null) throw new Error('Manifest is not an object');
+    const record = data as Record<string, unknown>;
+    return {
+      id: typeof record.id === 'string' ? record.id : undefined,
+      scope: typeof record.scope === 'string' ? record.scope : undefined,
+      start_url: typeof record.start_url === 'string' ? record.start_url : undefined,
+    };
+  });
+  const scope = await page.evaluate(async () => (await navigator.serviceWorker.ready).scope);
+
+  expect(manifest.id).toBe(expectedPath);
+  expect(manifest.scope).toBe(expectedPath);
+  expect(manifest.start_url).toBe(expectedPath);
+  expect(new URL(scope).pathname).toBe(expectedPath);
 });

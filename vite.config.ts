@@ -5,9 +5,13 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 const configuredBase = process.env.VITE_BASE_PATH ?? './';
 const base = configuredBase.endsWith('/') ? configuredBase : `${configuredBase}/`;
+const appVersion = process.env.npm_package_version ?? '0.0.0';
 
 export default defineConfig({
   base,
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -15,6 +19,7 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['wordwarp-icon.svg', 'wordwarp-maskable.svg'],
       manifest: {
+        id: base,
         name: 'WordWarp Text Effects Studio',
         short_name: 'WordWarp',
         description: 'Warped, metallic, dimensional text with transparent image export.',
@@ -31,7 +36,7 @@ export default defineConfig({
       workbox: {
         cleanupOutdatedCaches: true,
         navigateFallback: 'index.html',
-        globPatterns: ['**/*.{html,js,css,wasm,svg,png,webp}'],
+        globPatterns: ['**/*.{html,js,css,wasm,webmanifest,svg,png,webp,woff,woff2}'],
       },
     }),
   ],

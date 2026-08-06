@@ -99,6 +99,6 @@ export function createDefaultDocument(options: DefaultOptions = {}): WordWarpDoc
     elements: [createDefaultTextElement(options.elementId, options.fillId)],
     assets: {},
     globalLight: { angle: 120, altitude: 35 },
-    meta: { created: now, modified: now, app: 'WordWarp/0.1' },
+    meta: { created: now, modified: now, app: `WordWarp/${__APP_VERSION__}` },
   };
 }
