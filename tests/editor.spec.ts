@@ -30,6 +30,30 @@ test('edits text, applies a preset, and exports transparent PNG', async ({ page 
   await expect(page.getByLabel('Content')).toHaveValue('Chrome test');
 });
 
+test('renders a non-interactive dual-stroke selection outline', async ({ page }) => {
+  await page.goto('./');
+
+  const overlay = page.locator('.selection-overlay');
+  await expect(overlay).toHaveAttribute('aria-hidden', 'true');
+  await expect(overlay).toHaveCSS('pointer-events', 'none');
+
+  const layers = overlay.locator('rect');
+  await expect(layers).toHaveClass(['selection-underlay', 'selection-outline']);
+  const bounds = await layers.evaluateAll((rectangles) => rectangles.map((rectangle) => (
+    ['x', 'y', 'width', 'height'].map((attribute) => rectangle.getAttribute(attribute))
+  )));
+  expect(bounds[0]).toEqual(bounds[1]);
+
+  await expect(layers.nth(0)).toHaveCSS('stroke', 'rgb(7, 16, 24)');
+  await expect(layers.nth(0)).toHaveCSS('stroke-dasharray', 'none');
+  await expect(layers.nth(0)).toHaveCSS('stroke-width', '4px');
+  await expect(layers.nth(0)).toHaveCSS('vector-effect', 'non-scaling-stroke');
+  await expect(layers.nth(1)).toHaveCSS('stroke', 'rgb(72, 228, 255)');
+  await expect(layers.nth(1)).toHaveCSS('stroke-dasharray', /8px.*5px/);
+  await expect(layers.nth(1)).toHaveCSS('stroke-width', '2px');
+  await expect(layers.nth(1)).toHaveCSS('vector-effect', 'non-scaling-stroke');
+});
+
 test('starts mobile panels closed and exposes touch-sized controls', async ({ page }, testInfo) => {
   test.skip(!testInfo.project.name.startsWith('mobile-'));
   await page.setViewportSize({ width: 320, height: 568 });

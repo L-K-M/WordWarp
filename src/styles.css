@@ -570,10 +570,18 @@ button:disabled {
 
 .selection-overlay rect {
   fill: transparent;
+  vector-effect: non-scaling-stroke;
+}
+
+.selection-overlay .selection-underlay {
+  stroke: #071018;
+  stroke-width: 4;
+}
+
+.selection-overlay .selection-outline {
   stroke: var(--cyan);
   stroke-dasharray: 8 5;
   stroke-width: 2;
-  vector-effect: non-scaling-stroke;
 }
 
 .renderer-badge,
