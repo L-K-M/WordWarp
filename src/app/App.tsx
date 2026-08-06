@@ -370,7 +370,7 @@ export function App() {
     }
   };
 
-  const previewDocument = animationTime > 0 ? evaluateDocumentAtTime(document, animationTime) : document;
+  const previewDocument = evaluateDocumentAtTime(document, animationTime);
   const hasAnimations = hasEnabledAnimationTracks(document);
 
   // The playback loop only watches `isPlaying`, so removing the last enabled track while it runs

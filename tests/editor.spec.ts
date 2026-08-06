@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 
 import { expect, test } from '@playwright/test';
 import { decode } from 'fast-png';
+import { deflateSync, strToU8 } from 'fflate';
 
 test('edits text, applies a preset, and exports transparent PNG', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium');
@@ -52,6 +53,64 @@ test('renders a non-interactive dual-stroke selection outline', async ({ page })
   await expect(layers.nth(1)).toHaveCSS('stroke-dasharray', /8px.*5px/);
   await expect(layers.nth(1)).toHaveCSS('stroke-width', '2px');
   await expect(layers.nth(1)).toHaveCSS('vector-effect', 'non-scaling-stroke');
+});
+
+test('evaluates the initial animated preview at frame zero', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  await page.addInitScript(() => {
+    const getContext = Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, 'getContext')?.value as (
+      this: HTMLCanvasElement,
+      contextId: string,
+      ...args: unknown[]
+    ) => unknown;
+    Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
+      configurable: true,
+      value(this: HTMLCanvasElement, contextId: string, ...args: unknown[]) {
+        if (contextId === 'webgl2') return null;
+        return Reflect.apply(getContext, this, [contextId, ...args]);
+      },
+    });
+  });
+  const document = {
+    version: 1,
+    id: 'frame-zero-document',
+    name: 'Frame zero',
+    canvas: { width: 320, height: 180, background: null, autoFit: true, exportPadding: 0 },
+    elements: [{
+      id: 'frame-zero-element',
+      type: 'text',
+      name: 'Frame zero',
+      visible: true,
+      locked: false,
+      opacity: 1,
+      blendMode: 'normal',
+      transform: { x: 160, y: 90, rotation: 0, scaleX: 1, scaleY: 1, skewX: 0, skewY: 0, originX: 0.5, originY: 0.5 },
+      effects: [],
+      animations: [{ id: 'typewriter', kind: 'typewriter', enabled: true, duration: 2, params: {}, seed: 1 }],
+      text: 'Frame zero',
+      font: { family: 'Arial', source: 'local', weight: 400, italic: false },
+      layout: { size: 48, align: 'center', lineHeight: 1, letterSpacing: 0, wordSpacing: 0, transform: 'none', direction: 'ltr', curveSpacing: 'uniform' },
+      warp: { kind: 'none', adj: [0.5, 0.5], bend: 0, distortH: 0, distortV: 0, keepUpright: false },
+    }],
+    assets: {},
+    globalLight: { angle: 120, altitude: 35 },
+    meta: { created: '2026-01-02T03:04:05.000Z', modified: '2026-01-02T03:04:05.000Z', app: 'WordWarp/test' },
+  };
+  const payload = Buffer.from(deflateSync(strToU8(JSON.stringify(document)), { level: 9 })).toString('base64url');
+
+  await page.goto(`./#ww=1.${payload}`);
+  await expect(page.getByLabel('Content')).toHaveValue('Frame zero');
+  await expect(page.locator('.renderer-badge')).toHaveText('2D FALLBACK');
+  await page.evaluate(() => new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  }));
+  const hasVisiblePixels = await page.locator('canvas').evaluate((node) => {
+    if (!(node instanceof HTMLCanvasElement)) throw new Error('Expected a canvas');
+    const context = node.getContext('2d');
+    if (!context) throw new Error('Expected a 2D canvas context');
+    return context.getImageData(0, 0, node.width, node.height).data.some((value, index) => index % 4 === 3 && value > 0);
+  });
+  expect(hasVisiblePixels).toBe(false);
 });
 
 test('starts mobile panels closed and exposes touch-sized controls', async ({ page }, testInfo) => {
