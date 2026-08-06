@@ -158,6 +158,9 @@ function drawTextElement(
       message: 'Keep upright requires an outline-backed font and is unavailable for native-font raster warps',
     });
   }
+  for (const message of unsupportedFontFeatures(element)) {
+    result.diagnostics.push({ elementId: element.id, severity: 'warning', message });
+  }
 }
 
 export function effectStackReach(
@@ -185,6 +188,38 @@ export function effectStackReach(
     reach = Math.max(reach, reach + Math.abs(effect.offset) + reflectedHeight + effect.blur);
   }
   return reach + postReach;
+}
+
+/**
+ * Report font settings the Canvas2D text path cannot honour.
+ *
+ * Text is drawn with `fillText` against a CSS font shorthand, which carries family, style, weight
+ * and size and nothing else. Variable-font axes need a registered FontFace, and arbitrary OpenType
+ * features need a shaper -- neither is reachable from a context font string. Kerning and standard
+ * ligatures are the exception: `fontKerning` is set explicitly and `liga` is on by default, so
+ * leaving those enabled is honoured and only disabling them is not.
+ *
+ * These stay in the document model rather than being deleted, because an outline-backed text
+ * pipeline would apply them. Until then, say so instead of silently ignoring them.
+ */
+export function unsupportedFontFeatures(element: TextElement): string[] {
+  const messages: string[] = [];
+  const variations = Object.keys(element.font.variations ?? {});
+  if (variations.length > 0) {
+    messages.push(
+      `Variable font axes (${variations.join(', ')}) need an outline-backed font and are not applied`,
+    );
+  }
+  const features = Object.entries(element.font.features ?? {});
+  const unsupported = features
+    .filter(([tag, enabled]) => !(enabled && (tag === 'liga' || tag === 'kern')))
+    .map(([tag]) => tag);
+  if (unsupported.length > 0) {
+    messages.push(
+      `OpenType features (${unsupported.join(', ')}) need an outline-backed font and are not applied`,
+    );
+  }
+  return messages;
 }
 
 // A pathological element (very large bounds at a high export scale) could otherwise ask for a
