@@ -33,6 +33,25 @@ npm run test:e2e
 npm run build
 ```
 
+## Docker
+
+Build and run the production PWA with Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+Open `http://localhost:8080`. Set `WORDWARP_PORT` to use another host port, for example:
+
+```bash
+WORDWARP_PORT=3000 docker compose up --build
+```
+
+Stop the service with `docker compose down`.
+
+The service binds to `127.0.0.1` by default. Set `WORDWARP_HOST=0.0.0.0` to expose it on the network,
+and place it behind HTTPS when serving anything other than localhost so PWA features remain available.
+
 GIF transparency is one-bit and uses ordered dithering. APNG is the recommended animated format for
 soft glows and shadows. Native system fonts use the browser raster path; exact outline-backed
 `keepUpright` warping requires an imported TTF/OTF font.

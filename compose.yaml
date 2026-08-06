@@ -1,0 +1,10 @@
+services:
+  wordwarp:
+    image: wordwarp:local
+    build:
+      context: .
+      args:
+        VITE_BASE_PATH: /
+    ports:
+      - "${WORDWARP_HOST:-127.0.0.1}:${WORDWARP_PORT:-8080}:80"
+    restart: unless-stopped

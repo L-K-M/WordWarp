@@ -3,8 +3,11 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 import { VitePWA } from 'vite-plugin-pwa';
 
+const configuredBase = process.env.VITE_BASE_PATH ?? './';
+const base = configuredBase.endsWith('/') ? configuredBase : `${configuredBase}/`;
+
 export default defineConfig({
-  base: './',
+  base,
   plugins: [
     react(),
     tailwindcss(),
@@ -18,11 +21,11 @@ export default defineConfig({
         theme_color: '#090b12',
         background_color: '#090b12',
         display: 'standalone',
-        start_url: '.',
-        scope: '.',
+        start_url: base,
+        scope: base,
         icons: [
-          { src: 'wordwarp-icon.svg', sizes: 'any', type: 'image/svg+xml' },
-          { src: 'wordwarp-maskable.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'maskable' },
+          { src: `${base}wordwarp-icon.svg`, sizes: 'any', type: 'image/svg+xml' },
+          { src: `${base}wordwarp-maskable.svg`, sizes: 'any', type: 'image/svg+xml', purpose: 'maskable' },
         ],
       },
       workbox: {
