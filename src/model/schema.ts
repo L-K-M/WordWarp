@@ -134,12 +134,10 @@ export const effectSchema = z.discriminatedUnion('kind', [
     angle: finite,
     vanishingPoint: pointSchema,
     strength: unit,
-    facePaint: paintSchema,
     sidePaint: paintSchema,
     autoShade: z.boolean(),
     shadeAmount: unit,
     steps: z.union([z.literal('auto'), z.number().int().positive()]),
-    capBack: z.boolean(),
   }),
   z.object({ ...shadowBase, kind: z.literal('innerShadow'), choke: unit }),
   z.object({
@@ -297,8 +295,11 @@ const warpSchema = z
   .object({
     kind: z.enum(['none', 'preset', 'path', 'mesh', 'perspective']),
     preset: presetWarpSchema.optional(),
-    adj: z.tuple([unit, unit]),
-    bend: finite.min(-1).max(1),
+    // Bend and the first adjustment run past 1 so a preset can be pushed beyond its natural
+    // shape; the second adjustment is a phase and stays within the unit range. Widening these
+    // only admits documents the old range rejected, so nothing saved earlier needs migrating.
+    adj: z.tuple([finite.min(0).max(2), unit]),
+    bend: finite.min(-2).max(2),
     distortH: finite.min(-1).max(1),
     distortV: finite.min(-1).max(1),
     path: pathDataSchema.optional(),

@@ -40,9 +40,6 @@ export default defineConfig({
       },
     }),
   ],
-  optimizeDeps: {
-    exclude: ['harfbuzzjs'],
-  },
   worker: {
     format: 'es',
   },

@@ -142,10 +142,16 @@ test('uses the configured PWA base path', async ({ page }, testInfo) => {
     const data: unknown = await response.json();
     if (typeof data !== 'object' || data === null) throw new Error('Manifest is not an object');
     const record = data as Record<string, unknown>;
+    // Resolve each value against the manifest's own URL before handing it back. `vite.config.ts`
+    // defaults `base` to './' and stamps that straight into the manifest, which is the portable
+    // choice -- a relative id, scope and start_url follow the app wherever it is deployed. They
+    // are only comparable to a pathname once resolved the way a browser resolves them; comparing
+    // the raw './' against '/' fails while the manifest is in fact correct.
+    const resolve = (value: unknown) => (typeof value === 'string' ? new URL(value, href).pathname : undefined);
     return {
-      id: typeof record.id === 'string' ? record.id : undefined,
-      scope: typeof record.scope === 'string' ? record.scope : undefined,
-      start_url: typeof record.start_url === 'string' ? record.start_url : undefined,
+      id: resolve(record.id),
+      scope: resolve(record.scope),
+      start_url: resolve(record.start_url),
     };
   });
   const scope = await page.evaluate(async () => (await navigator.serviceWorker.ready).scope);
@@ -154,4 +160,48 @@ test('uses the configured PWA base path', async ({ page }, testInfo) => {
   expect(manifest.scope).toBe(expectedPath);
   expect(manifest.start_url).toBe(expectedPath);
   expect(new URL(scope).pathname).toBe(expectedPath);
+});
+
+test('style library scrolls to every preset and previews the real render', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('./');
+  await expect(page.getByRole('button', { name: 'WORDWARP TYPE EFFECTS LAB' })).toBeVisible();
+
+  const panel = page.locator('.preset-panel');
+  const cards = page.locator('.preset-card');
+  const total = await cards.count();
+  expect(total).toBeGreaterThan(12);
+
+  // Every category has to be reachable -- they used to sit on one horizontally scrolling row with
+  // the scrollbar hidden, so the last ones were off the edge of the panel. Checked before the
+  // panel is scrolled, since the row scrolls away with the rest of the panel's content.
+  const categories = page.locator('.preset-categories button');
+  const categoryCount = await categories.count();
+  for (let index = 0; index < categoryCount; index += 1) {
+    await expect(categories.nth(index)).toBeInViewport();
+  }
+  const categoryFontSize = await categories.first().evaluate((node) => Number.parseFloat(getComputedStyle(node).fontSize));
+  expect(categoryFontSize).toBeGreaterThanOrEqual(10);
+
+  // The shell used to grow past the viewport, which left the panel taller than the window with
+  // nothing to scroll, so the styles below the fold were simply unreachable.
+  const metrics = await panel.evaluate((node) => ({
+    client: node.clientHeight,
+    scroll: node.scrollHeight,
+  }));
+  expect(metrics.scroll).toBeGreaterThan(metrics.client);
+
+  const scrolled = await panel.evaluate((node) => {
+    node.scrollTop = node.scrollHeight;
+    return node.scrollTop;
+  });
+  expect(scrolled).toBeGreaterThan(0);
+  await expect(cards.nth(total - 1)).toBeInViewport();
+
+  // Cards show a render from the real pipeline rather than a swatch gradient standing in for one.
+  await expect(page.locator('.preset-preview img').first()).toBeVisible({ timeout: 15_000 });
+  const distinct = await page.locator('.preset-preview img').evaluateAll((nodes) =>
+    new Set(nodes.map((node) => (node as HTMLImageElement).src)).size);
+  expect(distinct).toBeGreaterThan(4);
 });

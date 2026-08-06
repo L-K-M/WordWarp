@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { documentAnimationDuration, evaluateDocumentAtTime } from '../animation/evaluate';
 import { createEffect, EFFECT_KINDS, type EffectKind } from '../effects/defaults';
 import { downloadAnimation, exportAnimation } from '../export/animation';
+import { exportErrorMessage } from '../export/errors';
 import { downloadPng, exportPng } from '../export/png';
 import { createDefaultDocument, createDefaultTextElement } from '../model/defaults';
 import { PRESET_WARP_IDS, type Effect, type TextElement } from '../model/types';
@@ -16,6 +17,7 @@ import { documentStore, useDocumentStore } from '../state/document-store';
 import { useEditorStore } from '../state/editor-store';
 import { useUiStore } from '../state/ui-store';
 import { DocumentCanvas } from '../ui/DocumentCanvas';
+import { PresetPreview } from '../ui/PresetPreview';
 import { warpDisplayName } from '../warp';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 
@@ -36,6 +38,7 @@ export function App() {
   const [presetQuery, setPresetQuery] = useState('');
   const [presetCategory, setPresetCategory] = useState<PresetCategory | 'all'>('all');
   const [exportFormat, setExportFormat] = useState<ExportFormat>('png');
+  const [exportScale, setExportScale] = useState(2);
   const [exportProgress, setExportProgress] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [animationTime, setAnimationTime] = useState(0);
@@ -323,19 +326,20 @@ export function App() {
     setExportProgress(0);
     try {
       if (exportFormat === 'png') {
-        const result = await exportPng(document, 2);
+        const result = await exportPng(document, exportScale);
         downloadPng(result);
         pushToast(`Exported ${result.width} x ${result.height} transparent PNG`, 'success');
       } else {
         const result = await exportAnimation(document, {
           format: exportFormat,
+          scale: exportScale,
           onProgress: setExportProgress,
         });
         downloadAnimation(result);
         pushToast(`Exported ${result.frameCount}-frame ${exportFormat.toUpperCase()}`, 'success');
       }
     } catch (error) {
-      pushToast(error instanceof Error ? error.message : 'Export failed', 'error');
+      pushToast(exportErrorMessage(error), 'error');
     } finally {
       setIsExporting(false);
       setExportProgress(0);
@@ -443,6 +447,17 @@ export function App() {
             <option value="apng">APNG</option>
             <option value="gif">GIF</option>
           </select>
+          <select
+            className="export-format"
+            aria-label="Export resolution"
+            value={exportScale}
+            onChange={(event) => setExportScale(Number(event.target.value))}
+          >
+            <option value={1}>1x</option>
+            <option value={2}>2x</option>
+            <option value={3}>3x</option>
+            <option value={4}>4x</option>
+          </select>
           <button className="export-button" type="button" onClick={() => void handleExport()} disabled={isExporting}>
             {isExporting ? `${Math.round(exportProgress * 100)}%` : `Export ${exportFormat.toUpperCase()}`} <span aria-hidden="true">+</span>
           </button>
@@ -485,9 +500,7 @@ export function App() {
                 type="button"
                 onClick={() => applyPreset(preset)}
               >
-                <span className="preset-preview" style={{ background: swatchGradient(preset.preview) }}>
-                  <span>Ww</span>
-                </span>
+                <PresetPreview key={preset.id} preset={preset} swatch={swatchGradient(preset.preview)} />
                 <span className="preset-meta">
                   <strong>{preset.name}</strong>
                   <small>{preset.category.toUpperCase()}{preset.animated ? ' / MOTION' : ''}</small>
@@ -667,8 +680,8 @@ export function App() {
                       <span>Bend <output>{selectedText.warp.bend.toFixed(2)}</output></span>
                       <input
                         type="range"
-                        min="-1"
-                        max="1"
+                        min="-2"
+                        max="2"
                         step="0.01"
                         value={selectedText.warp.bend}
                         onChange={(event) => {
@@ -685,7 +698,7 @@ export function App() {
                       <input
                         type="range"
                         min="0"
-                        max="1"
+                        max="2"
                         step="0.01"
                         value={selectedText.warp.adj[0]}
                         onChange={(event) => {
