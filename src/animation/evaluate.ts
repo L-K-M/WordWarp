@@ -23,7 +23,12 @@ export function documentAnimationDuration(document: WordWarpDocument): number {
   return durationMilliseconds === 0 ? 2 : durationMilliseconds / 1000;
 }
 
+export function hasEnabledAnimationTracks(document: WordWarpDocument): boolean {
+  return document.elements.some((element) => element.animations.some((track) => track.enabled));
+}
+
 export function evaluateDocumentAtTime(document: WordWarpDocument, normalizedTime: number): WordWarpDocument {
+  if (!hasEnabledAnimationTracks(document)) return document;
   const evaluated = structuredClone(document);
   const loopDuration = documentAnimationDuration(document);
   const loopTime = modulo(normalizedTime, 1);

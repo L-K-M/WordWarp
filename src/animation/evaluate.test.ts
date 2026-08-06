@@ -19,6 +19,19 @@ function animatedDocument() {
 }
 
 describe('animation evaluation', () => {
+  it('returns the same reference when no track is enabled', () => {
+    const source = createDefaultDocument();
+    expect(evaluateDocumentAtTime(source, 0.42)).toBe(source);
+  });
+
+  it('returns the same reference when every track is disabled', () => {
+    const source = animatedDocument();
+    for (const element of source.elements) {
+      for (const track of element.animations) track.enabled = false;
+    }
+    expect(evaluateDocumentAtTime(source, 0.42)).toBe(source);
+  });
+
   it('is deterministic and does not mutate the source', () => {
     const source = animatedDocument();
     const before = structuredClone(source);

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { documentAnimationDuration, evaluateDocumentAtTime } from '../animation/evaluate';
+import { documentAnimationDuration, evaluateDocumentAtTime, hasEnabledAnimationTracks } from '../animation/evaluate';
 import { createEffect, EFFECT_KINDS, type EffectKind } from '../effects/defaults';
 import { downloadAnimation, exportAnimation } from '../export/animation';
 import { exportErrorMessage } from '../export/errors';
@@ -371,6 +371,16 @@ export function App() {
   };
 
   const previewDocument = animationTime > 0 ? evaluateDocumentAtTime(document, animationTime) : document;
+  const hasAnimations = hasEnabledAnimationTracks(document);
+
+  // The playback loop only watches `isPlaying`, so removing the last enabled track while it runs
+  // would leave it ticking with the Play button greyed out and no way to stop it -- exactly the
+  // wasted frames this is meant to avoid, reached from the other direction. Keying off the same
+  // derived value the button uses covers every route in: applying a static preset, disabling the
+  // last track by hand, deleting the animated element, or undo.
+  useEffect(() => {
+    if (!hasAnimations) setIsPlaying(false);
+  }, [hasAnimations]);
 
   const fitZoomToViewport = () => {
     const viewport = window.document.querySelector('.canvas-viewport');
@@ -581,6 +591,8 @@ export function App() {
             <button
               type="button"
               className={isPlaying ? 'playing' : ''}
+              disabled={!hasAnimations}
+              title={hasAnimations ? undefined : 'Add an animated preset to preview motion'}
               onClick={() => setIsPlaying((playing) => !playing)}
               aria-pressed={isPlaying}
             >

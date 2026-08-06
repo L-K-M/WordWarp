@@ -268,3 +268,20 @@ test('Fit zoom fits the artboard and is idempotent', async ({ page }, testInfo) 
   expect(await readZoom()).toBe(fitted);
   await expect.poll(fitsInViewport).toBe(true);
 });
+
+test('stops playback when the last animation track goes away', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  await page.goto('./');
+
+  const play = page.locator('.zoom-strip button[aria-pressed]').first();
+  await page.getByRole('button', { name: 'Glitter Text' }).click();
+  await expect(play).toBeEnabled();
+  await play.click();
+  await expect(play).toHaveAttribute('aria-pressed', 'true');
+
+  // Swapping to a preset with no tracks disables the button. If playback is not stopped with it,
+  // the loop keeps ticking behind a control the user can no longer reach to stop it.
+  await page.getByRole('button', { name: 'Chrome Classic' }).click();
+  await expect(play).toBeDisabled();
+  await expect(play).toHaveAttribute('aria-pressed', 'false');
+});
