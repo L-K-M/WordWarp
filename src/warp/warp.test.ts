@@ -49,6 +49,40 @@ describe('preset warps', () => {
     expect(centerHeight).toBeGreaterThan(leftHeight);
   });
 
+  it('keeps bending past a bend of 1 instead of saturating', () => {
+    // The bend used to be clamped to 1 inside the mapping, so the slider's upper half did
+    // nothing at all: every value above 1 produced the identical shape.
+    const displacement = (bend: number) => Math.abs(mapWarpPoint(0.5, 0, baseWarp('textCurveUp', bend))[1] - 0);
+
+    const atOne = displacement(1);
+    const atTwo = displacement(2);
+    expect(atTwo).toBeGreaterThan(atOne * 1.5);
+
+    // And it still stops somewhere, rather than running away with an out-of-range document.
+    expect(displacement(9)).toBeCloseTo(atTwo, 6);
+  });
+
+  it('keeps shaping past an adjustment of 1, without folding the text back on itself', () => {
+    const curve = (adjustment: number) => {
+      const warp = { ...baseWarp('textCurveUp', 1), adj: [adjustment, 0.5] as [number, number] };
+      return Math.abs(mapWarpPoint(0.5, 0.5, warp)[1] - mapWarpPoint(0, 0.5, warp)[1]);
+    };
+    expect(curve(2)).toBeGreaterThan(curve(1) * 1.5);
+
+    // The arch is the one shape with a geometric ceiling, and it has to hold: past half a turn
+    // its horizontal mapping stops being monotonic, glyphs swap places, and the word reads
+    // backwards through the middle.
+    for (const adjustment of [0, 0.5, 1, 1.5, 2]) {
+      const warp = { ...baseWarp('textArchUp', 1), adj: [adjustment, 0.5] as [number, number] };
+      let previous = Number.NEGATIVE_INFINITY;
+      for (let step = 0; step <= 20; step += 1) {
+        const x = mapWarpPoint(step / 20, 0.5, warp)[0];
+        expect(x, `adj ${adjustment}`).toBeGreaterThan(previous);
+        previous = x;
+      }
+    }
+  });
+
   it('does not treat zero bend with distortion as identity', () => {
     const warp = { ...baseWarp('textWave1', 0), distortH: 0.5 };
     expect(isIdentityWarp(warp)).toBe(false);

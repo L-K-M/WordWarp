@@ -58,7 +58,7 @@ function applyTrack(element: TextElement, source: TextElement, track: AnimationT
     forEachEffect(element, 'extrude', (effect) => { effect.angle += phase * 360; });
   } else if (track.kind === 'waveUndulate') {
     element.warp.adj[1] = phase;
-    element.warp.bend = clamp(source.warp.bend + cycle * amount, -1, 1);
+    element.warp.bend = clamp(source.warp.bend + cycle * amount, -2, 2);
   } else if (track.kind === 'neonFlicker') {
     const noise = loopingNoise(track.seed, phase);
     forEachEffect(element, 'outerGlow', (effect) => {

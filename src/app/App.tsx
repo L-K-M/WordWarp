@@ -680,8 +680,8 @@ export function App() {
                       <span>Bend <output>{selectedText.warp.bend.toFixed(2)}</output></span>
                       <input
                         type="range"
-                        min="-1"
-                        max="1"
+                        min="-2"
+                        max="2"
                         step="0.01"
                         value={selectedText.warp.bend}
                         onChange={(event) => {
@@ -698,7 +698,7 @@ export function App() {
                       <input
                         type="range"
                         min="0"
-                        max="1"
+                        max="2"
                         step="0.01"
                         value={selectedText.warp.adj[0]}
                         onChange={(event) => {
