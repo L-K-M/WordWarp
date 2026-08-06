@@ -60,13 +60,13 @@ export function renderDocument2d(
 
 export function measureTextElement(context: TextContext, element: TextElement): Bounds {
   const layout = layoutText(context, element);
-  return transformBounds(layout.bounds, elementMatrix(element.transform));
+  return transformBounds(layout.bounds, elementMatrix(element.transform, layout.bounds));
 }
 
 function drawTextElement(context: TextContext, element: TextElement, result: RenderResult): void {
   context.save();
   const layout = layoutText(context, element);
-  const matrix = elementMatrix(element.transform);
+  const matrix = elementMatrix(element.transform, layout.bounds);
   applyCanvasMatrix(context, matrix);
   configureLayoutContext(context, layout);
   const fills = element.effects.filter(
@@ -149,7 +149,7 @@ export function effectReach(effect: Effect): number {
   if (effect.kind === 'dropShadow' || effect.kind === 'innerShadow') return effect.distance + effect.size;
   if (effect.kind === 'outerGlow' || effect.kind === 'innerGlow') return effect.size;
   if (effect.kind === 'longShadow') return effect.length === 'toEdge' ? 0 : effect.length;
-  if (effect.kind === 'reflection') return effect.offset + effect.height * 500 + effect.blur;
+  if (effect.kind === 'reflection') return effect.offset + effect.blur;
   if (effect.kind === 'satin') return effect.distance + effect.size;
   return 0;
 }

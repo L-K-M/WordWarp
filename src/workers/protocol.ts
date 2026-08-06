@@ -11,4 +11,4 @@ export type ExportWorkerRequest = ExportPngRequest;
 
 export type ExportWorkerResponse =
   | { type: 'export-complete'; id: string; bytes: ArrayBuffer; width: number; height: number }
-  | { type: 'export-error'; id: string; message: string };
+  | { type: 'export-error'; id: string; message: string; stack?: string };

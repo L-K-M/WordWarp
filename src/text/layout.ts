@@ -20,7 +20,7 @@ export interface LaidOutText {
 }
 
 export function layoutText(context: TextContext, element: TextElement): LaidOutText {
-  const text = transformText(element.text.replace(/\r\n?/g, '\n'), element.layout.transform);
+  const text = applyTextTransform(element.text.replace(/\r\n?/g, '\n'), element.layout.transform);
   const lines = text.split('\n');
   const font = fontShorthand(element);
   const letterSpacing = `${element.layout.letterSpacing * element.layout.size}px`;
@@ -50,16 +50,9 @@ export function layoutText(context: TextContext, element: TextElement): LaidOutT
   const bottom = (Math.max(1, lines.length) - 1) * lineAdvance + descent;
   const width = Math.max(1, right - left);
   const height = Math.max(1, bottom - top);
-  const anchorX = left + width * element.transform.originX;
-  const anchorY = top + height * element.transform.originY;
-
   return {
-    lines: rawLines.map((line) => ({
-      ...line,
-      x: line.x - anchorX,
-      baseline: line.baseline - anchorY,
-    })),
-    bounds: { x: left - anchorX, y: top - anchorY, width, height },
+    lines: rawLines,
+    bounds: { x: left, y: top, width, height },
     font,
     direction: element.layout.direction,
     letterSpacing,
@@ -89,9 +82,11 @@ function fontShorthand(element: TextElement): string {
   return `${style} ${element.font.weight} ${element.layout.size}px "${family}"`;
 }
 
-function transformText(text: string, transform: TextElement['layout']['transform']): string {
+export function applyTextTransform(text: string, transform: TextElement['layout']['transform']): string {
   if (transform === 'upper') return text.toLocaleUpperCase();
   if (transform === 'lower') return text.toLocaleLowerCase();
-  if (transform === 'title') return text.replace(/\b\p{L}/gu, (character) => character.toLocaleUpperCase());
+  if (transform === 'title') {
+    return text.replace(/(?<![\p{L}\p{N}])\p{L}/gu, (character) => character.toLocaleUpperCase());
+  }
   return text;
 }

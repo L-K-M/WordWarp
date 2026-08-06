@@ -29,6 +29,7 @@ scope.onmessage = (event) => {
         type: 'export-error',
         id: request.id,
         message: error instanceof Error ? error.message : 'Unknown export error',
+        stack: error instanceof Error ? error.stack : undefined,
       });
     });
 };

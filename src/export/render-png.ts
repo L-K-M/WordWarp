@@ -23,10 +23,8 @@ export async function renderPngOnSurface(
   const { width, height } = validateExportSize(bounds, scale);
   surface.width = width;
   surface.height = height;
-  const resizedContext = surface.getContext('2d', { alpha: true, willReadFrequently: true });
-  if (!resizedContext) throw new Error('Canvas2D export context was lost during resize');
-  renderDocument2d(resizedContext, document, { scale, viewport: bounds });
-  const pixels = resizedContext.getImageData(0, 0, width, height).data;
+  renderDocument2d(context, document, { scale, viewport: bounds });
+  const pixels = context.getImageData(0, 0, width, height).data;
   const bytes = await encodePngPixels(pixels, width, height);
   return { bytes, width, height };
 }

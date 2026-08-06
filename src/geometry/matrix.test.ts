@@ -12,19 +12,23 @@ describe('matrix geometry', () => {
   });
 
   it('builds the complete element transform', () => {
-    const matrix = elementMatrix({
-      x: 50,
-      y: 70,
-      rotation: 0,
-      scaleX: 2,
-      scaleY: 3,
-      skewX: 0,
-      skewY: 0,
-      originX: 0.5,
-      originY: 0.5,
-    });
+    const matrix = elementMatrix(
+      {
+        x: 50,
+        y: 70,
+        rotation: 0,
+        scaleX: 2,
+        scaleY: 3,
+        skewX: 0,
+        skewY: 0,
+        originX: 0.5,
+        originY: 0.5,
+      },
+      { x: 0, y: 0, width: 10, height: 20 },
+    );
 
-    expect(applyMatrix(matrix, [4, 5])).toEqual([58, 85]);
+    expect(applyMatrix(matrix, [5, 10])).toEqual([50, 70]);
+    expect(applyMatrix(matrix, [4, 5])).toEqual([48, 55]);
   });
 
   it('returns an axis-aligned bound for rotated geometry', () => {

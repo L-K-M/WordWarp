@@ -21,6 +21,7 @@ export async function shapeFontBytes(
 ): Promise<OutlinedText> {
   validateSfnt(bytes);
   const hb = await import('harfbuzzjs');
+  // harfbuzzjs 1.5 finalizer-manages wrappers and intentionally exposes no destroy method.
   const blob = new hb.Blob(bytes);
   const face = new hb.Face(blob, 0);
   const font = new hb.Font(face);

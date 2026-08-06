@@ -1,6 +1,5 @@
-import type { Bounds } from './bounds';
+import { boundsFromPoints, EMPTY_BOUNDS, type Bounds } from './bounds';
 import type { Point, Transform } from '../model/types';
-import { boundsFromPoints } from './bounds';
 
 export type Matrix = [number, number, number, number, number, number];
 
@@ -38,12 +37,15 @@ export function skewMatrix(xDegrees: number, yDegrees: number): Matrix {
   return [1, Math.tan((yDegrees * Math.PI) / 180), Math.tan((xDegrees * Math.PI) / 180), 1, 0, 0];
 }
 
-export function elementMatrix(transform: Transform): Matrix {
+export function elementMatrix(transform: Transform, localBounds: Bounds = EMPTY_BOUNDS): Matrix {
+  const originX = localBounds.x + localBounds.width * transform.originX;
+  const originY = localBounds.y + localBounds.height * transform.originY;
   return [
     translationMatrix(transform.x, transform.y),
     rotationMatrix(transform.rotation),
     scaleMatrix(transform.scaleX, transform.scaleY),
     skewMatrix(transform.skewX, transform.skewY),
+    translationMatrix(-originX, -originY),
   ].reduce(multiplyMatrix, IDENTITY_MATRIX);
 }
 

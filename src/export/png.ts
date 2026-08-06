@@ -51,6 +51,7 @@ async function exportInWorker(document: WordWarpDocument, scale: number): Promis
       window.clearTimeout(timeout);
       worker.terminate();
       if (event.data.type === 'export-error') {
+        if (event.data.stack) console.error(event.data.stack);
         reject(new Error(event.data.message));
       } else {
         resolve({
