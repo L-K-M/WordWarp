@@ -1,23 +1,8 @@
 import { rgbaToCss, sampleGradient } from '../color';
 import type { Bounds } from '../../geometry/bounds';
-import type { Paint, Rgba } from '../../model/types';
+import type { Paint } from '../../model/types';
+import { officeRampColors } from '../../presets/office-ramps';
 import type { TextContext } from '../../text/layout';
-
-const METAL_RAMPS: Record<string, Rgba[]> = {
-  chrome: [
-    [0.94, 0.94, 0.94, 1],
-    [0.2, 0.21, 0.2, 1],
-    [0.94, 0.94, 0.94, 1],
-    [0.39, 0.4, 0.39, 1],
-    [0.86, 0.87, 0.86, 1],
-  ],
-  gold: [
-    [0.95, 0.88, 0.67, 1],
-    [0.5, 0.4, 0.15, 1],
-    [0.93, 0.81, 0.49, 1],
-    [0.71, 0.56, 0.24, 1],
-  ],
-};
 
 export function createPaintStyle(context: TextContext, paint: Paint, bounds: Bounds): string | CanvasGradient {
   if (paint.kind === 'solid') return rgbaToCss(paint.color);
@@ -60,7 +45,7 @@ export function createPaintStyle(context: TextContext, paint: Paint, bounds: Bou
   }
 
   if (paint.kind === 'ramp') {
-    const colors = METAL_RAMPS[paint.rampId.toLowerCase()] ?? METAL_RAMPS.chrome!;
+    const colors = officeRampColors(paint.rampId) ?? officeRampColors('chrome')!;
     const radians = ((paint.angle - 90) * Math.PI) / 180;
     const centerX = bounds.x + bounds.width / 2;
     const centerY = bounds.y + bounds.height / 2;

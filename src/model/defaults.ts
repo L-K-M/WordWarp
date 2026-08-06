@@ -1,6 +1,7 @@
+import { createEffect } from '../effects/defaults';
+import { createId } from '../lib/id';
 import { DOC_VERSION } from './types';
 import type { FillEffect, TextElement, WordWarpDocument } from './types';
-import { createId } from '../lib/id';
 
 interface DefaultOptions {
   documentId?: string;
@@ -17,28 +18,21 @@ export function createDefaultFill(id = createId()): FillEffect {
     enabled: true,
     opacity: 1,
     blendMode: 'normal',
-    paint: {
-      kind: 'gradient',
-      gradient: {
-        type: 'linear',
-        stops: [
-          { offset: 0, color: [0.96, 0.99, 1, 1] },
-          { offset: 0.28, color: [0.29, 0.9, 1, 1] },
-          { offset: 0.56, color: [0.13, 0.23, 0.52, 1] },
-          { offset: 0.72, color: [1, 0.31, 0.78, 1] },
-          { offset: 1, color: [1, 0.87, 0.32, 1] },
-        ],
-        angle: 90,
-        center: [0.5, 0.5],
-        scale: 1,
-        dither: true,
-        interpolation: 'oklab',
-      },
-    },
+    paint: { kind: 'ramp', rampId: 'chrome', angle: 90, variant: 1 },
   };
 }
 
 export function createDefaultTextElement(id = createId(), fillId = createId()): TextElement {
+  const dropShadow = createEffect('dropShadow');
+  dropShadow.distance = 12;
+  dropShadow.size = 12;
+  dropShadow.opacity = 0.62;
+  const bevel = createEffect('bevel');
+  bevel.size = 8;
+  bevel.depth = 140;
+  const outline = createEffect('stroke');
+  outline.width = 2;
+  outline.paint = { kind: 'solid', color: [0.1, 0.1, 0.1, 1] };
   return {
     id,
     type: 'text',
@@ -58,7 +52,7 @@ export function createDefaultTextElement(id = createId(), fillId = createId()): 
       originX: 0.5,
       originY: 0.5,
     },
-    effects: [createDefaultFill(fillId)],
+    effects: [dropShadow, createDefaultFill(fillId), bevel, outline],
     animations: [],
     text: 'WordWarp',
     font: {

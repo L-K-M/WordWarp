@@ -4,6 +4,8 @@ import { createEffect, EFFECT_KINDS, type EffectKind } from '../effects/defaults
 import { downloadPng, exportPng } from '../export/png';
 import { createDefaultTextElement } from '../model/defaults';
 import { PRESET_WARP_IDS, type Effect, type TextElement } from '../model/types';
+import { applyPresetToElement, BUILT_IN_PRESETS } from '../presets/library';
+import type { Preset, PresetCategory } from '../presets/types';
 import { useDocumentStore } from '../state/document-store';
 import { useEditorStore } from '../state/editor-store';
 import { useUiStore } from '../state/ui-store';
@@ -11,22 +13,26 @@ import { DocumentCanvas } from '../ui/DocumentCanvas';
 import { warpDisplayName } from '../warp';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 
-const presetSwatches = [
-  { name: 'Chrome Classic', category: 'METAL', colors: ['#f7fbff', '#586270', '#11151e', '#e9f7ff'] },
-  { name: 'Outrun Sunset', category: 'SYNTH', colors: ['#ff34d2', '#ff4f76', '#ffc642', '#5638ff'] },
-  { name: 'Aqua Gel', category: 'Y2K', colors: ['#ecffff', '#55d9ff', '#087ad8', '#003767'] },
-  { name: 'Memphis Party', category: '90S', colors: ['#ffd93d', '#ff6b6b', '#4ecdc4', '#17192c'] },
-  { name: 'Deep Extrude', category: '3D', colors: ['#ff667a', '#bd2847', '#40182a', '#ffc0ca'] },
-  { name: 'Riso Shift', category: 'TEXTURE', colors: ['#f94671', '#09a9bd', '#f1dba7', '#20202a'] },
-] as const;
+const presetCategories: Array<{ id: PresetCategory | 'all'; label: string }> = [
+  { id: 'all', label: 'All' },
+  { id: 'metallic', label: 'Metal' },
+  { id: 'synthwave', label: 'Synth' },
+  { id: 'y2k', label: 'Y2K' },
+  { id: 'nineties', label: '90s' },
+  { id: 'dimensional', label: '3D' },
+];
 
 export function App() {
   const [isExporting, setIsExporting] = useState(false);
   const [newEffectKind, setNewEffectKind] = useState<EffectKind>('stroke');
+  const [presetQuery, setPresetQuery] = useState('');
+  const [presetCategory, setPresetCategory] = useState<PresetCategory | 'all'>('all');
   const document = useDocumentStore((state) => state.document);
   const pastCount = useDocumentStore((state) => state.past.length);
   const futureCount = useDocumentStore((state) => state.future.length);
   const updateDocument = useDocumentStore((state) => state.updateDocument);
+  const beginTransaction = useDocumentStore((state) => state.beginTransaction);
+  const commitTransaction = useDocumentStore((state) => state.commitTransaction);
   const undo = useDocumentStore((state) => state.undo);
   const redo = useDocumentStore((state) => state.redo);
   const selectedElementId = useEditorStore((state) => state.selectedElementId);
@@ -53,6 +59,17 @@ export function App() {
     });
     const next = document.elements[selectedIndex + 1] ?? document.elements[selectedIndex - 1];
     selectElement(next?.id ?? null);
+  };
+
+  const moveSelectedLayer = (direction: -1 | 1) => {
+    if (!selectedElementId) return;
+    updateDocument('Reorder layer', (draft) => {
+      const index = draft.elements.findIndex((element) => element.id === selectedElementId);
+      const nextIndex = index + direction;
+      if (index < 0 || nextIndex < 0 || nextIndex >= draft.elements.length) return;
+      const [element] = draft.elements.splice(index, 1);
+      draft.elements.splice(nextIndex, 0, element!);
+    });
   };
 
   useKeyboardShortcuts({ undo, redo, remove: removeSelected });
@@ -83,30 +100,21 @@ export function App() {
     );
   };
 
-  const applySwatch = (colors: readonly string[]) => {
+  const applyPreset = (preset: Preset) => {
     if (!selectedText) return;
-    updateDocument('Apply colorway', (draft) => {
+    updateDocument(`Apply ${preset.name}`, (draft) => {
       const element = draft.elements.find((candidate) => candidate.id === selectedText.id);
       if (element?.type !== 'text') return;
-      const fill = element.effects.find((effect) => effect.kind === 'fill');
-      if (!fill) return;
-      fill.paint = {
-        kind: 'gradient',
-        gradient: {
-          type: 'linear',
-          stops: colors.map((color, index) => ({
-            offset: index / (colors.length - 1),
-            color: hexToRgba(color),
-          })),
-          angle: 90,
-          center: [0.5, 0.5],
-          scale: 1,
-          dither: true,
-          interpolation: 'oklab',
-        },
-      };
+      applyPresetToElement(element, preset);
     });
   };
+
+  const visiblePresets = BUILT_IN_PRESETS.filter((preset) => {
+    const categoryMatches = presetCategory === 'all' || preset.category === presetCategory;
+    const query = presetQuery.trim().toLocaleLowerCase();
+    const queryMatches = !query || `${preset.name} ${preset.tags.join(' ')}`.toLocaleLowerCase().includes(query);
+    return categoryMatches && queryMatches;
+  });
 
   const toggleEffect = (effectId: string) => {
     if (!selectedText) return;
@@ -216,32 +224,49 @@ export function App() {
         <aside className="preset-panel" aria-label="Preset library">
           <div className="panel-heading">
             <span>STYLE LIBRARY</span>
-            <span className="count">06</span>
+            <span className="count">{String(visiblePresets.length).padStart(2, '0')}</span>
           </div>
           <label className="search-field">
             <span className="sr-only">Search presets</span>
-            <input type="search" placeholder="Find a look..." disabled />
+            <input
+              type="search"
+              placeholder="Find a look..."
+              value={presetQuery}
+              onChange={(event) => setPresetQuery(event.target.value)}
+            />
             <kbd>/</kbd>
           </label>
+          <div className="preset-categories" aria-label="Preset categories">
+            {presetCategories.map((category) => (
+              <button
+                key={category.id}
+                type="button"
+                className={presetCategory === category.id ? 'active' : ''}
+                onClick={() => setPresetCategory(category.id)}
+              >
+                {category.label}
+              </button>
+            ))}
+          </div>
           <div className="preset-grid">
-            {presetSwatches.map((preset) => (
+            {visiblePresets.map((preset) => (
               <button
                 className="preset-card"
                 key={preset.name}
                 type="button"
-                onClick={() => applySwatch(preset.colors)}
+                onClick={() => applyPreset(preset)}
               >
-                <span className="preset-preview" style={{ background: swatchGradient(preset.colors) }}>
+                <span className="preset-preview" style={{ background: swatchGradient(preset.preview) }}>
                   <span>Ww</span>
                 </span>
                 <span className="preset-meta">
                   <strong>{preset.name}</strong>
-                  <small>{preset.category}</small>
+                  <small>{preset.category.toUpperCase()}{preset.animated ? ' / MOTION' : ''}</small>
                 </span>
               </button>
             ))}
           </div>
-          <p className="foundation-note">Full material presets land after the render graph.</p>
+          {visiblePresets.length === 0 && <p className="foundation-note">No styles match this search.</p>}
         </aside>
 
         <main className="canvas-panel">
@@ -268,6 +293,17 @@ export function App() {
                 document={document}
                 selectedElementId={selectedElementId}
                 onSelect={selectElement}
+                onMoveStart={(id) => beginTransaction(`Move ${id}`, `move:${id}`)}
+                onMove={(id, x, y) => {
+                  updateDocument('Move element', (draft) => {
+                    const element = draft.elements.find((candidate) => candidate.id === id);
+                    if (element && !element.locked) {
+                      element.transform.x = x;
+                      element.transform.y = y;
+                    }
+                  });
+                }}
+                onMoveEnd={commitTransaction}
               />
             </div>
           </div>
@@ -468,6 +504,36 @@ export function App() {
                   <button className="add-effect" type="button" onClick={addEffect}>+ Add</button>
                 </div>
               </section>
+
+              <section className="inspector-section light-section">
+                <h2>Global light <span>{Math.round(document.globalLight.angle)} DEG</span></h2>
+                <label className="range-field">
+                  <span>Angle <output>{Math.round(document.globalLight.angle)}</output></span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="360"
+                    value={document.globalLight.angle}
+                    onChange={(event) => {
+                      const angle = Number(event.target.value);
+                      updateDocument('Adjust global light', (draft) => { draft.globalLight.angle = angle; }, 'global-light');
+                    }}
+                  />
+                </label>
+                <label className="range-field">
+                  <span>Altitude <output>{Math.round(document.globalLight.altitude)}</output></span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="90"
+                    value={document.globalLight.altitude}
+                    onChange={(event) => {
+                      const altitude = Number(event.target.value);
+                      updateDocument('Adjust global light', (draft) => { draft.globalLight.altitude = altitude; }, 'global-light');
+                    }}
+                  />
+                </label>
+              </section>
             </>
           ) : (
             <div className="no-selection">
@@ -497,6 +563,8 @@ export function App() {
           ))}
         </div>
         <div className="layer-actions">
+          <button type="button" onClick={() => moveSelectedLayer(-1)} disabled={!selectedElementId} aria-label="Move layer backward">BACK</button>
+          <button type="button" onClick={() => moveSelectedLayer(1)} disabled={!selectedElementId} aria-label="Move layer forward">FWD</button>
           <button type="button" onClick={addText} aria-label="Add text layer">+</button>
           <button type="button" onClick={removeSelected} disabled={!selectedElementId} aria-label="Delete selected layer">DEL</button>
         </div>
@@ -515,11 +583,6 @@ export function App() {
 
 function swatchGradient(colors: readonly string[]): string {
   return `linear-gradient(145deg, ${colors.join(', ')})`;
-}
-
-function hexToRgba(hex: string): [number, number, number, number] {
-  const value = Number.parseInt(hex.slice(1), 16);
-  return [((value >> 16) & 255) / 255, ((value >> 8) & 255) / 255, (value & 255) / 255, 1];
 }
 
 function EffectQuickControl({ effect, onChange }: { effect: Effect; onChange: (value: number) => void }) {

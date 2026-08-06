@@ -16,6 +16,7 @@ const base = <Kind extends EffectKind>(kind: Kind, slot: Effect['slot']) => ({
   blendMode: 'normal' as const,
 });
 
+export function createEffect<Kind extends EffectKind>(kind: Kind): Extract<Effect, { kind: Kind }>;
 export function createEffect(kind: EffectKind): Effect {
   if (kind === 'fill') return { ...base(kind, 'body'), paint: white };
   if (kind === 'stroke') {
