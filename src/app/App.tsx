@@ -896,20 +896,40 @@ export function App() {
         </div>
         <div className="layer-list">
           {[...document.elements].reverse().map((element) => (
-            <button
-              className={element.id === selectedElementId ? 'selected' : ''}
-              type="button"
+            <div
+              className={`layer-item ${element.id === selectedElementId ? 'selected' : ''}`}
               key={element.id}
-              onClick={() => selectElement(element.id)}
             >
-              <span className="layer-kind">{element.type === 'text' ? 'T' : 'S'}</span>
-              <span>{element.name}</span>
-            </button>
+              <button
+                className="layer-main"
+                type="button"
+                onClick={() => selectElement(element.id)}
+              >
+                <span className="layer-kind">{element.type === 'text' ? 'T' : 'S'}</span>
+                <span>{element.name}</span>
+              </button>
+              <button
+                className={`layer-visibility ${element.visible ? 'visible' : ''}`}
+                type="button"
+                aria-label={`${element.visible ? 'Hide' : 'Show'} ${element.name}`}
+                aria-pressed={element.visible}
+                title={element.visible ? 'Hide layer' : 'Show layer'}
+                onClick={() => {
+                  updateDocument('Toggle layer visibility', (draft) => {
+                    const candidate = draft.elements.find((item) => item.id === element.id);
+                    if (candidate) candidate.visible = !candidate.visible;
+                  });
+                }}
+              >
+                {element.visible ? 'ON' : 'OFF'}
+              </button>
+            </div>
           ))}
         </div>
         <div className="layer-actions">
           <button type="button" onClick={() => moveSelectedLayer(-1)} disabled={!selectedElementId} aria-label="Move layer backward">BACK</button>
           <button type="button" onClick={() => moveSelectedLayer(1)} disabled={!selectedElementId} aria-label="Move layer forward">FWD</button>
+          <button type="button" onClick={duplicateSelected} disabled={!selectedElementId} aria-label="Duplicate selected layer" title="Duplicate (Ctrl+D)">DUP</button>
           <button type="button" onClick={addText} aria-label="Add text layer">+</button>
           <button type="button" onClick={removeSelected} disabled={!selectedElementId} aria-label="Delete selected layer">DEL</button>
         </div>

@@ -963,25 +963,56 @@ button:disabled {
   gap: 7px;
 }
 
-.layer-list button {
+.layer-item {
   display: flex;
   min-width: 130px;
   height: 46px;
-  align-items: center;
-  gap: 9px;
-  padding: 0 10px;
+  align-items: stretch;
   border: 1px solid #2d3445;
   border-radius: 3px;
-  color: #949eb2;
-  font-size: 10px;
-  text-align: left;
   background: #141824;
 }
 
-.layer-list button.selected {
+.layer-item.selected {
   border-color: #4d92a5;
-  color: #f0f6ff;
   box-shadow: inset 0 -2px 0 var(--cyan);
+}
+
+.layer-item .layer-main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 9px;
+  padding: 0 10px;
+  color: #949eb2;
+  font-size: 10px;
+  text-align: left;
+  background: transparent;
+}
+
+.layer-item.selected .layer-main {
+  color: #f0f6ff;
+}
+
+.layer-item .layer-main > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layer-visibility {
+  flex: 0 0 auto;
+  padding: 0 7px;
+  border-left: 1px solid #2d3445;
+  color: #59637a;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 7px;
+  background: transparent;
+}
+
+.layer-visibility.visible {
+  color: #83eaff;
 }
 
 .layer-kind {
@@ -1203,7 +1234,7 @@ button:disabled {
     padding: 7px 8px;
   }
 
-  .layer-list button {
+  .layer-item {
     min-width: 112px;
     height: 44px;
   }

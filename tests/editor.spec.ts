@@ -13,7 +13,7 @@ test('edits text, applies a preset, and exports transparent PNG', async ({ page 
   await content.fill('Chrome test');
   await page.getByRole('button', { name: 'Gold Bar' }).click();
   await expect(page.locator('canvas')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Chrome test/ })).toBeVisible();
+  await expect(page.locator('.layer-main').filter({ hasText: 'Chrome test' })).toBeVisible();
 
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: /Export PNG/ }).click();
@@ -133,7 +133,7 @@ test('ignores canvas shortcuts on a focused button while preserving undo and red
   test.skip(testInfo.project.name !== 'chromium');
   await page.goto('./');
 
-  const layers = page.locator('.layer-list > button');
+  const layers = page.locator('.layer-list .layer-main');
   const addLayer = page.getByRole('button', { name: 'Add text layer' });
   await expect(layers).toHaveCount(1);
   await addLayer.click();
