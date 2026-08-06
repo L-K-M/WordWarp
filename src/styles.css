@@ -895,6 +895,34 @@ button:disabled {
   text-align: right;
 }
 
+.effect-color-controls {
+  display: flex;
+  grid-column: 2 / -1;
+  gap: 10px;
+}
+
+.effect-color-controls label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #8d97ad;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+/* 24px on both axes is the WCAG 2.5.8 floor, and a colour swatch is a small, precise target to
+   begin with. The rest of the app already holds to this -- the narrow breakpoints put a 44px
+   minimum on every button group. */
+.effect-color-controls input[type="color"] {
+  width: 28px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid #343c4e;
+  border-radius: 3px;
+  background: #0c0f17;
+}
+
 .effect-adder {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 62px;
