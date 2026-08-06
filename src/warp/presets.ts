@@ -4,14 +4,24 @@ type PresetSpec = Pick<WarpSpec, 'adj' | 'bend' | 'distortH' | 'distortV'> & {
   preset: PresetWarpId;
 };
 
+/**
+ * Bend and shape both run past 1, which pushes a preset beyond its natural shape: bend
+ * extrapolates past the envelope's target rather than stopping at it, and shape drives each
+ * preset's amplitude further. 2 is the ceiling because `bias` stops being monotonic a little
+ * above it, and a non-monotonic bias folds the text back over itself.
+ */
+const MAX_BEND = 2;
+const MAX_ADJUSTMENT = 2;
+
 export function mapPresetPoint(u: number, v: number, spec: PresetSpec): Point {
-  const amount = Math.min(1, Math.abs(spec.bend));
+  const amount = Math.min(MAX_BEND, Math.abs(spec.bend));
   if (amount === 0 || spec.preset === 'textNoShape' || spec.preset === 'textPlain') {
     return applyDistortion([u, v], u, v, spec);
   }
 
   const direction = spec.bend < 0 ? -1 : 1;
-  const target = presetTarget(spec.preset, u, v, clamp01(spec.adj[0]), clamp01(spec.adj[1]), direction);
+  const adjustment = clamp(spec.adj[0], 0, MAX_ADJUSTMENT);
+  const target = presetTarget(spec.preset, u, v, adjustment, clamp01(spec.adj[1]), direction);
   const mapped: Point = [mix(u, target[0], amount), mix(v, target[1], amount)];
   return applyDistortion(mapped, u, v, spec);
 }
@@ -171,7 +181,10 @@ function arch(
   direction: number,
   pour: boolean,
 ): Point {
-  const sweep = Math.PI * (0.25 + adjustment * 0.7);
+  // Half a turn is the arch's geometric limit: past it the ends curve back under themselves, the
+  // horizontal mapping stops being monotonic, and glyphs swap places so the word reads backwards
+  // through the middle. Going further round is what the circle presets are for.
+  const sweep = Math.min(Math.PI * 0.98, Math.PI * (0.25 + adjustment * 0.7));
   const theta = sweep * (bias(u, secondary) - 0.5);
   const radius = 1 / Math.max(0.2, 2 * Math.sin(sweep / 2));
   const centerX = 0.5 + radius * Math.sin(theta);
@@ -215,5 +228,9 @@ function mix(a: number, b: number, amount: number): number {
 }
 
 function clamp01(value: number): number {
-  return Math.min(1, Math.max(0, value));
+  return clamp(value, 0, 1);
+}
+
+function clamp(value: number, low: number, high: number): number {
+  return Math.min(high, Math.max(low, value));
 }
