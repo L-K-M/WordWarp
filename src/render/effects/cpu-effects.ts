@@ -1,6 +1,7 @@
-import { sampleGradient } from '../color';
 import { createCanvasSurface, get2dContext, type CanvasSurface } from '../surface';
+import { createPaintStyle } from '../fallback2d/paint';
 import { alphaChannel, blurAlpha, offsetAlpha, signedDistanceField } from './fields';
+import type { Bounds } from '../../geometry/bounds';
 import type {
   BevelEffect,
   BlendMode,
@@ -10,7 +11,6 @@ import type {
   Rgba,
   TextureOverlayEffect,
 } from '../../model/types';
-import { officeRampColors } from '../../presets/office-ramps';
 
 interface EffectOptions {
   scale: number;
@@ -35,10 +35,13 @@ export function renderEffectStack(
   const outputContext = get2dContext(output, true);
   let distance: Float32Array | null = null;
   const getDistance = () => (distance ??= signedDistanceField(faceAlpha, width, height));
+  let paintBounds: Bounds | null = null;
+  const getPaintBounds = () =>
+    (paintBounds ??= alphaBounds(faceAlpha, width, height) ?? { x: 0, y: 0, width, height });
 
   for (const effect of effects) {
     if (!effect.enabled || effect.opacity <= 0 || effectSlot(effect) !== 'back') continue;
-    const layer = renderBackEffect(effect, faceAlpha, getDistance, width, height, options);
+    const layer = renderBackEffect(effect, faceAlpha, getDistance, getPaintBounds, width, height, options);
     if (layer) drawLayer(outputContext, layer, effect.blendMode);
   }
 
@@ -54,7 +57,7 @@ export function renderEffectStack(
       drawReflection(output, effect.offset * options.scale, effect.height, effect.opacity);
       continue;
     }
-    const layers = renderFaceEffect(effect, faceAlpha, getDistance, width, height, options);
+    const layers = renderFaceEffect(effect, faceAlpha, getDistance, getPaintBounds, width, height, options);
     for (const layer of layers) drawLayer(outputContext, layer, effect.blendMode);
   }
 
@@ -71,6 +74,7 @@ function renderBackEffect(
   effect: Effect,
   faceAlpha: Uint8Array,
   getDistance: () => Float32Array,
+  getPaintBounds: () => Bounds,
   width: number,
   height: number,
   options: EffectOptions,
@@ -113,7 +117,7 @@ function renderBackEffect(
       }
     }
     applyContour(mask, effect.contour);
-    return colorize(mask, width, height, paintColor(effect.paint), effect.opacity);
+    return colorizePaint(mask, width, height, effect.paint, effect.opacity, getPaintBounds());
   }
 
   if (effect.kind === 'extrude' || effect.kind === 'longShadow') {
@@ -135,7 +139,7 @@ function renderBackEffect(
       }
     }
     const paint = effect.kind === 'extrude' ? effect.sidePaint : effect.paint;
-    return colorize(union, width, height, paintColor(paint), effect.opacity);
+    return colorizePaint(union, width, height, paint, effect.opacity, getPaintBounds());
   }
 
   return null;
@@ -145,6 +149,7 @@ function renderFaceEffect(
   effect: Effect,
   faceAlpha: Uint8Array,
   getDistance: () => Float32Array,
+  getPaintBounds: () => Bounds,
   width: number,
   height: number,
   options: EffectOptions,
@@ -154,17 +159,15 @@ function renderFaceEffect(
   if (effect.kind === 'stroke') {
     const distance = getDistance();
     const widthPx = effect.width * options.scale;
+    // Thresholding the distance field produced hard, aliased stroke edges. Take the band's
+    // per-pixel coverage instead so the stroke is anti-aliased like everything else.
+    const lo = effect.position === 'inside' ? -widthPx : effect.position === 'outside' ? 0 : -widthPx / 2;
+    const hi = effect.position === 'inside' ? 0 : effect.position === 'outside' ? widthPx : widthPx / 2;
     const mask = new Uint8Array(faceAlpha.length);
     for (let index = 0; index < mask.length; index += 1) {
-      const value = distance[index]!;
-      const visible = effect.position === 'inside'
-        ? value <= 0 && value >= -widthPx
-        : effect.position === 'outside'
-          ? value >= 0 && value <= widthPx
-          : Math.abs(value) <= widthPx / 2;
-      mask[index] = visible ? 255 : 0;
+      mask[index] = Math.round(255 * bandCoverage(distance[index]!, lo, hi));
     }
-    return [colorize(mask, width, height, paintColor(effect.paint), effect.opacity)];
+    return [colorizePaint(mask, width, height, effect.paint, effect.opacity, getPaintBounds())];
   }
 
   if (effect.kind === 'innerGlow') {
@@ -179,7 +182,7 @@ function renderFaceEffect(
       }
     }
     applyContour(mask, effect.contour);
-    return [colorize(mask, width, height, paintColor(effect.paint), effect.opacity)];
+    return [colorizePaint(mask, width, height, effect.paint, effect.opacity, getPaintBounds())];
   }
 
   if (effect.kind === 'innerShadow') {
@@ -442,15 +445,57 @@ function imageSurface(pixels: Uint8ClampedArray, width: number, height: number):
   return surface;
 }
 
-function paintColor(paint: Paint): Rgba {
-  if (paint.kind === 'solid') return paint.color;
-  if (paint.kind === 'gradient') return sampleGradient(paint.gradient, 0.5);
-  if (paint.kind === 'ramp') {
-    const colors = officeRampColors(paint.rampId);
-    return colors?.[Math.floor(colors.length / 2)] ?? [0.62, 0.7, 0.78, 1];
+/**
+ * Colourise a coverage mask with a Paint.
+ *
+ * Solid paints take the cheap path. Everything else is rasterised through the same
+ * `createPaintStyle` the fill uses, so a gradient stroke is an actual gradient rather than one
+ * sample from the middle of it, and a ramp or matcap keeps its shape instead of collapsing to a
+ * representative colour.
+ *
+ * The paint is laid out over `paintBounds` -- the visible glyph -- rather than the effect layer,
+ * which is padded out by blur and glow reach. Anchoring to the padded layer would make a gradient
+ * shift around whenever an unrelated effect changed the padding.
+ */
+function colorizePaint(
+  mask: Uint8Array,
+  width: number,
+  height: number,
+  paint: Paint,
+  opacity: number,
+  paintBounds: Bounds,
+): CanvasSurface {
+  if (paint.kind === 'solid') return colorize(mask, width, height, paint.color, opacity);
+
+  const surface = createCanvasSurface(width, height);
+  const context = get2dContext(surface, true);
+  context.fillStyle = createPaintStyle(context, paint, paintBounds);
+  context.fillRect(0, 0, width, height);
+  const image = context.getImageData(0, 0, width, height);
+  const data = image.data;
+  for (let index = 0; index < mask.length; index += 1) {
+    const offset = index * 4;
+    const alpha = Math.round(mask[index]! * (data[offset + 3]! / 255) * opacity);
+    if (alpha > 0) {
+      data[offset + 3] = alpha;
+      continue;
+    }
+    data[offset] = 0;
+    data[offset + 1] = 0;
+    data[offset + 2] = 0;
+    data[offset + 3] = 0;
   }
-  if (paint.kind === 'matcap') return [0.68, 0.76, 0.86, 1];
-  return [0.5, 0.5, 0.5, 1];
+  context.putImageData(image, 0, 0);
+  return surface;
+}
+
+/** Coverage of the distance band [lo, hi] at signed distance d, anti-aliased over one pixel. */
+function bandCoverage(distance: number, lo: number, hi: number): number {
+  return clamp01(distance - lo + 0.5) * clamp01(hi - distance + 0.5);
+}
+
+function clamp01(value: number): number {
+  return Math.min(1, Math.max(0, value));
 }
 
 function applyContour(mask: Uint8Array, contour: number[]): void {
