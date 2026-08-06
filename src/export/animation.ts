@@ -1,0 +1,160 @@
+import { documentAnimationDuration, evaluateDocumentAtTime } from '../animation/evaluate';
+import { roundOutBounds, unionBounds, type Bounds } from '../geometry/bounds';
+import { createId } from '../lib/id';
+import type { WordWarpDocument } from '../model/types';
+import { createCanvasSurface, get2dContext } from '../render/surface';
+import type { EncodeAnimationResponse } from '../workers/encode-protocol';
+import { encodeApng, encodeGif } from './animation-codec';
+import { getExportBounds, validateExportSize } from './bounds';
+import { renderRgbaOnSurface } from './render-png';
+
+const MAX_RAW_FRAME_BYTES = 64 * 1024 * 1024;
+
+export interface AnimationExportOptions {
+  format: 'apng' | 'gif';
+  fps?: number;
+  scale?: number;
+  onProgress?: (progress: number) => void;
+}
+
+export interface AnimationExport {
+  blob: Blob;
+  filename: string;
+  width: number;
+  height: number;
+  frameCount: number;
+}
+
+export async function exportAnimation(
+  document: WordWarpDocument,
+  options: AnimationExportOptions,
+): Promise<AnimationExport> {
+  const requestedFps = options.fps ?? 12;
+  if (!Number.isFinite(requestedFps)) throw new Error('Animation FPS must be a finite number');
+  const fps = Math.min(30, Math.max(1, Math.round(requestedFps)));
+  const scale = options.scale ?? 1;
+  if (!Number.isFinite(scale) || scale <= 0) throw new Error('Animation scale must be positive');
+  const duration = documentAnimationDuration(document);
+  if (duration > 30) throw new Error('Animation loops longer than 30 seconds cannot be exported yet');
+  const frameCount = Math.max(2, Math.round(duration * fps));
+  const bounds = measureAnimationBounds(document, frameCount);
+  const { width, height } = validateExportSize(bounds, scale);
+  const frameBytes = width * height * 4;
+  if (frameBytes * frameCount > MAX_RAW_FRAME_BYTES) {
+    throw new Error('Animated export exceeds the 64 MB raw-frame budget');
+  }
+  const frames: ArrayBuffer[] = [];
+
+  for (let frame = 0; frame < frameCount; frame += 1) {
+    const evaluated = evaluateDocumentAtTime(document, frame / frameCount);
+    const rendered = renderRgbaOnSurface(evaluated, scale, () => createCanvasSurface(1, 1), bounds);
+    frames.push(new Uint8Array(rendered.pixels).buffer);
+    options.onProgress?.((frame + 1) / (frameCount + 1));
+    await yieldToBrowser();
+  }
+
+  const delays = frameDelays(options.format, duration, frameCount);
+  const bytes = await encodeInWorker(options.format, frames, width, height, delays);
+  options.onProgress?.(1);
+  const mime = options.format === 'apng' ? 'image/apng' : 'image/gif';
+  const extension = options.format;
+  return {
+    blob: new Blob([new Uint8Array(bytes).buffer], { type: mime }),
+    filename: `${safeFilename(document.name)}.${extension}`,
+    width,
+    height,
+    frameCount,
+  };
+}
+
+export function downloadAnimation(result: AnimationExport): void {
+  const url = URL.createObjectURL(result.blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = result.filename;
+  anchor.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+async function encodeInWorker(
+  format: 'apng' | 'gif',
+  frames: ArrayBuffer[],
+  width: number,
+  height: number,
+  delays: number[],
+): Promise<ArrayBuffer> {
+  if (typeof Worker === 'undefined') {
+    const encoded = format === 'apng'
+      ? encodeApng(frames, width, height, delays)
+      : encodeGif(frames, width, height, delays);
+    return new Uint8Array(encoded).buffer;
+  }
+  const worker = new Worker(new URL('../workers/encode.worker.ts', import.meta.url), {
+    type: 'module',
+    name: 'wordwarp-encoder',
+  });
+  const id = createId();
+  return await new Promise<ArrayBuffer>((resolve, reject) => {
+    let settled = false;
+    const timeout = globalThis.setTimeout(() => {
+      finish(() => reject(new Error('Animation encoding timed out')));
+    }, 120_000);
+    const finish = (complete: () => void) => {
+      if (settled) return;
+      settled = true;
+      globalThis.clearTimeout(timeout);
+      worker.terminate();
+      complete();
+    };
+    worker.onmessage = (event: MessageEvent<EncodeAnimationResponse>) => {
+      if (event.data.id !== id) return;
+      finish(() => {
+        if (event.data.type === 'encode-error') reject(new Error(event.data.message));
+        else resolve(event.data.bytes);
+      });
+    };
+    worker.onerror = (event) => {
+      finish(() => reject(new Error(event.message || 'Animation worker failed')));
+    };
+    worker.onmessageerror = () => finish(() => reject(new Error('Animation worker returned an unreadable response')));
+    try {
+      worker.postMessage(
+        { type: 'encode-animation', id, format, frames, width, height, delays },
+        frames,
+      );
+    } catch (error) {
+      finish(() => reject(error instanceof Error ? error : new Error('Could not start animation encoding', { cause: error })));
+    }
+  });
+}
+
+function measureAnimationBounds(document: WordWarpDocument, frameCount: number): Bounds {
+  const surface = createCanvasSurface(1, 1);
+  const context = get2dContext(surface, true);
+  let bounds: Bounds | null = null;
+  for (let frame = 0; frame < frameCount; frame += 1) {
+    const evaluated = evaluateDocumentAtTime(document, frame / frameCount);
+    bounds = unionBounds(bounds, getExportBounds(evaluated, context));
+  }
+  return roundOutBounds(bounds ?? getExportBounds(document, context));
+}
+
+function frameDelays(format: 'apng' | 'gif', duration: number, frameCount: number): number[] {
+  const unitsPerSecond = format === 'gif' ? 100 : 1000;
+  const unitMilliseconds = 1000 / unitsPerSecond;
+  const totalUnits = Math.max(frameCount, Math.round(duration * unitsPerSecond));
+  return Array.from({ length: frameCount }, (_, frame) => {
+    const start = Math.round((frame * totalUnits) / frameCount);
+    const end = Math.round(((frame + 1) * totalUnits) / frameCount);
+    return Math.max(unitMilliseconds, (end - start) * unitMilliseconds);
+  });
+}
+
+function yieldToBrowser(): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, 0));
+}
+
+function safeFilename(name: string): string {
+  const cleaned = name.trim().replace(/[^a-z0-9-_]+/gi, '-').replace(/^-+|-+$/g, '');
+  return cleaned || 'wordwarp';
+}

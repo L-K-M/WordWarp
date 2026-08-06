@@ -4,8 +4,8 @@
 > type. Compose elements on a canvas, export a genuinely transparent PNG — shadows and glows
 > included — plus animated APNG/GIF.
 
-**Status:** design document, v1. No code written yet.
-**Repo:** `L-K-M/WordWarp` · **Branch:** `claude/wordwrap-text-effects-8l8g0v`
+**Status:** v1 implemented through the five-PR roadmap; this document remains the architecture reference.
+**Repo:** `L-K-M/WordWarp` · **Branch:** `main`
 
 > **Naming note.** The brief calls the tool "WordWrap"; the repository is `WordWarp`. This document
 > uses **WordWarp** throughout — it matches the repo and describes what the tool actually does

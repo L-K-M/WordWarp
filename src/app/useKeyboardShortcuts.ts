@@ -6,7 +6,7 @@ interface ShortcutActions {
   remove: () => void;
 }
 
-export function useKeyboardShortcuts(actions: ShortcutActions): void {
+export function useKeyboardShortcuts(actions: ShortcutActions, enabled = true): void {
   const onKeyDown = useEffectEvent((event: KeyboardEvent) => {
     const target = event.target;
     const isEditing =
@@ -35,7 +35,8 @@ export function useKeyboardShortcuts(actions: ShortcutActions): void {
   });
 
   useEffect(() => {
+    if (!enabled) return;
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [enabled]);
 }

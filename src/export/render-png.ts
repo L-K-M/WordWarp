@@ -1,11 +1,19 @@
 import { getExportBounds, validateExportSize } from './bounds';
 import { encodePngPixels } from './png-codec';
+import { planTiles } from './tiling';
+import type { Bounds } from '../geometry/bounds';
 import type { WordWarpDocument } from '../model/types';
-import { renderDocument2d } from '../render/fallback2d/renderer';
+import { effectStackReach, measureTextElement, renderDocument2d } from '../render/fallback2d/renderer';
 import { get2dContext } from '../render/surface';
 
 export interface RenderedPng {
   bytes: Uint8Array;
+  width: number;
+  height: number;
+}
+
+export interface RenderedRgba {
+  pixels: Uint8ClampedArray;
   width: number;
   height: number;
 }
@@ -17,14 +25,82 @@ export async function renderPngOnSurface(
   scale: number,
   createSurface: () => ExportSurface,
 ): Promise<RenderedPng> {
+  const rendered = renderRgbaOnSurface(document, scale, createSurface);
+  const bytes = await encodePngPixels(rendered.pixels, rendered.width, rendered.height);
+  return { bytes, width: rendered.width, height: rendered.height };
+}
+
+export function renderRgbaOnSurface(
+  document: WordWarpDocument,
+  scale: number,
+  createSurface: () => ExportSurface,
+  fixedBounds?: Bounds,
+): RenderedRgba {
   const surface = createSurface();
   const context = get2dContext(surface, true);
-  const bounds = getExportBounds(document, context);
+  const bounds = fixedBounds ?? getExportBounds(document, context);
   const { width, height } = validateExportSize(bounds, scale);
-  surface.width = width;
-  surface.height = height;
-  renderDocument2d(context, document, { scale, viewport: bounds });
-  const pixels = context.getImageData(0, 0, width, height).data;
-  const bytes = await encodePngPixels(pixels, width, height);
-  return { bytes, width, height };
+  const shouldTile = width > 4096 || height > 4096 || width * height > 16_777_216;
+  if (shouldTile && hasEnabledReflection(document)) {
+    throw new Error('Reflection effects cannot currently be combined with tiled large-image export');
+  }
+  const maximumReach = maximumEffectReach(document, context, bounds);
+  const scaledReach = Math.ceil(maximumReach * scale);
+  if (shouldTile && scaledReach > 1024) {
+    throw new Error('Effects on this large export require more than 1024 pixels of tile overlap');
+  }
+  const halo = shouldTile ? scaledReach : 0;
+  const coreSize = Math.max(512, 4096 - halo * 2);
+  const tiles = shouldTile
+    ? planTiles(width, height, coreSize, halo)
+    : planTiles(width, height, Math.max(width, height), 0);
+  const pixels = new Uint8ClampedArray(width * height * 4);
+
+  for (const tile of tiles) {
+    surface.width = tile.render.width;
+    surface.height = tile.render.height;
+    const tileContext = get2dContext(surface, true);
+    renderDocument2d(tileContext, document, {
+      scale,
+      viewport: {
+        x: bounds.x + tile.render.x / scale,
+        y: bounds.y + tile.render.y / scale,
+        width: tile.render.width / scale,
+        height: tile.render.height / scale,
+      },
+      effectViewport: bounds,
+    });
+    const source = tileContext.getImageData(
+      tile.core.x - tile.render.x,
+      tile.core.y - tile.render.y,
+      tile.core.width,
+      tile.core.height,
+    ).data;
+    for (let row = 0; row < tile.core.height; row += 1) {
+      const sourceOffset = row * tile.core.width * 4;
+      const destinationOffset = ((tile.core.y + row) * width + tile.core.x) * 4;
+      pixels.set(source.subarray(sourceOffset, sourceOffset + tile.core.width * 4), destinationOffset);
+    }
+  }
+  return { pixels, width, height };
+}
+
+function hasEnabledReflection(document: WordWarpDocument): boolean {
+  return document.elements.some((element) => (
+    element.visible && element.effects.some((effect) => effect.enabled && effect.kind === 'reflection')
+  ));
+}
+
+function maximumEffectReach(
+  document: WordWarpDocument,
+  context: ReturnType<typeof get2dContext>,
+  viewport: Bounds,
+): number {
+  let reach = 2;
+  for (const element of document.elements) {
+    if (!element.visible || element.type !== 'text') continue;
+    const elementBounds = measureTextElement(context, element);
+    reach = Math.max(reach, effectStackReach(elementBounds, element.effects, viewport));
+  }
+  return reach;
 }
