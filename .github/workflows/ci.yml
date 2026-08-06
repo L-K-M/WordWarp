@@ -49,3 +49,19 @@ jobs:
           name: playwright-results
           path: test-results
           retention-days: 7
+
+  container:
+    name: Docker Compose smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose up --build --detach --wait --wait-timeout 90
+      - name: Verify container responses
+        run: |
+          curl --fail --silent --show-error http://127.0.0.1:8080/ >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:8080/nested/path | grep --quiet 'src="/assets/'
+          test "$(curl --fail --silent --show-error --output /dev/null --write-out '%{content_type}' http://127.0.0.1:8080/manifest.webmanifest)" = "application/manifest+json"
+          curl --fail --silent --show-error --head http://127.0.0.1:8080/sw.js | tr --delete '\r' | grep --ignore-case --quiet '^Cache-Control:.*no-cache'
+      - if: always()
+        run: docker compose down --volumes

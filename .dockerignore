@@ -1,0 +1,16 @@
+.git
+.github
+.idea
+.codenomad
+node_modules
+dist
+coverage
+playwright-report
+test-results
+*.local
+*.log
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
