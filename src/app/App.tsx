@@ -1,12 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
+import { documentAnimationDuration, evaluateDocumentAtTime } from '../animation/evaluate';
 import { createEffect, EFFECT_KINDS, type EffectKind } from '../effects/defaults';
+import { downloadAnimation, exportAnimation } from '../export/animation';
 import { downloadPng, exportPng } from '../export/png';
-import { createDefaultTextElement } from '../model/defaults';
+import { createDefaultDocument, createDefaultTextElement } from '../model/defaults';
 import { PRESET_WARP_IDS, type Effect, type TextElement } from '../model/types';
+import { startAutosave, type AutosaveController } from '../persistence/autosave';
+import { loadActiveDocument, saveDocument } from '../persistence/database';
 import { applyPresetToElement, BUILT_IN_PRESETS } from '../presets/library';
 import type { Preset, PresetCategory } from '../presets/types';
-import { useDocumentStore } from '../state/document-store';
+import { buildShareUrl, decodeShareFragment } from '../share/url';
+import { subscribeToServiceWorkerUpdate, type ServiceWorkerUpdate } from '../service-worker-update';
+import { documentStore, useDocumentStore } from '../state/document-store';
 import { useEditorStore } from '../state/editor-store';
 import { useUiStore } from '../state/ui-store';
 import { DocumentCanvas } from '../ui/DocumentCanvas';
@@ -22,17 +28,31 @@ const presetCategories: Array<{ id: PresetCategory | 'all'; label: string }> = [
   { id: 'dimensional', label: '3D' },
 ];
 
+type ExportFormat = 'png' | 'apng' | 'gif';
+
 export function App() {
   const [isExporting, setIsExporting] = useState(false);
   const [newEffectKind, setNewEffectKind] = useState<EffectKind>('stroke');
   const [presetQuery, setPresetQuery] = useState('');
   const [presetCategory, setPresetCategory] = useState<PresetCategory | 'all'>('all');
+  const [exportFormat, setExportFormat] = useState<ExportFormat>('png');
+  const [exportProgress, setExportProgress] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [animationTime, setAnimationTime] = useState(0);
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+  const [serviceWorkerUpdate, setServiceWorkerUpdate] = useState<ServiceWorkerUpdate | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const animationTimeRef = useRef(0);
+  const autosaveRef = useRef<AutosaveController | null>(null);
   const document = useDocumentStore((state) => state.document);
   const pastCount = useDocumentStore((state) => state.past.length);
   const futureCount = useDocumentStore((state) => state.future.length);
   const updateDocument = useDocumentStore((state) => state.updateDocument);
   const beginTransaction = useDocumentStore((state) => state.beginTransaction);
   const commitTransaction = useDocumentStore((state) => state.commitTransaction);
+  const replaceDocument = useDocumentStore((state) => state.replaceDocument);
   const undo = useDocumentStore((state) => state.undo);
   const redo = useDocumentStore((state) => state.redo);
   const selectedElementId = useEditorStore((state) => state.selectedElementId);
@@ -43,9 +63,130 @@ export function App() {
   const rightPanelOpen = useEditorStore((state) => state.rightPanelOpen);
   const toggleLeftPanel = useEditorStore((state) => state.toggleLeftPanel);
   const toggleRightPanel = useEditorStore((state) => state.toggleRightPanel);
+  const syncPanelsForViewport = useEditorStore((state) => state.syncPanelsForViewport);
   const toasts = useUiStore((state) => state.toasts);
   const pushToast = useUiStore((state) => state.pushToast);
   const dismissToast = useUiStore((state) => state.dismissToast);
+
+  useEffect(() => {
+    let stopped = false;
+    void (async () => {
+      await Promise.resolve();
+      if (stopped) return;
+      let shared: ReturnType<typeof decodeShareFragment> = null;
+      try {
+        try {
+          shared = decodeShareFragment(window.location.hash);
+        } catch (error) {
+          clearShareFragment();
+          pushToast(error instanceof Error ? error.message : 'Could not read the share link', 'error');
+        }
+        const restored = shared ?? await loadActiveDocument();
+        if (stopped) return;
+        if (restored) {
+          replaceDocument(restored);
+          selectElement(restored.elements[0]?.id ?? null);
+        }
+        if (shared) {
+          await saveDocument(shared);
+          if (stopped) return;
+          clearShareFragment();
+          pushToast('Opened a shared copy', 'success');
+        }
+      } catch (error) {
+        if (!stopped) setRestoreError(error instanceof Error ? error.message : 'Could not restore the document');
+        return;
+      }
+      if (stopped) return;
+      autosaveRef.current = startAutosave(documentStore, () => pushToast('Autosave is unavailable', 'warning'));
+      setIsHydrated(true);
+    })();
+    return () => {
+      stopped = true;
+      autosaveRef.current?.stop();
+      autosaveRef.current = null;
+    };
+  }, [pushToast, replaceDocument, selectElement]);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+    let stopped = false;
+    const importSharedDocument = () => {
+      void (async () => {
+        let shared: ReturnType<typeof decodeShareFragment>;
+        try {
+          shared = decodeShareFragment(window.location.hash);
+        } catch (error) {
+          clearShareFragment();
+          if (!stopped) pushToast(error instanceof Error ? error.message : 'Could not read the share link', 'error');
+          return;
+        }
+        if (!shared) return;
+        setIsImporting(true);
+        try {
+          await autosaveRef.current?.flush();
+          if (stopped) return;
+          replaceDocument(shared);
+          selectElement(shared.elements[0]?.id ?? null);
+          await saveDocument(shared);
+          if (stopped) return;
+          clearShareFragment();
+          pushToast('Opened a shared copy', 'success');
+        } catch (error) {
+          if (!stopped) pushToast(error instanceof Error ? error.message : 'Could not open the share link', 'error');
+        } finally {
+          if (!stopped) setIsImporting(false);
+        }
+      })();
+    };
+    window.addEventListener('hashchange', importSharedDocument);
+    return () => {
+      stopped = true;
+      window.removeEventListener('hashchange', importSharedDocument);
+    };
+  }, [isHydrated, pushToast, replaceDocument, selectElement]);
+
+  useEffect(() => {
+    const desktop = window.matchMedia('(min-width: 1051px)');
+    const mobile = window.matchMedia('(max-width: 740px)');
+    const sync = () => syncPanelsForViewport(window.innerWidth);
+    sync();
+    desktop.addEventListener('change', sync);
+    mobile.addEventListener('change', sync);
+    return () => {
+      desktop.removeEventListener('change', sync);
+      mobile.removeEventListener('change', sync);
+    };
+  }, [syncPanelsForViewport]);
+
+  useEffect(() => subscribeToServiceWorkerUpdate((update) => setServiceWorkerUpdate(() => update)), []);
+
+  const animationDuration = documentAnimationDuration(document);
+  useEffect(() => {
+    if (!isPlaying) return;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const pauseForReducedMotion = () => {
+      if (!reducedMotion.matches) return false;
+      setIsPlaying(false);
+      pushToast('Animation preview is paused by reduced-motion preferences', 'info');
+      return true;
+    };
+    if (pauseForReducedMotion()) return;
+    reducedMotion.addEventListener('change', pauseForReducedMotion);
+    const started = performance.now() - animationTimeRef.current * animationDuration * 1000;
+    let frame = 0;
+    const tick = (now: number) => {
+      const nextTime = ((now - started) / (animationDuration * 1000)) % 1;
+      animationTimeRef.current = nextTime;
+      setAnimationTime(nextTime);
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(frame);
+      reducedMotion.removeEventListener('change', pauseForReducedMotion);
+    };
+  }, [animationDuration, isPlaying, pushToast]);
 
   const selectedElement = document.elements.find((element) => element.id === selectedElementId);
   const selectedText = selectedElement?.type === 'text' ? selectedElement : null;
@@ -72,7 +213,7 @@ export function App() {
     });
   };
 
-  useKeyboardShortcuts({ undo, redo, remove: removeSelected });
+  useKeyboardShortcuts({ undo, redo, remove: removeSelected }, isHydrated && !isImporting && !isUpdating);
 
   const addText = () => {
     const element = createDefaultTextElement();
@@ -179,21 +320,87 @@ export function App() {
   const handleExport = async () => {
     if (isExporting) return;
     setIsExporting(true);
+    setExportProgress(0);
     try {
-      const result = await exportPng(document, 2);
-      downloadPng(result);
-      pushToast(`Exported ${result.width} x ${result.height} transparent PNG`, 'success');
+      if (exportFormat === 'png') {
+        const result = await exportPng(document, 2);
+        downloadPng(result);
+        pushToast(`Exported ${result.width} x ${result.height} transparent PNG`, 'success');
+      } else {
+        const result = await exportAnimation(document, {
+          format: exportFormat,
+          onProgress: setExportProgress,
+        });
+        downloadAnimation(result);
+        pushToast(`Exported ${result.frameCount}-frame ${exportFormat.toUpperCase()}`, 'success');
+      }
     } catch (error) {
-      pushToast(error instanceof Error ? error.message : 'PNG export failed', 'error');
+      pushToast(error instanceof Error ? error.message : 'Export failed', 'error');
     } finally {
       setIsExporting(false);
+      setExportProgress(0);
     }
   };
 
+  const handleShare = async () => {
+    try {
+      const url = buildShareUrl(document, window.location);
+      if (navigator.share) await navigator.share({ title: document.name, url });
+      else await navigator.clipboard.writeText(url);
+      pushToast('Share link ready', 'success');
+    } catch (error) {
+      pushToast(error instanceof Error ? error.message : 'Could not share this document', 'error');
+    }
+  };
+
+  const applyServiceWorkerUpdate = async () => {
+    if (!serviceWorkerUpdate || isUpdating) return;
+    setIsUpdating(true);
+    try {
+      await autosaveRef.current?.flush();
+      await serviceWorkerUpdate();
+    } catch (error) {
+      setIsUpdating(false);
+      pushToast(error instanceof Error ? error.message : 'Could not apply the update', 'error');
+    }
+  };
+
+  const previewDocument = animationTime > 0 ? evaluateDocumentAtTime(document, animationTime) : document;
+
+  if (restoreError) {
+    return (
+      <div className="loading-screen recovery-screen" role="alert">
+        <strong>Could not restore your saved document</strong>
+        <p>{restoreError}</p>
+        <div>
+          <button type="button" onClick={() => window.location.reload()}>Retry</button>
+          <button type="button" onClick={() => {
+            const freshDocument = createDefaultDocument();
+            replaceDocument(freshDocument);
+            selectElement(freshDocument.elements[0]?.id ?? null);
+            clearShareFragment();
+            autosaveRef.current = startAutosave(documentStore, () => pushToast('Autosave is unavailable', 'warning'));
+            setRestoreError(null);
+            setIsHydrated(true);
+          }}>Start a new document</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isHydrated) {
+    return <div className="loading-screen" role="status">Restoring studio...</div>;
+  }
+
   return (
-    <div className="app-shell">
+    <div className="app-shell" inert={isImporting || isUpdating} aria-busy={isImporting || isUpdating}>
       <header className="topbar">
-        <button className="brand" type="button" onClick={() => pushToast('WordWarp renderer online')}>
+        <button
+          className="brand"
+          type="button"
+          aria-label="WORDWARP TYPE EFFECTS LAB"
+          onClick={() => pushToast('WordWarp renderer online')}
+        >
           <span className="brand-mark" aria-hidden="true">W</span>
           <span>
             <strong>WORDWARP</strong>
@@ -211,17 +418,39 @@ export function App() {
         </div>
 
         <div className="topbar-actions">
-          <button className="panel-toggle" type="button" onClick={toggleLeftPanel}>Presets</button>
-          <button className="panel-toggle" type="button" onClick={toggleRightPanel}>Inspect</button>
-          <button type="button" onClick={() => pushToast('Share links arrive in the shipping PR')}>Share</button>
+          <button
+            className="panel-toggle"
+            type="button"
+            onClick={toggleLeftPanel}
+            aria-expanded={leftPanelOpen}
+            aria-controls="preset-panel"
+          >Presets</button>
+          <button
+            className="panel-toggle"
+            type="button"
+            onClick={toggleRightPanel}
+            aria-expanded={rightPanelOpen}
+            aria-controls="inspector-panel"
+          >Inspect</button>
+          <button type="button" onClick={() => void handleShare()}>Share</button>
+          <select
+            className="export-format"
+            aria-label="Export format"
+            value={exportFormat}
+            onChange={(event) => setExportFormat(event.target.value as ExportFormat)}
+          >
+            <option value="png">PNG</option>
+            <option value="apng">APNG</option>
+            <option value="gif">GIF</option>
+          </select>
           <button className="export-button" type="button" onClick={() => void handleExport()} disabled={isExporting}>
-            {isExporting ? 'Rendering...' : 'Export PNG'} <span aria-hidden="true">+</span>
+            {isExporting ? `${Math.round(exportProgress * 100)}%` : `Export ${exportFormat.toUpperCase()}`} <span aria-hidden="true">+</span>
           </button>
         </div>
       </header>
 
       <div className={`workspace ${leftPanelOpen ? '' : 'left-closed'} ${rightPanelOpen ? '' : 'right-closed'}`}>
-        <aside className="preset-panel" aria-label="Preset library">
+        <aside id="preset-panel" className="preset-panel" aria-label="Preset library">
           <div className="panel-heading">
             <span>STYLE LIBRARY</span>
             <span className="count">{String(visiblePresets.length).padStart(2, '0')}</span>
@@ -290,11 +519,11 @@ export function App() {
               style={{ transform: `scale(${zoom})` }}
             >
               <DocumentCanvas
-                document={document}
+                document={previewDocument}
                 selectedElementId={selectedElementId}
                 onSelect={selectElement}
-                onMoveStart={(id) => beginTransaction(`Move ${id}`, `move:${id}`)}
-                onMove={(id, x, y) => {
+                onMoveStart={isPlaying ? undefined : (id) => beginTransaction(`Move ${id}`, `move:${id}`)}
+                onMove={isPlaying ? undefined : (id, x, y) => {
                   updateDocument('Move element', (draft) => {
                     const element = draft.elements.find((candidate) => candidate.id === id);
                     if (element && !element.locked) {
@@ -303,7 +532,7 @@ export function App() {
                     }
                   });
                 }}
-                onMoveEnd={commitTransaction}
+                onMoveEnd={isPlaying ? undefined : commitTransaction}
               />
             </div>
           </div>
@@ -313,11 +542,18 @@ export function App() {
             <button type="button" onClick={() => setZoom(zoom - 0.1)} aria-label="Zoom out">-</button>
             <output>{Math.round(zoom * 100)}%</output>
             <button type="button" onClick={() => setZoom(zoom + 0.1)} aria-label="Zoom in">+</button>
-            <button type="button" disabled>Play</button>
+            <button
+              type="button"
+              className={isPlaying ? 'playing' : ''}
+              onClick={() => setIsPlaying((playing) => !playing)}
+              aria-pressed={isPlaying}
+            >
+              {isPlaying ? 'Pause' : 'Play'}
+            </button>
           </div>
         </main>
 
-        <aside className="inspector-panel" aria-label="Inspector">
+        <aside id="inspector-panel" className="inspector-panel" aria-label="Inspector">
           <div className="panel-heading">
             <span>INSPECTOR</span>
             <span className="selection-dot" aria-hidden="true" />
@@ -577,6 +813,14 @@ export function App() {
           </button>
         ))}
       </div>
+      {serviceWorkerUpdate && (
+        <div className="update-banner" role="status">
+          <span>An update is ready.</span>
+          <button type="button" disabled={isUpdating} onClick={() => void applyServiceWorkerUpdate()}>
+            {isUpdating ? 'Saving...' : 'Save and reload'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -627,4 +871,8 @@ function effectControl(effect: Effect): { label: string; min: number; max: numbe
 
 function effectLabel(kind: TextElement['effects'][number]['kind']): string {
   return kind.replace(/([A-Z])/g, ' $1').replace(/^./, (character) => character.toUpperCase());
+}
+
+function clearShareFragment(): void {
+  window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
 }

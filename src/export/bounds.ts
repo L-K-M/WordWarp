@@ -1,7 +1,7 @@
 import { expandBounds, roundOutBounds, unionBounds, type Bounds } from '../geometry/bounds';
 import type { TextContext } from '../text/layout';
 import type { WordWarpDocument } from '../model/types';
-import { effectReach, measureTextElement } from '../render/fallback2d/renderer';
+import { effectStackReach, measureTextElement } from '../render/fallback2d/renderer';
 
 export function getExportBounds(document: WordWarpDocument, context: TextContext): Bounds {
   const fullCanvas: Bounds = { x: 0, y: 0, width: document.canvas.width, height: document.canvas.height };
@@ -11,16 +11,7 @@ export function getExportBounds(document: WordWarpDocument, context: TextContext
   for (const element of document.elements) {
     if (!element.visible || element.opacity <= 0 || element.type !== 'text') continue;
     let bounds = measureTextElement(context, element);
-    let reach = 0;
-    for (const effect of element.effects) {
-      reach = Math.max(reach, effectReach(effect));
-      if (effect.kind === 'reflection' && effect.enabled) {
-        reach = Math.max(reach, effect.offset + effect.height * bounds.height + effect.blur);
-      }
-      if (effect.kind === 'longShadow' && effect.enabled && effect.length === 'toEdge') {
-        reach = Math.max(reach, Math.hypot(document.canvas.width, document.canvas.height));
-      }
-    }
+    const reach = effectStackReach(bounds, element.effects, document.canvas);
     bounds = expandBounds(bounds, reach);
     content = unionBounds(content, bounds);
   }

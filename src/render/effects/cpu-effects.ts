@@ -15,6 +15,10 @@ import { officeRampColors } from '../../presets/office-ramps';
 interface EffectOptions {
   scale: number;
   globalLight: { angle: number; altitude: number };
+  originX: number;
+  originY: number;
+  extentWidth: number;
+  extentHeight: number;
 }
 
 export function renderEffectStack(
@@ -56,7 +60,7 @@ export function renderEffectStack(
 
   for (const effect of effects) {
     if (!effect.enabled || effect.opacity <= 0 || effect.kind !== 'post') continue;
-    applyPostEffect(outputContext, effect, width, height);
+    applyPostEffect(outputContext, effect, width, height, options);
   }
   outputContext.globalAlpha = 1;
   outputContext.globalCompositeOperation = 'source-over';
@@ -113,7 +117,11 @@ function renderBackEffect(
   }
 
   if (effect.kind === 'extrude' || effect.kind === 'longShadow') {
-    const depthValue = effect.kind === 'extrude' ? effect.depth : effect.length === 'toEdge' ? Math.hypot(width, height) : effect.length;
+    const depthValue = effect.kind === 'extrude'
+      ? effect.depth
+      : effect.length === 'toEdge'
+        ? Math.hypot(options.extentWidth, options.extentHeight) / options.scale
+        : effect.length;
     const depth = Math.min(Math.hypot(width, height), depthValue * options.scale);
     const radians = (effect.angle * Math.PI) / 180;
     const union = new Uint8Array(faceAlpha.length);
@@ -211,7 +219,7 @@ function renderFaceEffect(
   if (effect.kind === 'bevel') return renderBevel(effect, faceAlpha, getDistance(), width, height, options);
 
   if (effect.kind === 'textureOverlay') {
-    return [renderTexture(effect, faceAlpha, width, height)];
+    return [renderTexture(effect, faceAlpha, width, height, options)];
   }
 
   return [];
@@ -267,6 +275,7 @@ function renderTexture(
   faceAlpha: Uint8Array,
   width: number,
   height: number,
+  options: EffectOptions,
 ): CanvasSurface {
   const pixels = new Uint8ClampedArray(width * height * 4);
   const pattern = effect.source.type === 'procedural' ? effect.source.pattern : 'noise';
@@ -274,9 +283,11 @@ function renderTexture(
     for (let x = 0; x < width; x += 1) {
       const index = y * width + x;
       const coverage = effect.clipToShape ? faceAlpha[index]! / 255 : 1;
-      let value = hashNoise(x, y, hashString(effect.id));
-      if (pattern === 'weave') value = ((Math.floor(x / 3) + Math.floor(y / 3)) & 1) === 0 ? 0.8 : 0.25;
-      if (pattern === 'halftone') value = ((x % 8) - 4) ** 2 + ((y % 8) - 4) ** 2 < 8 ? 0.9 : 0.1;
+      const globalX = x + options.originX;
+      const globalY = y + options.originY;
+      let value = hashNoise(globalX, globalY, hashString(effect.id));
+      if (pattern === 'weave') value = ((Math.floor(globalX / 3) + Math.floor(globalY / 3)) & 1) === 0 ? 0.8 : 0.25;
+      if (pattern === 'halftone') value = (modulo(globalX, 8) - 4) ** 2 + (modulo(globalY, 8) - 4) ** 2 < 8 ? 0.9 : 0.1;
       if (pattern === 'grain') value = 0.35 + value * 0.3;
       const offset = index * 4;
       const channel = Math.round(value * 255);
@@ -317,24 +328,34 @@ function drawReflection(output: CanvasSurface, offset: number, heightRatio: numb
   context.drawImage(layer, 0, 0);
 }
 
-function applyPostEffect(context: ReturnType<typeof get2dContext>, effect: PostEffect, width: number, height: number): void {
+function applyPostEffect(
+  context: ReturnType<typeof get2dContext>,
+  effect: PostEffect,
+  width: number,
+  height: number,
+  options: EffectOptions,
+): void {
   const image = context.getImageData(0, 0, width, height);
   const source = image.data.slice();
   const transformed = image.data.slice();
   const amount = numericParam(effect, 'amount', 0.22);
 
   if (effect.type === 'grain') {
-    for (let index = 0; index < transformed.length; index += 4) {
-      if (transformed[index + 3] === 0) continue;
-      const noise = (hashNoise(index / 4, effect.seed, effect.seed) - 0.5) * 255 * amount;
-      transformed[index] = clampByte(transformed[index]! + noise);
-      transformed[index + 1] = clampByte(transformed[index + 1]! + noise);
-      transformed[index + 2] = clampByte(transformed[index + 2]! + noise);
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const index = (y * width + x) * 4;
+        if (transformed[index + 3] === 0) continue;
+        const noise = (hashNoise(x + options.originX, y + options.originY, effect.seed) - 0.5) * 255 * amount;
+        transformed[index] = clampByte(transformed[index]! + noise);
+        transformed[index + 1] = clampByte(transformed[index + 1]! + noise);
+        transformed[index + 2] = clampByte(transformed[index + 2]! + noise);
+      }
     }
   } else if (effect.type === 'scanlines') {
     const period = Math.max(2, Math.round(numericParam(effect, 'period', 4)));
+    const lineOffset = Math.round(numericParam(effect, 'offset', 0) * period);
     for (let y = 0; y < height; y += 1) {
-      if (y % period !== 0) continue;
+      if (modulo(y + options.originY - lineOffset, period) !== 0) continue;
       for (let x = 0; x < width; x += 1) {
         const offset = (y * width + x) * 4;
         transformed[offset] = Math.round(transformed[offset]! * (1 - amount));
@@ -353,7 +374,10 @@ function applyPostEffect(context: ReturnType<typeof get2dContext>, effect: PostE
     }
   } else if (effect.type === 'glitch') {
     for (let y = 0; y < height; y += 1) {
-      const shift = hashNoise(y, effect.seed, 17) > 0.78 ? Math.round((hashNoise(y, 9, effect.seed) - 0.5) * 30) : 0;
+      const globalY = y + options.originY;
+      const shift = hashNoise(globalY, effect.seed, 17) > 0.78
+        ? Math.round((hashNoise(globalY, 9, effect.seed) - 0.5) * 30)
+        : 0;
       for (let x = 0; x < width; x += 1) {
         const destination = (y * width + x) * 4;
         const sourceX = Math.min(width - 1, Math.max(0, x - shift));
@@ -367,8 +391,8 @@ function applyPostEffect(context: ReturnType<typeof get2dContext>, effect: PostE
       for (let x = 0; x < width; x += 1) {
         const offset = (y * width + x) * 4;
         const luminance = (source[offset]! + source[offset + 1]! + source[offset + 2]!) / (3 * 255);
-        const dx = (x % frequency) - frequency / 2;
-        const dy = (y % frequency) - frequency / 2;
+        const dx = modulo(x + options.originX, frequency) - frequency / 2;
+        const dy = modulo(y + options.originY, frequency) - frequency / 2;
         const dot = Math.hypot(dx, dy) < (frequency * luminance) / 2;
         const value = dot ? 255 : 0;
         transformed[offset] = value;
@@ -504,4 +528,8 @@ function hashString(value: string): number {
 
 function clampByte(value: number): number {
   return Math.min(255, Math.max(0, Math.round(value)));
+}
+
+function modulo(value: number, divisor: number): number {
+  return ((value % divisor) + divisor) % divisor;
 }

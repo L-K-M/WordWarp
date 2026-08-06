@@ -58,9 +58,12 @@ export function createPaintStyle(context: TextContext, paint: Paint, bounds: Bou
   }
 
   if (paint.kind === 'matcap') {
+    const radians = (paint.rotation * Math.PI) / 180;
+    const highlightX = bounds.x + bounds.width * (0.5 + Math.cos(radians) * 0.22);
+    const highlightY = bounds.y + bounds.height * (0.5 + Math.sin(radians) * 0.22);
     const gradient = context.createRadialGradient(
-      bounds.x + bounds.width * 0.35,
-      bounds.y + bounds.height * 0.25,
+      highlightX,
+      highlightY,
       0,
       bounds.x + bounds.width * 0.5,
       bounds.y + bounds.height * 0.5,

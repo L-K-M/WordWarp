@@ -1,9 +1,37 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
+import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  base: './',
+  plugins: [
+    react(),
+    tailwindcss(),
+    VitePWA({
+      registerType: 'prompt',
+      includeAssets: ['wordwarp-icon.svg', 'wordwarp-maskable.svg'],
+      manifest: {
+        name: 'WordWarp Text Effects Studio',
+        short_name: 'WordWarp',
+        description: 'Warped, metallic, dimensional text with transparent image export.',
+        theme_color: '#090b12',
+        background_color: '#090b12',
+        display: 'standalone',
+        start_url: '.',
+        scope: '.',
+        icons: [
+          { src: 'wordwarp-icon.svg', sizes: 'any', type: 'image/svg+xml' },
+          { src: 'wordwarp-maskable.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'maskable' },
+        ],
+      },
+      workbox: {
+        cleanupOutdatedCaches: true,
+        navigateFallback: 'index.html',
+        globPatterns: ['**/*.{html,js,css,wasm,svg,png,webp}'],
+      },
+    }),
+  ],
   optimizeDeps: {
     exclude: ['harfbuzzjs'],
   },

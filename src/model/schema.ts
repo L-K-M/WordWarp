@@ -239,12 +239,7 @@ const animationTrackSchema = z.object({
   duration: finite.positive(),
   params: z.record(z.string(), z.union([finite, z.string()])),
   seed: z.number().int(),
-  stagger: z
-    .object({
-      amount: unit,
-      order: z.enum(['forward', 'backward', 'center', 'random']),
-    })
-    .optional(),
+  stagger: z.never().optional(),
 });
 
 const elementBase = {

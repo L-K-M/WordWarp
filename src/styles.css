@@ -35,6 +35,43 @@ body {
   overflow: hidden;
 }
 
+.loading-screen {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  color: var(--cyan);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  background: #090b12;
+}
+
+.recovery-screen {
+  align-content: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+}
+
+.recovery-screen p {
+  max-width: 560px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.recovery-screen button {
+  min-height: 44px;
+  margin: 0 4px;
+  padding: 0 14px;
+  border: 1px solid var(--line-bright);
+  border-radius: 4px;
+  background: var(--panel-high);
+}
+
 button,
 input,
 textarea,
@@ -190,6 +227,22 @@ button:disabled {
   color: #081017;
   background: linear-gradient(100deg, #f8ffff, #78e9ff);
   box-shadow: 2px 2px 0 #314254;
+}
+
+.export-format {
+  height: 32px;
+  border: 1px solid #30384a;
+  border-radius: 3px;
+  color: #9ea8bc;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9px;
+  background: #0d1018;
+}
+
+.zoom-strip button.playing {
+  border-color: #397d8f;
+  color: #9ceeff;
+  background: #122a33;
 }
 
 .export-button span {
@@ -947,6 +1000,33 @@ button:disabled {
   box-shadow: 0 10px 34px rgb(0 0 0 / 40%);
 }
 
+.update-banner {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #397d8f;
+  border-radius: 4px;
+  color: #dffaff;
+  font-size: 11px;
+  background: #122a33;
+  box-shadow: 0 10px 34px rgb(0 0 0 / 40%);
+}
+
+.update-banner button {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid #78e9ff;
+  border-radius: 3px;
+  color: #081017;
+  font-weight: 700;
+  background: #78e9ff;
+}
+
 @media (max-width: 1050px) {
   .topbar {
     grid-template-columns: 1fr auto;
@@ -983,7 +1063,7 @@ button:disabled {
 
 @media (max-width: 740px) {
   body {
-    overflow: auto;
+    overflow: hidden auto;
   }
 
   .app-shell {
@@ -991,35 +1071,52 @@ button:disabled {
   }
 
   .topbar {
-    padding: 0 9px;
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 5px;
+    padding: 0 4px;
   }
 
   .brand-mark {
     width: 32px;
     height: 32px;
     font-size: 21px;
+    margin-right: 0;
   }
 
-  .brand strong {
-    font-size: 13px;
-  }
-
-  .brand small,
-  .topbar-actions > button:not(.panel-toggle):not(.export-button) {
+  .brand > span:last-child {
     display: none;
+  }
+
+  .topbar-actions button {
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    padding-inline: 2px;
+    font-size: 8px;
   }
 
   .topbar-actions {
     gap: 2px;
   }
 
-  .topbar-actions button {
-    min-width: auto;
-    padding-inline: 8px;
+  .export-format {
+    width: 56px;
+    height: 44px;
   }
 
   .topbar-actions .export-button {
-    min-width: 72px;
+    width: 68px;
+    min-width: 68px;
+  }
+
+  .canvas-panel {
+    grid-template-rows: 48px minmax(0, 1fr) 48px;
+  }
+
+  .tool-group button,
+  .zoom-strip button,
+  .layer-actions button {
+    min-height: 44px;
   }
 
   .workspace,
@@ -1072,7 +1169,13 @@ button:disabled {
 
   .layer-list button {
     min-width: 112px;
-    height: 40px;
+    height: 44px;
+  }
+
+  .inspector-panel button,
+  .inspector-panel input,
+  .inspector-panel select {
+    min-height: 44px;
   }
 
   .layer-actions button:last-child {
