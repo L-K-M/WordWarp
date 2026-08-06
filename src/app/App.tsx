@@ -26,6 +26,7 @@ const presetCategories: Array<{ id: PresetCategory | 'all'; label: string }> = [
   { id: 'y2k', label: 'Y2K' },
   { id: 'nineties', label: '90s' },
   { id: 'dimensional', label: '3D' },
+  { id: 'texture', label: 'FX' },
 ];
 
 type ExportFormat = 'png' | 'apng' | 'gif';
