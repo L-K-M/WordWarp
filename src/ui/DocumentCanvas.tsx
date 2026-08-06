@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useRef, useState } from 'react';
 
 import { containsPoint, type Bounds } from '../geometry/bounds';
 import type { WordWarpDocument } from '../model/types';
@@ -11,6 +11,7 @@ interface DocumentCanvasProps {
 }
 
 export function DocumentCanvas({ document, selectedElementId, onSelect }: DocumentCanvasProps) {
+  const deferredDocument = useDeferredValue(document);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<PreviewRenderer | null>(null);
   const [bounds, setBounds] = useState<Record<string, Bounds>>({});
@@ -36,7 +37,7 @@ export function DocumentCanvas({ document, selectedElementId, onSelect }: Docume
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
       try {
-        const result = rendererRef.current?.render(document);
+        const result = rendererRef.current?.render(deferredDocument);
         if (!result) return;
         setBounds(Object.fromEntries(result.elementBounds));
         setError(null);
@@ -45,7 +46,7 @@ export function DocumentCanvas({ document, selectedElementId, onSelect }: Docume
       }
     });
     return () => cancelAnimationFrame(frame);
-  }, [document]);
+  }, [deferredDocument]);
 
   const selectedBounds = selectedElementId ? bounds[selectedElementId] : undefined;
 

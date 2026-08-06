@@ -3,7 +3,10 @@ import { layoutText, type LaidOutText, type TextContext } from '../../text/layou
 import type { BlendMode, Effect, FillEffect, TextElement, WordWarpDocument } from '../../model/types';
 import type { Bounds } from '../../geometry/bounds';
 import type { RenderResult, RenderViewport } from '../contracts';
+import { renderEffectStack } from '../effects/cpu-effects';
+import { createCanvasSurface, get2dContext } from '../surface';
 import { createPaintStyle } from './paint';
+import { drawWarpedSurface, getWarpedBounds } from './warp';
 
 export interface Render2dOptions {
   scale?: number;
@@ -50,7 +53,7 @@ export function renderDocument2d(
       });
       continue;
     }
-    drawTextElement(context, element, result);
+    drawTextElement(context, element, result, scale, viewport, document.globalLight);
   }
   context.setTransform(1, 0, 0, 1, 0, 0);
   context.globalAlpha = 1;
@@ -60,44 +63,71 @@ export function renderDocument2d(
 
 export function measureTextElement(context: TextContext, element: TextElement): Bounds {
   const layout = layoutText(context, element);
-  return transformBounds(layout.bounds, elementMatrix(element.transform, layout.bounds));
+  const warpedBounds = getWarpedBounds(layout.bounds, element.warp);
+  return transformBounds(warpedBounds, elementMatrix(element.transform, layout.bounds));
 }
 
-function drawTextElement(context: TextContext, element: TextElement, result: RenderResult): void {
-  context.save();
+function drawTextElement(
+  context: TextContext,
+  element: TextElement,
+  result: RenderResult,
+  scale: number,
+  viewport: RenderViewport,
+  globalLight: { angle: number; altitude: number },
+): void {
   const layout = layoutText(context, element);
   const matrix = elementMatrix(element.transform, layout.bounds);
-  applyCanvasMatrix(context, matrix);
-  configureLayoutContext(context, layout);
+  const sourceWidth = Math.max(1, Math.ceil(layout.bounds.width));
+  const sourceHeight = Math.max(1, Math.ceil(layout.bounds.height));
+  const source = createCanvasSurface(sourceWidth, sourceHeight);
+  const sourceContext = get2dContext(source);
+  sourceContext.setTransform(
+    sourceWidth / layout.bounds.width,
+    0,
+    0,
+    sourceHeight / layout.bounds.height,
+    (-layout.bounds.x * sourceWidth) / layout.bounds.width,
+    (-layout.bounds.y * sourceHeight) / layout.bounds.height,
+  );
+  configureLayoutContext(sourceContext, layout);
   const fills = element.effects.filter(
     (effect): effect is FillEffect => effect.enabled && effect.kind === 'fill',
   );
 
   if (fills.length === 0) {
-    context.globalAlpha = element.opacity;
-    context.globalCompositeOperation = mapBlendMode(element.blendMode);
-    context.fillStyle = '#ffffff';
-    drawLines(context, layout);
+    sourceContext.globalAlpha = 1;
+    sourceContext.globalCompositeOperation = 'source-over';
+    sourceContext.fillStyle = '#ffffff';
+    drawLines(sourceContext, layout);
   } else {
     for (const fill of fills) {
-      context.globalAlpha = element.opacity * fill.opacity;
-      context.globalCompositeOperation = mapBlendMode(fill.blendMode);
-      context.fillStyle = createPaintStyle(context, fill.paint, layout.bounds);
-      drawLines(context, layout);
+      sourceContext.globalAlpha = fill.opacity;
+      sourceContext.globalCompositeOperation = mapBlendMode(fill.blendMode);
+      sourceContext.fillStyle = createPaintStyle(sourceContext, fill.paint, layout.bounds);
+      drawLines(sourceContext, layout);
     }
   }
 
-  for (const effect of element.effects) {
-    if (!effect.enabled || effect.kind === 'fill') continue;
-    result.diagnostics.push({
-      elementId: element.id,
-      effectId: effect.id,
-      severity: 'warning',
-      message: `${effect.kind} is deferred to the effect renderer`,
-    });
-  }
-  result.elementBounds.set(element.id, transformBounds(layout.bounds, matrix));
+  const face = createCanvasSurface(context.canvas.width, context.canvas.height);
+  const faceContext = get2dContext(face);
+  faceContext.setTransform(scale, 0, 0, scale, -viewport.x * scale, -viewport.y * scale);
+  applyCanvasMatrix(faceContext, matrix);
+  drawWarpedSurface(faceContext, source, layout.bounds, element.warp);
+  const hasEffects = element.effects.some((effect) => effect.enabled && effect.kind !== 'fill');
+  const rendered = hasEffects
+    ? renderEffectStack(face, element.effects, { scale, globalLight })
+    : face;
+
+  context.save();
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.globalAlpha = element.opacity;
+  context.globalCompositeOperation = mapBlendMode(element.blendMode);
+  context.drawImage(rendered, 0, 0);
   context.restore();
+  result.elementBounds.set(
+    element.id,
+    transformBounds(getWarpedBounds(layout.bounds, element.warp), matrix),
+  );
 }
 
 function configureLayoutContext(context: TextContext, layout: LaidOutText): void {

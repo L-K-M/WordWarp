@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { DOC_VERSION } from './types';
+import { DOC_VERSION, PRESET_WARP_IDS } from './types';
 import type { WordWarpDocument } from './types';
 
 const finite = z.number().finite();
@@ -280,49 +280,7 @@ const layoutSchema = z.object({
   curveSpacing: z.enum(['uniform', 'arc-length']),
 });
 
-const presetWarpSchema = z.enum([
-  'textNoShape',
-  'textPlain',
-  'textArchDown',
-  'textArchDownPour',
-  'textArchUp',
-  'textArchUpPour',
-  'textButton',
-  'textButtonPour',
-  'textCanDown',
-  'textCanUp',
-  'textCascadeDown',
-  'textCascadeUp',
-  'textChevron',
-  'textChevronInverted',
-  'textCircle',
-  'textCirclePour',
-  'textCurveDown',
-  'textCurveUp',
-  'textDeflate',
-  'textDeflateBottom',
-  'textDeflateInflate',
-  'textDeflateInflateDeflate',
-  'textDeflateTop',
-  'textDoubleWave1',
-  'textFadeDown',
-  'textFadeLeft',
-  'textFadeRight',
-  'textFadeUp',
-  'textInflate',
-  'textInflateBottom',
-  'textInflateTop',
-  'textRingInside',
-  'textRingOutside',
-  'textSlantDown',
-  'textSlantUp',
-  'textStop',
-  'textTriangle',
-  'textTriangleInverted',
-  'textWave1',
-  'textWave2',
-  'textWave4',
-]);
+const presetWarpSchema = z.enum(PRESET_WARP_IDS);
 
 const pathDataSchema = z.object({
   commands: z.array(
