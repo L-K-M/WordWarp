@@ -1,4 +1,4 @@
-export const DOC_VERSION = 1 as const;
+export const DOC_VERSION = 2 as const;
 
 export type Point = [number, number];
 export type Rgba = [number, number, number, number];
@@ -93,12 +93,10 @@ export interface ExtrudeEffect extends EffectBase {
   angle: number;
   vanishingPoint: Point;
   strength: number;
-  facePaint: Paint;
   sidePaint: Paint;
   autoShade: boolean;
   shadeAmount: number;
   steps: number | 'auto';
-  capBack: boolean;
 }
 
 export interface ShadowEffectBase extends EffectBase {

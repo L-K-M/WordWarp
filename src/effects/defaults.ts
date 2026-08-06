@@ -56,12 +56,10 @@ export function createEffect(kind: EffectKind): Effect {
       angle: 45,
       vanishingPoint: [0.5, 1.4],
       strength: 0.4,
-      facePaint: white,
       sidePaint: { kind: 'solid', color: [0.12, 0.16, 0.3, 1] },
       autoShade: true,
       shadeAmount: 0.45,
       steps: 'auto',
-      capBack: true,
     };
   }
   if (kind === 'innerShadow') {

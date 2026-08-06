@@ -13,6 +13,28 @@ export function registerMigration(fromVersion: number, migration: Migration): vo
   migrations.set(fromVersion, migration);
 }
 
+// v1 -> v2: drop ExtrudeEffect.facePaint and ExtrudeEffect.capBack.
+//
+// Neither was ever read by the renderer. The extruded face is painted by the element's own fill
+// effect, so a second face paint on the extrusion had no meaning, and nothing capped the back of
+// the prism. Both are removed rather than implemented so the schema stops advertising controls
+// that do nothing.
+registerMigration(1, (document) => {
+  const elements = Array.isArray(document.elements) ? document.elements : [];
+  for (const element of elements) {
+    if (!element || typeof element !== 'object') continue;
+    const effects = (element as { effects?: unknown }).effects;
+    if (!Array.isArray(effects)) continue;
+    for (const effect of effects) {
+      if (!effect || typeof effect !== 'object') continue;
+      if ((effect as { kind?: unknown }).kind !== 'extrude') continue;
+      delete (effect as Record<string, unknown>).facePaint;
+      delete (effect as Record<string, unknown>).capBack;
+    }
+  }
+  return { ...document, version: 2 };
+});
+
 export function loadDocument(value: unknown): WordWarpDocument {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error('Document must be an object');

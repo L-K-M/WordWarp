@@ -128,18 +128,42 @@ function renderBackEffect(
         : effect.length;
     const depth = Math.min(Math.hypot(width, height), depthValue * options.scale);
     const radians = (effect.angle * Math.PI) / 180;
+    // Step count now follows the effect's own `steps` when it is set, instead of always being
+    // derived from depth and capped at 96 -- at large depths that cap spaced the copies far enough
+    // apart to leave gaps in thin stems.
+    const requested = effect.kind === 'extrude' && effect.steps !== 'auto' ? effect.steps : Math.ceil(depth);
+    const steps = Math.max(1, Math.min(512, requested));
+    const perspective = effect.kind === 'extrude' && effect.mode === 'perspective';
+
     const union = new Uint8Array(faceAlpha.length);
-    const steps = Math.max(1, Math.min(96, Math.ceil(depth / 3)));
-    for (let step = steps; step >= 1; step -= 1) {
-      const amount = (step / steps) * depth;
-      const shifted = offsetAlpha(faceAlpha, width, height, Math.cos(radians) * amount, Math.sin(radians) * amount);
-      const fade = effect.kind === 'longShadow' && effect.fade ? 1 - step / (steps + 1) : 1;
-      for (let index = 0; index < union.length; index += 1) {
-        union[index] = Math.max(union[index]!, Math.round(shifted[index]! * fade));
+    if (perspective) {
+      // Converge on a vanishing point instead of sliding along a fixed vector. The point is
+      // expressed relative to the glyph, so map it into face pixels first.
+      const bounds = getPaintBounds();
+      const vanishX = bounds.x + effect.vanishingPoint[0] * bounds.width;
+      const vanishY = bounds.y + effect.vanishingPoint[1] * bounds.height;
+      const strength = clamp01(effect.strength);
+      for (let step = steps; step >= 1; step -= 1) {
+        const scale = 1 - (step / steps) * strength;
+        projectInto(union, faceAlpha, width, height, scale, vanishX, vanishY, 1);
+      }
+    } else {
+      for (let step = steps; step >= 1; step -= 1) {
+        const amount = (step / steps) * depth;
+        const shifted = offsetAlpha(faceAlpha, width, height, Math.cos(radians) * amount, Math.sin(radians) * amount);
+        const fade = effect.kind === 'longShadow' && effect.fade ? 1 - step / (steps + 1) : 1;
+        for (let index = 0; index < union.length; index += 1) {
+          union[index] = Math.max(union[index]!, Math.round(shifted[index]! * fade));
+        }
       }
     }
+
     const paint = effect.kind === 'extrude' ? effect.sidePaint : effect.paint;
-    return colorizePaint(union, width, height, paint, effect.opacity, getPaintBounds());
+    const layer = colorizePaint(union, width, height, paint, effect.opacity, getPaintBounds());
+    if (effect.kind === 'extrude' && effect.autoShade && effect.shadeAmount > 0) {
+      darkenSurface(layer, clamp01(effect.shadeAmount));
+    }
+    return layer;
   }
 
   return null;
@@ -245,20 +269,36 @@ function renderBevel(
   const highlight = new Uint8Array(faceAlpha.length);
   const shadow = new Uint8Array(faceAlpha.length);
 
+  // Build an explicit height field first. Differentiating the distance field directly -- which is
+  // what this used to do -- cannot express a bevel profile at all: a true distance field has unit
+  // gradient everywhere, so the surface normal came out the same regardless of technique and
+  // `technique` was silently ignored. Shaping a height from the distance and differentiating that
+  // gives each technique its own surface.
+  const rawHeight = new Float32Array(faceAlpha.length);
+  for (let index = 0; index < rawHeight.length; index += 1) {
+    rawHeight[index] = bevelHeight(distance[index]!, size, effect.style, effect.technique);
+  }
+  const heightField = effect.soften > 0
+    ? blurFloat(rawHeight, width, height, (effect.soften * options.scale) / 3)
+    : rawHeight;
+
+  const relief = effect.depth / 100;
+  const direction = effect.direction === 'up' ? 1 : -1;
   for (let y = 1; y < height - 1; y += 1) {
     for (let x = 1; x < width - 1; x += 1) {
       const index = y * width + x;
       const value = distance[index]!;
       const inBand = effect.style === 'outer'
-        ? value >= 0 && value <= size
+        ? value >= -1 && value <= size
         : effect.style === 'emboss'
           ? Math.abs(value) <= size
-          : value <= 0 && value >= -size;
+          : value <= 1 && value >= -size;
       if (!inBand) continue;
-      const dx = (distance[index + 1]! - distance[index - 1]!) * (effect.depth / 100);
-      const dy = (distance[index + width]! - distance[index - width]!) * (effect.depth / 100);
+      // Central differences on the height, scaled by depth; z stays at 1 so depth alone controls
+      // how far the normal tilts away from vertical.
+      const dx = (heightField[index + 1]! - heightField[index - 1]!) * 0.5 * size * relief;
+      const dy = (heightField[index + width]! - heightField[index - width]!) * 0.5 * size * relief;
       const magnitude = Math.hypot(dx, dy, 1);
-      const direction = effect.direction === 'up' ? 1 : -1;
       const dot = ((-dx / magnitude) * lightX + (-dy / magnitude) * lightY + (1 / magnitude) * lightZ) * direction;
       const coverage = effect.style === 'outer' ? 1 : faceAlpha[index]! / 255;
       highlight[index] = Math.round(Math.max(0, dot) * 255 * coverage);
@@ -487,6 +527,114 @@ function colorizePaint(
   }
   context.putImageData(image, 0, 0);
   return surface;
+}
+
+/**
+ * Accumulate the mask scaled about a vanishing point into `target`, keeping the maximum coverage.
+ * Nearest-neighbour is adequate here: the result is unioned across many steps, so resampling
+ * softness would be lost anyway.
+ */
+function projectInto(
+  target: Uint8Array,
+  source: Uint8Array,
+  width: number,
+  height: number,
+  scale: number,
+  vanishX: number,
+  vanishY: number,
+  weight: number,
+): void {
+  if (scale <= 0) return;
+  for (let y = 0; y < height; y += 1) {
+    // Invert p' = vanish + (p - vanish) * scale to find which source pixel lands here.
+    const sourceY = Math.round(vanishY + (y - vanishY) / scale);
+    if (sourceY < 0 || sourceY >= height) continue;
+    for (let x = 0; x < width; x += 1) {
+      const sourceX = Math.round(vanishX + (x - vanishX) / scale);
+      if (sourceX < 0 || sourceX >= width) continue;
+      const value = Math.round(source[sourceY * width + sourceX]! * weight);
+      const index = y * width + x;
+      if (value > target[index]!) target[index] = value;
+    }
+  }
+}
+
+/** Multiply a surface's RGB toward black, leaving alpha untouched. */
+function darkenSurface(surface: CanvasSurface, amount: number): void {
+  const context = get2dContext(surface, true);
+  const image = context.getImageData(0, 0, surface.width, surface.height);
+  const data = image.data;
+  const keep = 1 - amount;
+  for (let offset = 0; offset < data.length; offset += 4) {
+    if (data[offset + 3] === 0) continue;
+    data[offset] = Math.round(data[offset]! * keep);
+    data[offset + 1] = Math.round(data[offset + 1]! * keep);
+    data[offset + 2] = Math.round(data[offset + 2]! * keep);
+  }
+  context.putImageData(image, 0, 0);
+}
+
+/**
+ * Surface height of a bevel at signed distance `d`, normalised to 0..1.
+ *
+ * `t` runs 0 at the outer end of the bevel band to 1 at its inner end; each technique is a
+ * different profile across it. `pillow` rises and falls again, which is what gives it the puffed
+ * look, so it is treated as a style rather than a technique -- matching the effect's parameters.
+ */
+export const bevelHeightForTest = bevelHeight;
+
+function bevelHeight(
+  distance: number,
+  size: number,
+  style: BevelEffect['style'],
+  technique: BevelEffect['technique'],
+): number {
+  let t: number;
+  if (style === 'outer') t = clamp01(1 - distance / size);
+  else if (style === 'emboss' || style === 'pillow') t = clamp01(1 - Math.abs(distance) / size);
+  else t = clamp01(-distance / size);
+
+  if (style === 'pillow') return Math.sin(clamp01(t) * Math.PI);
+  if (technique === 'chiselHard') return t;
+  if (technique === 'chiselSoft') return t * t * (3 - 2 * t);
+  return Math.sqrt(Math.max(0, 1 - (1 - t) * (1 - t)));
+}
+
+function blurFloat(source: Float32Array, width: number, height: number, sigma: number): Float32Array {
+  if (sigma <= 0.01) return source;
+  const radius = Math.max(1, Math.ceil(sigma * 3));
+  const kernel = new Float32Array(radius * 2 + 1);
+  let total = 0;
+  for (let offset = -radius; offset <= radius; offset += 1) {
+    const weight = Math.exp(-(offset * offset) / (2 * sigma * sigma));
+    kernel[offset + radius] = weight;
+    total += weight;
+  }
+  for (let index = 0; index < kernel.length; index += 1) kernel[index] = kernel[index]! / total;
+
+  const horizontal = new Float32Array(source.length);
+  const output = new Float32Array(source.length);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      let value = 0;
+      for (let offset = -radius; offset <= radius; offset += 1) {
+        const sampleX = Math.min(width - 1, Math.max(0, x + offset));
+        value += source[y * width + sampleX]! * kernel[offset + radius]!;
+      }
+      horizontal[y * width + x] = value;
+    }
+  }
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      let value = 0;
+      for (let offset = -radius; offset <= radius; offset += 1) {
+        const sampleY = Math.min(height - 1, Math.max(0, y + offset));
+        value += horizontal[sampleY * width + x]! * kernel[offset + radius]!;
+      }
+      output[y * width + x] = value;
+    }
+  }
+  return output;
 }
 
 /** Coverage of the distance band [lo, hi] at signed distance d, anti-aliased over one pixel. */

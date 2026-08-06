@@ -134,12 +134,10 @@ export const effectSchema = z.discriminatedUnion('kind', [
     angle: finite,
     vanishingPoint: pointSchema,
     strength: unit,
-    facePaint: paintSchema,
     sidePaint: paintSchema,
     autoShade: z.boolean(),
     shadeAmount: unit,
     steps: z.union([z.literal('auto'), z.number().int().positive()]),
-    capBack: z.boolean(),
   }),
   z.object({ ...shadowBase, kind: z.literal('innerShadow'), choke: unit }),
   z.object({
