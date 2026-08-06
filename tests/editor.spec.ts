@@ -142,10 +142,16 @@ test('uses the configured PWA base path', async ({ page }, testInfo) => {
     const data: unknown = await response.json();
     if (typeof data !== 'object' || data === null) throw new Error('Manifest is not an object');
     const record = data as Record<string, unknown>;
+    // Resolve each value against the manifest's own URL before handing it back. `vite.config.ts`
+    // defaults `base` to './' and stamps that straight into the manifest, which is the portable
+    // choice -- a relative id, scope and start_url follow the app wherever it is deployed. They
+    // are only comparable to a pathname once resolved the way a browser resolves them; comparing
+    // the raw './' against '/' fails while the manifest is in fact correct.
+    const resolve = (value: unknown) => (typeof value === 'string' ? new URL(value, href).pathname : undefined);
     return {
-      id: typeof record.id === 'string' ? record.id : undefined,
-      scope: typeof record.scope === 'string' ? record.scope : undefined,
-      start_url: typeof record.start_url === 'string' ? record.start_url : undefined,
+      id: resolve(record.id),
+      scope: resolve(record.scope),
+      start_url: resolve(record.start_url),
     };
   });
   const scope = await page.evaluate(async () => (await navigator.serviceWorker.ready).scope);
