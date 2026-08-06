@@ -382,6 +382,25 @@ export function App() {
     }, `effect:${effectId}`);
   };
 
+  const updateEffectColor = (effectId: string, target: 'paint' | 'color' | 'highlight' | 'shadow', hex: string) => {
+    if (!selectedText) return;
+    const rgb = hexToRgb(hex);
+    if (!rgb) return;
+    updateDocument('Change effect color', (draft) => {
+      const element = draft.elements.find((candidate) => candidate.id === selectedText.id);
+      const effect = element?.effects.find((candidate) => candidate.id === effectId);
+      if (!effect) return;
+      if (target === 'paint' && 'paint' in effect && effect.paint.kind === 'solid') {
+        effect.paint.color = [rgb[0], rgb[1], rgb[2], effect.paint.color[3]];
+      } else if (target === 'color' && 'color' in effect) {
+        effect.color = [rgb[0], rgb[1], rgb[2], effect.color[3]];
+      } else if (effect.kind === 'bevel' && (target === 'highlight' || target === 'shadow')) {
+        const slot = target === 'highlight' ? effect.highlight : effect.shadow;
+        slot.color = [rgb[0], rgb[1], rgb[2], slot.color[3]];
+      }
+    }, `effect-color:${effectId}:${target}`);
+  };
+
   const handleExport = async () => {
     if (isExporting) return;
     setIsExporting(true);
@@ -839,6 +858,7 @@ export function App() {
                         <button type="button" onClick={() => removeEffect(effect.id)} aria-label={`Remove ${effectLabel(effect.kind)}`}>X</button>
                       </span>
                       <EffectQuickControl effect={effect} onChange={(value) => updateEffectPrimary(effect.id, value)} />
+                      <EffectColorControls effect={effect} onChange={(target, hex) => updateEffectColor(effect.id, target, hex)} />
                     </li>
                   ))}
                 </ol>
@@ -983,6 +1003,50 @@ function EffectQuickControl({ effect, onChange }: { effect: Effect; onChange: (v
       <output>{control.value.toFixed(control.step < 1 ? 2 : 0)}</output>
     </label>
   );
+}
+
+type ColorTarget = 'paint' | 'color' | 'highlight' | 'shadow';
+
+function EffectColorControls({ effect, onChange }: { effect: Effect; onChange: (target: ColorTarget, hex: string) => void }) {
+  const swatches: Array<{ target: ColorTarget; label: string; value: string }> = [];
+  if ('paint' in effect && effect.paint.kind === 'solid') {
+    swatches.push({ target: 'paint', label: 'Color', value: rgbaToHex(effect.paint.color) });
+  }
+  if ('color' in effect) {
+    swatches.push({ target: 'color', label: 'Color', value: rgbaToHex(effect.color) });
+  }
+  if (effect.kind === 'bevel') {
+    swatches.push({ target: 'highlight', label: 'Hi', value: rgbaToHex(effect.highlight.color) });
+    swatches.push({ target: 'shadow', label: 'Sh', value: rgbaToHex(effect.shadow.color) });
+  }
+  if (swatches.length === 0) return null;
+  return (
+    <span className="effect-color-controls">
+      {swatches.map((swatch) => (
+        <label key={swatch.target} title={`${effectLabel(effect.kind)} ${swatch.label.toLowerCase()}`}>
+          <span>{swatch.label}</span>
+          <input
+            type="color"
+            value={swatch.value}
+            aria-label={`${effectLabel(effect.kind)} ${swatch.label.toLowerCase()}`}
+            onInput={(event) => onChange(swatch.target, event.currentTarget.value)}
+          />
+        </label>
+      ))}
+    </span>
+  );
+}
+
+function rgbaToHex([red, green, blue]: readonly [number, number, number, number]): string {
+  const channel = (value: number) => Math.round(Math.min(1, Math.max(0, value)) * 255).toString(16).padStart(2, '0');
+  return `#${channel(red)}${channel(green)}${channel(blue)}`;
+}
+
+function hexToRgb(hex: string): [number, number, number] | null {
+  const match = /^#([0-9a-f]{6})$/i.exec(hex);
+  if (!match) return null;
+  const value = Number.parseInt(match[1]!, 16);
+  return [((value >> 16) & 255) / 255, ((value >> 8) & 255) / 255, (value & 255) / 255];
 }
 
 function effectControl(effect: Effect): { label: string; min: number; max: number; step: number; value: number } {
