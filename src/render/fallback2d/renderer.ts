@@ -87,8 +87,12 @@ function drawTextElement(
   const renderBounds = intersectBounds(fullRenderBounds, viewport);
   result.elementBounds.set(element.id, transformedBounds);
   if (!renderBounds) return;
-  const sourceWidth = Math.max(1, Math.ceil(layout.bounds.width));
-  const sourceHeight = Math.max(1, Math.ceil(layout.bounds.height));
+  // The glyph source must be rasterised at the export scale. Rendering it at logical size and
+  // letting the scaled destination context enlarge it turns every high-resolution export into an
+  // upscaled 1x bitmap, which is exactly the artefact supersampling is supposed to avoid.
+  const sourceScale = sourceRasterScale(layout.bounds, scale);
+  const sourceWidth = Math.max(1, Math.ceil(layout.bounds.width * sourceScale));
+  const sourceHeight = Math.max(1, Math.ceil(layout.bounds.height * sourceScale));
   const source = createCanvasSurface(sourceWidth, sourceHeight);
   const sourceContext = get2dContext(source);
   sourceContext.setTransform(
@@ -181,6 +185,18 @@ export function effectStackReach(
     reach = Math.max(reach, reach + Math.abs(effect.offset) + reflectedHeight + effect.blur);
   }
   return reach + postReach;
+}
+
+// A pathological element (very large bounds at a high export scale) could otherwise ask for a
+// source canvas big enough to fail allocation. Back the scale off rather than throwing: a slightly
+// soft glyph beats a failed export.
+const MAX_SOURCE_PIXELS = 64_000_000;
+
+export function sourceRasterScale(bounds: Bounds, scale: number): number {
+  const requested = Math.max(1, scale);
+  const area = Math.max(1, bounds.width * bounds.height);
+  const affordable = Math.sqrt(MAX_SOURCE_PIXELS / area);
+  return Math.max(1, Math.min(requested, affordable));
 }
 
 function configureLayoutContext(context: TextContext, layout: LaidOutText): void {
