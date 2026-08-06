@@ -3,7 +3,12 @@ import { encodePngPixels } from './png-codec';
 import { planTiles } from './tiling';
 import type { Bounds } from '../geometry/bounds';
 import type { WordWarpDocument } from '../model/types';
-import { effectStackReach, measureTextElement, renderDocument2d } from '../render/fallback2d/renderer';
+import {
+  effectContributesPixels,
+  effectStackReach,
+  measureTextElement,
+  renderDocument2d,
+} from '../render/fallback2d/renderer';
 import { get2dContext } from '../render/surface';
 
 export interface RenderedPng {
@@ -41,7 +46,7 @@ export function renderRgbaOnSurface(
   const bounds = fixedBounds ?? getExportBounds(document, context);
   const { width, height } = validateExportSize(bounds, scale);
   const shouldTile = width > 4096 || height > 4096 || width * height > 16_777_216;
-  if (shouldTile && hasEnabledReflection(document)) {
+  if (shouldTile && hasTiledExportBlockingReflection(document)) {
     throw new Error('Reflection effects cannot currently be combined with tiled large-image export');
   }
   const maximumReach = maximumEffectReach(document, context, bounds);
@@ -85,9 +90,11 @@ export function renderRgbaOnSurface(
   return { pixels, width, height };
 }
 
-function hasEnabledReflection(document: WordWarpDocument): boolean {
+export function hasTiledExportBlockingReflection(document: WordWarpDocument): boolean {
   return document.elements.some((element) => (
-    element.visible && element.effects.some((effect) => effect.enabled && effect.kind === 'reflection')
+    element.visible
+    && element.opacity > 0
+    && element.effects.some((effect) => effect.kind === 'reflection' && effectContributesPixels(effect))
   ));
 }
 
@@ -98,7 +105,7 @@ function maximumEffectReach(
 ): number {
   let reach = 2;
   for (const element of document.elements) {
-    if (!element.visible || element.type !== 'text') continue;
+    if (!element.visible || element.opacity <= 0 || element.type !== 'text') continue;
     const elementBounds = measureTextElement(context, element);
     reach = Math.max(reach, effectStackReach(elementBounds, element.effects, viewport));
   }

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { createEffect } from '../effects/defaults';
+import { createDefaultDocument } from '../model/defaults';
 import { effectStackReach } from '../render/fallback2d/renderer';
+import { hasTiledExportBlockingReflection } from './render-png';
 import { planTiles } from './tiling';
 
 describe('export tiling', () => {
@@ -30,5 +32,34 @@ describe('export tiling', () => {
     const reflectedReach = effectStackReach(face, [shadow, reflection], viewport);
     expect(reflectedReach).toBeGreaterThan(shadow.distance + shadow.size + reflection.offset);
     expect(effectStackReach(face, [shadow, reflection, aberration], viewport)).toBe(reflectedReach + 7);
+  });
+
+  it('ignores zero-opacity effects when calculating reach', () => {
+    const shadow = createEffect('dropShadow');
+    const post = createEffect('post');
+    const reflection = createEffect('reflection');
+    shadow.opacity = 0;
+    post.type = 'aberration';
+    post.params.amount = 7;
+    post.opacity = 0;
+    reflection.opacity = 0;
+    const face = { x: 0, y: 0, width: 200, height: 100 };
+    const viewport = { width: 1200, height: 630 };
+    const baseline = effectStackReach(face, [], viewport);
+
+    expect(effectStackReach(face, [shadow], viewport)).toBe(baseline);
+    expect(effectStackReach(face, [post], viewport)).toBe(baseline);
+    expect(effectStackReach(face, [reflection], viewport)).toBe(baseline);
+  });
+
+  it('does not block tiled exports for a zero-opacity reflection', () => {
+    const document = createDefaultDocument();
+    const reflection = createEffect('reflection');
+    document.elements[0]!.effects = [reflection];
+
+    expect(hasTiledExportBlockingReflection(document)).toBe(true);
+
+    reflection.opacity = 0;
+    expect(hasTiledExportBlockingReflection(document)).toBe(false);
   });
 });
