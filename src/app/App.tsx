@@ -36,6 +36,7 @@ export function App() {
   const [presetQuery, setPresetQuery] = useState('');
   const [presetCategory, setPresetCategory] = useState<PresetCategory | 'all'>('all');
   const [exportFormat, setExportFormat] = useState<ExportFormat>('png');
+  const [exportScale, setExportScale] = useState(2);
   const [exportProgress, setExportProgress] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [animationTime, setAnimationTime] = useState(0);
@@ -323,12 +324,13 @@ export function App() {
     setExportProgress(0);
     try {
       if (exportFormat === 'png') {
-        const result = await exportPng(document, 2);
+        const result = await exportPng(document, exportScale);
         downloadPng(result);
         pushToast(`Exported ${result.width} x ${result.height} transparent PNG`, 'success');
       } else {
         const result = await exportAnimation(document, {
           format: exportFormat,
+          scale: exportScale,
           onProgress: setExportProgress,
         });
         downloadAnimation(result);
@@ -442,6 +444,17 @@ export function App() {
             <option value="png">PNG</option>
             <option value="apng">APNG</option>
             <option value="gif">GIF</option>
+          </select>
+          <select
+            className="export-format"
+            aria-label="Export resolution"
+            value={exportScale}
+            onChange={(event) => setExportScale(Number(event.target.value))}
+          >
+            <option value={1}>1x</option>
+            <option value={2}>2x</option>
+            <option value={3}>3x</option>
+            <option value={4}>4x</option>
           </select>
           <button className="export-button" type="button" onClick={() => void handleExport()} disabled={isExporting}>
             {isExporting ? `${Math.round(exportProgress * 100)}%` : `Export ${exportFormat.toUpperCase()}`} <span aria-hidden="true">+</span>
