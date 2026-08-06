@@ -16,7 +16,7 @@ import { buildShareUrl, decodeShareFragment } from '../share/url';
 import { subscribeToServiceWorkerUpdate, type ServiceWorkerUpdate } from '../service-worker-update';
 import { documentStore, useDocumentStore } from '../state/document-store';
 import { useEditorStore } from '../state/editor-store';
-import { useUiStore } from '../state/ui-store';
+import { holdToast, resumeToast, useUiStore } from '../state/ui-store';
 import { DocumentCanvas } from '../ui/DocumentCanvas';
 import { PresetPreview } from '../ui/PresetPreview';
 import { warpDisplayName } from '../warp';
@@ -937,7 +937,16 @@ export function App() {
 
       <div className="toast-region" role="status" aria-live="polite">
         {toasts.map((toast) => (
-          <button key={toast.id} type="button" className={`toast toast-${toast.tone}`} onClick={() => dismissToast(toast.id)}>
+          <button
+            key={toast.id}
+            type="button"
+            className={`toast toast-${toast.tone}`}
+            onClick={() => dismissToast(toast.id)}
+            onMouseEnter={() => holdToast(toast.id)}
+            onMouseLeave={() => resumeToast(toast.id, toast.tone)}
+            onFocus={() => holdToast(toast.id)}
+            onBlur={() => resumeToast(toast.id, toast.tone)}
+          >
             {toast.message}
           </button>
         ))}
