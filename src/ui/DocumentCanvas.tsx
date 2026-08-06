@@ -132,12 +132,22 @@ export function DocumentCanvas({
         aria-hidden="true"
       >
         {selectedBounds && (
-          <rect
-            x={selectedBounds.x}
-            y={selectedBounds.y}
-            width={selectedBounds.width}
-            height={selectedBounds.height}
-          />
+          <>
+            <rect
+              className="selection-underlay"
+              x={selectedBounds.x}
+              y={selectedBounds.y}
+              width={selectedBounds.width}
+              height={selectedBounds.height}
+            />
+            <rect
+              className="selection-outline"
+              x={selectedBounds.x}
+              y={selectedBounds.y}
+              width={selectedBounds.width}
+              height={selectedBounds.height}
+            />
+          </>
         )}
       </svg>
       <span className="renderer-badge">{backend === 'webgl2' ? 'WEBGL2' : '2D FALLBACK'}</span>
