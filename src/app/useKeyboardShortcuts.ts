@@ -4,6 +4,10 @@ interface ShortcutActions {
   undo: () => void;
   redo: () => void;
   remove: () => void;
+  duplicate: () => void;
+  deselect: () => void;
+  focusSearch: () => void;
+  nudge: (dx: number, dy: number) => void;
 }
 
 export function useKeyboardShortcuts(actions: ShortcutActions, enabled = true): void {
@@ -12,6 +16,7 @@ export function useKeyboardShortcuts(actions: ShortcutActions, enabled = true): 
     const isEditing =
       target instanceof HTMLInputElement ||
       target instanceof HTMLTextAreaElement ||
+      target instanceof HTMLSelectElement ||
       (target instanceof HTMLElement && target.isContentEditable);
     const command = event.metaKey || event.ctrlKey;
 
@@ -28,9 +33,51 @@ export function useKeyboardShortcuts(actions: ShortcutActions, enabled = true): 
       return;
     }
 
-    if (!isEditing && (event.key === 'Backspace' || event.key === 'Delete')) {
+    if (command && event.key.toLowerCase() === 'd') {
+      if (isEditing) return;
+      event.preventDefault();
+      actions.duplicate();
+      return;
+    }
+
+    if (isEditing) {
+      if (event.key === 'Escape' && target instanceof HTMLElement) {
+        target.blur();
+        actions.deselect();
+      }
+      return;
+    }
+
+    if (event.key === '/' ) {
+      event.preventDefault();
+      actions.focusSearch();
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      actions.deselect();
+      return;
+    }
+
+    if (event.key === 'Backspace' || event.key === 'Delete') {
       event.preventDefault();
       actions.remove();
+      return;
+    }
+
+    const step = event.shiftKey ? 10 : 1;
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      actions.nudge(-step, 0);
+    } else if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      actions.nudge(step, 0);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      actions.nudge(0, -step);
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      actions.nudge(0, step);
     }
   });
 

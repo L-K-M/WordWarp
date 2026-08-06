@@ -344,3 +344,27 @@ test('stops playback when the last animation track goes away', async ({ page }, 
   await expect(play).toBeDisabled();
   await expect(play).toHaveAttribute('aria-pressed', 'false');
 });
+
+test('slash focuses the preset search even when the panel is closed', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  // The panel can only be closed below 1051px -- that is where the toggle is shown and where the
+  // workspace starts with it collapsed, so it is also the only width where this bug is reachable.
+  await page.setViewportSize({ width: 1000, height: 900 });
+  await page.goto('./');
+
+  const workspace = page.locator('.workspace');
+  const search = page.locator('#preset-search');
+  await expect(workspace).toHaveClass(/left-closed/);
+
+  // A closed panel is `visibility: hidden` rather than unmounted, and hidden elements cannot take
+  // focus. Focusing in the same tick as the toggle was therefore a silent no-op: the panel opened
+  // and focus stayed on the body.
+  await page.keyboard.press('/');
+  await expect(workspace).not.toHaveClass(/left-closed/);
+  await expect(search).toBeFocused();
+
+  // And it still works when the panel is already open.
+  await search.blur();
+  await page.keyboard.press('/');
+  await expect(search).toBeFocused();
+});

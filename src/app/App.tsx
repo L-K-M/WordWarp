@@ -6,6 +6,7 @@ import { downloadAnimation, exportAnimation } from '../export/animation';
 import { exportErrorMessage } from '../export/errors';
 import { downloadPng, exportPng } from '../export/png';
 import { createDefaultDocument, createDefaultTextElement } from '../model/defaults';
+import { createId } from '../lib/id';
 import { PRESET_WARP_IDS, type Effect, type TextElement } from '../model/types';
 import { startAutosave, type AutosaveController } from '../persistence/autosave';
 import { loadActiveDocument, saveDocument } from '../persistence/database';
@@ -50,6 +51,7 @@ export function App() {
   const [isImporting, setIsImporting] = useState(false);
   const animationTimeRef = useRef(0);
   const autosaveRef = useRef<AutosaveController | null>(null);
+  const pendingSearchFocus = useRef(false);
   const document = useDocumentStore((state) => state.document);
   const pastCount = useDocumentStore((state) => state.past.length);
   const futureCount = useDocumentStore((state) => state.future.length);
@@ -192,18 +194,69 @@ export function App() {
     };
   }, [animationDuration, isPlaying, pushToast]);
 
+  useEffect(() => {
+    if (!leftPanelOpen || !pendingSearchFocus.current) return;
+    pendingSearchFocus.current = false;
+    window.document.getElementById('preset-search')?.focus();
+  }, [leftPanelOpen]);
+
   const selectedElement = document.elements.find((element) => element.id === selectedElementId);
   const selectedText = selectedElement?.type === 'text' ? selectedElement : null;
 
   const removeSelected = () => {
     if (!selectedElementId) return;
     const selectedIndex = document.elements.findIndex((element) => element.id === selectedElementId);
+    if (selectedIndex < 0) {
+      selectElement(null);
+      return;
+    }
+    if (document.elements[selectedIndex]?.locked) return;
     updateDocument('Delete element', (draft) => {
       const index = draft.elements.findIndex((element) => element.id === selectedElementId);
       if (index >= 0) draft.elements.splice(index, 1);
     });
     const next = document.elements[selectedIndex + 1] ?? document.elements[selectedIndex - 1];
     selectElement(next?.id ?? null);
+  };
+
+  const duplicateSelected = () => {
+    const source = document.elements.find((element) => element.id === selectedElementId);
+    if (!source || source.locked) return;
+    const copy = structuredClone(source);
+    copy.id = createId();
+    copy.name = `${source.name} copy`;
+    copy.transform.x += 24;
+    copy.transform.y += 24;
+    copy.effects = copy.effects.map((effect) => ({ ...effect, id: createId() }));
+    copy.animations = copy.animations.map((track) => ({ ...track, id: createId() }));
+    updateDocument('Duplicate element', (draft) => {
+      const index = draft.elements.findIndex((element) => element.id === source.id);
+      draft.elements.splice(index < 0 ? draft.elements.length : index + 1, 0, copy);
+    });
+    selectElement(copy.id);
+  };
+
+  const nudgeSelected = (dx: number, dy: number) => {
+    if (!selectedElementId) return;
+    updateDocument('Nudge element', (draft) => {
+      const element = draft.elements.find((candidate) => candidate.id === selectedElementId);
+      if (element && !element.locked) {
+        element.transform.x += dx;
+        element.transform.y += dy;
+      }
+    }, `nudge:${selectedElementId}`);
+  };
+
+  const focusPresetSearch = () => {
+    if (leftPanelOpen) {
+      window.document.getElementById('preset-search')?.focus();
+      return;
+    }
+    // A closed panel is `visibility: hidden` rather than unmounted, and hidden elements cannot
+    // take focus. `toggleLeftPanel` only schedules the state change, so focusing in the same tick
+    // is a silent no-op -- the panel opens and focus stays on the body. Defer to after the commit.
+    pendingSearchFocus.current = true;
+    toggleLeftPanel();
   };
 
   const moveSelectedLayer = (direction: -1 | 1) => {
@@ -217,7 +270,15 @@ export function App() {
     });
   };
 
-  useKeyboardShortcuts({ undo, redo, remove: removeSelected }, isHydrated && !isImporting && !isUpdating);
+  useKeyboardShortcuts({
+    undo,
+    redo,
+    remove: removeSelected,
+    duplicate: duplicateSelected,
+    deselect: () => selectElement(null),
+    focusSearch: focusPresetSearch,
+    nudge: nudgeSelected,
+  }, isHydrated && !isImporting && !isUpdating);
 
   const addText = () => {
     const element = createDefaultTextElement();
@@ -505,6 +566,7 @@ export function App() {
           <label className="search-field">
             <span className="sr-only">Search presets</span>
             <input
+              id="preset-search"
               type="search"
               placeholder="Find a look..."
               value={presetQuery}
@@ -613,7 +675,6 @@ export function App() {
                 <label>
                   <span>Content</span>
                   <textarea
-                    autoFocus
                     value={selectedText.text}
                     onChange={(event) => updateText(event.target.value)}
                     rows={3}
