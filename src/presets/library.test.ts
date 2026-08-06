@@ -6,11 +6,11 @@ import { applyPresetToElement, BUILT_IN_PRESETS } from './library';
 import { OFFICE_RAMPS } from './office-ramps';
 
 describe('preset library', () => {
-  it('ships every named style from the five core categories', () => {
-    expect(BUILT_IN_PRESETS).toHaveLength(30);
-    expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(30);
+  it('ships every named style from the six core categories', () => {
+    expect(BUILT_IN_PRESETS).toHaveLength(41);
+    expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(41);
     expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.category))).toEqual(
-      new Set(['metallic', 'synthwave', 'y2k', 'nineties', 'dimensional']),
+      new Set(['metallic', 'synthwave', 'y2k', 'nineties', 'dimensional', 'texture']),
     );
   });
 

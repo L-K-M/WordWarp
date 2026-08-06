@@ -78,6 +78,13 @@ function shadow(color: string, distance = 14, size = 12, opacity = 0.68): DropSh
   return effect;
 }
 
+function vhsShadow(color: string, angle: number): DropShadowEffect {
+  const effect = shadow(color, 5, 0, 0.9);
+  effect.angle = angle;
+  effect.useGlobalLight = false;
+  return effect;
+}
+
 function innerShadow(color: string, distance = 5, size = 9, opacity = 0.55): InnerShadowEffect {
   const effect = createEffect('innerShadow');
   effect.color = hexColor(color);
@@ -273,6 +280,43 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('inflated-balloon', 'Inflated Balloon', 'dimensional', ['#ff4d6d', '#ffffff', '#a91039', '#ffb1c0'], [
     shadow('#8a0f31', 10, 16, 0.5), fill(gradient(['#ffffff', '#ff9aad', '#ff4d6d', '#a91039'])), bevel(30, 'pillow', 220), innerGlow('#ffffff', 14, 0.7),
   ], warp('textInflate', 0.94, 0.8), ['balloon', 'pillow']),
+
+  definePreset('vaporwave-mall', 'Vaporwave Mall', 'synthwave', ['#ff71ce', '#01cdfe', '#fffb96', '#2d1b4e'], [
+    glow('#ff71ce', 26, 0.6), fill(gradient(['#ff71ce', '#b967ff', '#01cdfe'], 100)), post('scanlines', { amount: 0.14, period: 4 }, 0.5), post('aberration', { amount: 2 }, 0.4),
+  ], warp('textArchUp', 0.5), ['vaporwave', 'aesthetic']),
+  definePreset('acid-chrome', 'Acid Chrome', 'synthwave', ['#e8ffe8', '#39ff14', '#0d3b0d', '#00e5ff'], [
+    shadow('#071408', 10, 8, 0.6), fill(ramp('chrome-ii')), post('aberration', { amount: 3 }, 0.6), post('glitch', { amount: 0.2 }, 0.4),
+  ], warp('textInflate', 0.5, 0.6), ['acid', 'rave']),
+  definePreset('vhs-title-card', 'VHS Title Card', 'synthwave', ['#ffffff', '#00e5ff', '#ff00a0', '#1a1a2e'], [
+    vhsShadow('#00e5ff', 90), vhsShadow('#ff00a0', 270), fill(solid('#f4f6ff')), stroke(1, '#0b0c12'),
+  ], warp('textSlantUp', 0.3), ['vhs', 'title']),
+  definePreset('arcade-cabinet', 'Arcade Cabinet', 'synthwave', ['#ff00a0', '#ffffff', '#ffe600', '#14061f'], [
+    glow('#ff00a0', 30, 0.75), fill(gradient(['#ffe600', '#ff5e00', '#ff00a0'], 100)), stroke(6, '#ff00a0'), stroke(2, '#ffffff'),
+  ], warp('textWave1', 0.22), ['arcade', 'neon']),
+
+  definePreset('sticker-bomb', 'Sticker Bomb', 'nineties', ['#ffdd00', '#ffffff', '#1a1a2e', '#ff4757'], [
+    shadow('#1a1a2e', 9, 0, 1), fill(gradient(['#ffdd00', '#ff4757'], 120)), stroke(9, '#ffffff'), stroke(2, '#1a1a2e'),
+  ], warp('textWave2', 0.24), ['sticker', 'bold']),
+  definePreset('caution-tape', 'Caution Tape', 'nineties', ['#ffd400', '#111111', '#fff3b0', '#5c4a00'], [
+    shadow('#000000', 8, 3, 0.75), fill(gradient(['#ffd400', '#ffd400', '#111111', '#ffd400'], 45)), bevel(6, 'inner', 160), stroke(2, '#111111'),
+  ], warp('textSlantUp', 0.45), ['caution', 'hazard']),
+
+  definePreset('jelly', 'Jelly', 'y2k', ['#ff8ac6', '#ffffff', '#c2185b', '#ffd9ec'], [
+    shadow('#a1164f', 8, 12, 0.4), fill(solid('#ff8ac6', 0.72)), bevel(22, 'pillow', 200), innerGlow('#ffffff', 16, 0.8),
+  ], warp('textInflate', 0.8, 0.65), ['jelly', 'squish']),
+  definePreset('disco-fever', 'Disco Fever', 'y2k', ['#ff6ec7', '#6ec7ff', '#fff36e', '#6effb8'], [
+    glow('#ffffff', 20, 0.5), fill(gradient(['#ff6ec7', '#6ec7ff', '#6effb8', '#fff36e'], 45)), bevel(10), stroke(2, '#ffffff'),
+  ], none(), ['disco', 'animated'], [{ id: 'disco-hue', kind: 'hueCycle', enabled: true, duration: 4, params: {}, seed: 77 }]),
+
+  definePreset('deep-fried', 'Deep Fried', 'texture', ['#ff5e00', '#ffe600', '#ff0000', '#3d0c02'], [
+    shadow('#2b0a02', 10, 6, 0.7), fill(gradient(['#ffe600', '#ff5e00', '#ff0000'], 100)), post('grain', { amount: 0.3 }, 0.7), post('halftone', { frequency: 7 }, 0.35),
+  ], warp('textWave4', 0.3), ['fried', 'meme']),
+  definePreset('blueprint', 'Blueprint', 'texture', ['#123a6d', '#ffffff', '#0a2242', '#3d6fa8'], [
+    fill(solid('#123a6d')), stroke(1.5, '#ffffff'), post('scanlines', { amount: 0.1, period: 6 }, 0.35),
+  ], none(), ['blueprint', 'technical']),
+  definePreset('rusty-sign', 'Rusty Sign', 'texture', ['#8a4b1f', '#d9813a', '#3d1f08', '#c9a227'], [
+    fill(ramp('mahogany')), texture('noise', 0.3), bevel(9, 'inner', 150), innerShadow('#2e1504', 6, 10, 0.6),
+  ], warp('textDeflate', 0.4), ['rust', 'vintage']),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {
