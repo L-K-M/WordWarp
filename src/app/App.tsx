@@ -1,8 +1,12 @@
+import { useState } from 'react';
+
+import { downloadPng, exportPng } from '../export/png';
 import { createDefaultTextElement } from '../model/defaults';
-import type { Paint, TextElement } from '../model/types';
+import type { TextElement } from '../model/types';
 import { useDocumentStore } from '../state/document-store';
 import { useEditorStore } from '../state/editor-store';
 import { useUiStore } from '../state/ui-store';
+import { DocumentCanvas } from '../ui/DocumentCanvas';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 
 const presetSwatches = [
@@ -15,6 +19,7 @@ const presetSwatches = [
 ] as const;
 
 export function App() {
+  const [isExporting, setIsExporting] = useState(false);
   const document = useDocumentStore((state) => state.document);
   const pastCount = useDocumentStore((state) => state.past.length);
   const futureCount = useDocumentStore((state) => state.future.length);
@@ -109,10 +114,24 @@ export function App() {
     });
   };
 
+  const handleExport = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      const result = await exportPng(document, 2);
+      downloadPng(result);
+      pushToast(`Exported ${result.width} x ${result.height} transparent PNG`, 'success');
+    } catch (error) {
+      pushToast(error instanceof Error ? error.message : 'PNG export failed', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="app-shell">
       <header className="topbar">
-        <button className="brand" type="button" onClick={() => pushToast('WordWarp 0.1 foundation build')}>
+        <button className="brand" type="button" onClick={() => pushToast('WordWarp renderer online')}>
           <span className="brand-mark" aria-hidden="true">W</span>
           <span>
             <strong>WORDWARP</strong>
@@ -133,8 +152,8 @@ export function App() {
           <button className="panel-toggle" type="button" onClick={toggleLeftPanel}>Presets</button>
           <button className="panel-toggle" type="button" onClick={toggleRightPanel}>Inspect</button>
           <button type="button" onClick={() => pushToast('Share links arrive in the shipping PR')}>Share</button>
-          <button className="export-button" type="button" onClick={() => pushToast('PNG export arrives with the renderer')}>
-            Export <span aria-hidden="true">+</span>
+          <button className="export-button" type="button" onClick={() => void handleExport()} disabled={isExporting}>
+            {isExporting ? 'Rendering...' : 'Export PNG'} <span aria-hidden="true">+</span>
           </button>
         </div>
       </header>
@@ -191,31 +210,11 @@ export function App() {
               className="artboard-wrap"
               style={{ transform: `scale(${zoom})` }}
             >
-              <div
-                className="artboard"
-                role="img"
-                aria-label={`Transparent ${document.canvas.width} by ${document.canvas.height} composition with ${document.elements.length} elements`}
-              >
-                <div className="artboard-glow" aria-hidden="true" />
-                {document.elements.map((element) => {
-                  if (!element.visible || element.type !== 'text') return null;
-                  return (
-                    <CanvasText
-                      key={element.id}
-                      element={element}
-                      selected={element.id === selectedElementId}
-                      canvasWidth={document.canvas.width}
-                      canvasHeight={document.canvas.height}
-                      onSelect={() => selectElement(element.id)}
-                    />
-                  );
-                })}
-                {document.elements.length === 0 && (
-                  <button className="empty-canvas" type="button" onClick={addText}>
-                    <span>+</span> Add your first text layer
-                  </button>
-                )}
-              </div>
+              <DocumentCanvas
+                document={document}
+                selectedElementId={selectedElementId}
+                onSelect={selectElement}
+              />
             </div>
           </div>
 
@@ -246,6 +245,29 @@ export function App() {
                     rows={3}
                   />
                 </label>
+                <label className="font-family-field">
+                  <span>Font family</span>
+                  <input
+                    list="font-families"
+                    value={selectedText.font.family}
+                    onChange={(event) => {
+                      const family = event.target.value;
+                      updateDocument('Change font family', (draft) => {
+                        const element = draft.elements.find((item) => item.id === selectedText.id);
+                        if (element?.type === 'text') element.font.family = family || 'sans-serif';
+                      }, `font:${selectedText.id}`);
+                    }}
+                  />
+                  <datalist id="font-families">
+                    <option value="Arial Black" />
+                    <option value="Arial" />
+                    <option value="Georgia" />
+                    <option value="Impact" />
+                    <option value="Trebuchet MS" />
+                    <option value="Verdana" />
+                    <option value="sans-serif" />
+                  </datalist>
+                </label>
                 <div className="field-row">
                   <label>
                     <span>Size</span>
@@ -265,7 +287,19 @@ export function App() {
                   </label>
                   <label>
                     <span>Weight</span>
-                    <select value={selectedText.font.weight} disabled>
+                    <select
+                      value={selectedText.font.weight}
+                      onChange={(event) => {
+                        const weight = Number(event.target.value);
+                        updateDocument('Change font weight', (draft) => {
+                          const element = draft.elements.find((item) => item.id === selectedText.id);
+                          if (element?.type === 'text') element.font.weight = weight;
+                        });
+                      }}
+                    >
+                      <option value="400">Regular</option>
+                      <option value="600">Semibold</option>
+                      <option value="700">Bold</option>
                       <option value="900">Black</option>
                     </select>
                   </label>
@@ -350,74 +384,13 @@ export function App() {
   );
 }
 
-interface CanvasTextProps {
-  element: TextElement;
-  selected: boolean;
-  canvasWidth: number;
-  canvasHeight: number;
-  onSelect: () => void;
-}
-
-function CanvasText({ element, selected, canvasWidth, canvasHeight, onSelect }: CanvasTextProps) {
-  const fill = element.effects.find((effect) => effect.kind === 'fill' && effect.enabled);
-  const text = transformText(element.text, element.layout.transform);
-  return (
-    <button
-      type="button"
-      className={`canvas-text ${selected ? 'selected' : ''}`}
-      onClick={onSelect}
-      style={{
-        left: `${(element.transform.x / canvasWidth) * 100}%`,
-        top: `${(element.transform.y / canvasHeight) * 100}%`,
-        opacity: element.opacity,
-        fontFamily: element.font.family,
-        fontSize: `${(element.layout.size / canvasWidth) * 100}cqi`,
-        fontWeight: element.font.weight,
-        fontStyle: element.font.italic ? 'italic' : 'normal',
-        letterSpacing: `${element.layout.letterSpacing}em`,
-        lineHeight: element.layout.lineHeight,
-        textAlign: element.layout.align,
-        direction: element.layout.direction,
-        backgroundImage: fill?.kind === 'fill' ? paintToCss(fill.paint) : 'none',
-        transform: `translate(-${element.transform.originX * 100}%, -${element.transform.originY * 100}%) rotate(${element.transform.rotation}deg) scale(${element.transform.scaleX}, ${element.transform.scaleY}) skew(${element.transform.skewX}deg, ${element.transform.skewY}deg)`,
-      }}
-    >
-      {text || ' '}
-    </button>
-  );
-}
-
-function paintToCss(paint: Paint): string {
-  if (paint.kind === 'solid') return `linear-gradient(${rgbaToCss(paint.color)}, ${rgbaToCss(paint.color)})`;
-  if (paint.kind === 'gradient') {
-    const stops = paint.gradient.stops
-      .map((stop) => `${rgbaToCss(stop.color)} ${Math.round(stop.offset * 100)}%`)
-      .join(', ');
-    return `linear-gradient(${paint.gradient.angle}deg, ${stops})`;
-  }
-  if (paint.kind === 'ramp') return 'linear-gradient(180deg, #f9fdff, #59616f 35%, #10141c 52%, #eaf7ff 76%, #7a8592)';
-  if (paint.kind === 'matcap') return 'radial-gradient(circle at 35% 25%, #fff, #7b8b9f 30%, #121722 72%)';
-  return 'linear-gradient(135deg, #555, #111)';
-}
-
 function swatchGradient(colors: readonly string[]): string {
   return `linear-gradient(145deg, ${colors.join(', ')})`;
-}
-
-function rgbaToCss([red, green, blue, alpha]: [number, number, number, number]): string {
-  return `rgba(${Math.round(red * 255)}, ${Math.round(green * 255)}, ${Math.round(blue * 255)}, ${alpha})`;
 }
 
 function hexToRgba(hex: string): [number, number, number, number] {
   const value = Number.parseInt(hex.slice(1), 16);
   return [((value >> 16) & 255) / 255, ((value >> 8) & 255) / 255, (value & 255) / 255, 1];
-}
-
-function transformText(text: string, transform: TextElement['layout']['transform']): string {
-  if (transform === 'upper') return text.toUpperCase();
-  if (transform === 'lower') return text.toLowerCase();
-  if (transform === 'title') return text.replace(/\b\p{L}/gu, (character) => character.toUpperCase());
-  return text;
 }
 
 function effectLabel(kind: TextElement['effects'][number]['kind']): string {

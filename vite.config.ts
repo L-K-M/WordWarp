@@ -4,6 +4,12 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  optimizeDeps: {
+    exclude: ['harfbuzzjs'],
+  },
+  worker: {
+    format: 'es',
+  },
   test: {
     coverage: {
       reporter: ['text', 'html'],
