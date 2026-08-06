@@ -161,3 +161,47 @@ test('uses the configured PWA base path', async ({ page }, testInfo) => {
   expect(manifest.start_url).toBe(expectedPath);
   expect(new URL(scope).pathname).toBe(expectedPath);
 });
+
+test('style library scrolls to every preset and previews the real render', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('./');
+  await expect(page.getByRole('button', { name: 'WORDWARP TYPE EFFECTS LAB' })).toBeVisible();
+
+  const panel = page.locator('.preset-panel');
+  const cards = page.locator('.preset-card');
+  const total = await cards.count();
+  expect(total).toBeGreaterThan(12);
+
+  // Every category has to be reachable -- they used to sit on one horizontally scrolling row with
+  // the scrollbar hidden, so the last ones were off the edge of the panel. Checked before the
+  // panel is scrolled, since the row scrolls away with the rest of the panel's content.
+  const categories = page.locator('.preset-categories button');
+  const categoryCount = await categories.count();
+  for (let index = 0; index < categoryCount; index += 1) {
+    await expect(categories.nth(index)).toBeInViewport();
+  }
+  const categoryFontSize = await categories.first().evaluate((node) => Number.parseFloat(getComputedStyle(node).fontSize));
+  expect(categoryFontSize).toBeGreaterThanOrEqual(10);
+
+  // The shell used to grow past the viewport, which left the panel taller than the window with
+  // nothing to scroll, so the styles below the fold were simply unreachable.
+  const metrics = await panel.evaluate((node) => ({
+    client: node.clientHeight,
+    scroll: node.scrollHeight,
+  }));
+  expect(metrics.scroll).toBeGreaterThan(metrics.client);
+
+  const scrolled = await panel.evaluate((node) => {
+    node.scrollTop = node.scrollHeight;
+    return node.scrollTop;
+  });
+  expect(scrolled).toBeGreaterThan(0);
+  await expect(cards.nth(total - 1)).toBeInViewport();
+
+  // Cards show a render from the real pipeline rather than a swatch gradient standing in for one.
+  await expect(page.locator('.preset-preview img').first()).toBeVisible({ timeout: 15_000 });
+  const distinct = await page.locator('.preset-preview img').evaluateAll((nodes) =>
+    new Set(nodes.map((node) => (node as HTMLImageElement).src)).size);
+  expect(distinct).toBeGreaterThan(4);
+});

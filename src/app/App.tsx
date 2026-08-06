@@ -17,6 +17,7 @@ import { documentStore, useDocumentStore } from '../state/document-store';
 import { useEditorStore } from '../state/editor-store';
 import { useUiStore } from '../state/ui-store';
 import { DocumentCanvas } from '../ui/DocumentCanvas';
+import { PresetPreview } from '../ui/PresetPreview';
 import { warpDisplayName } from '../warp';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 
@@ -499,9 +500,7 @@ export function App() {
                 type="button"
                 onClick={() => applyPreset(preset)}
               >
-                <span className="preset-preview" style={{ background: swatchGradient(preset.preview) }}>
-                  <span>Ww</span>
-                </span>
+                <PresetPreview key={preset.id} preset={preset} swatch={swatchGradient(preset.preview)} />
                 <span className="preset-meta">
                   <strong>{preset.name}</strong>
                   <small>{preset.category.toUpperCase()}{preset.animated ? ' / MOTION' : ''}</small>
