@@ -2,7 +2,7 @@ import { flattenPath } from '../geometry/path';
 import type { PathData, Point } from '../model/types';
 
 export function mapPathPoint(u: number, v: number, path: PathData): Point {
-  const points = flattenPath(path, { tolerance: 0.002 }).flat();
+  const points = longestSubpath(flattenPath(path, { tolerance: 0.002 }));
   if (points.length < 2) return [u, v];
   const lengths = [0];
   let total = 0;
@@ -24,6 +24,22 @@ export function mapPathPoint(u: number, v: number, path: PathData): Point {
   const magnitude = Math.hypot(dx, dy) || 1;
   const offset = v - 0.5;
   return [center[0] - (dy / magnitude) * offset, center[1] + (dx / magnitude) * offset];
+}
+
+function longestSubpath(subpaths: Point[][]): Point[] {
+  let longest: Point[] = [];
+  let longestLength = 0;
+  for (const points of subpaths) {
+    let length = 0;
+    for (let index = 1; index < points.length; index += 1) {
+      length += Math.hypot(points[index]![0] - points[index - 1]![0], points[index]![1] - points[index - 1]![1]);
+    }
+    if (length > longestLength) {
+      longest = points;
+      longestLength = length;
+    }
+  }
+  return longest;
 }
 
 function mix(a: number, b: number, amount: number): number {

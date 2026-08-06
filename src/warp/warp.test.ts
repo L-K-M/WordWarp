@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { PRESET_WARP_IDS, type WarpSpec } from '../model/types';
+import { isIdentityWarp } from '../render/fallback2d/warp';
 import { mapWarpPoint } from './index';
+import { mapPathPoint } from './path';
 import { mapPerspectivePoint } from './perspective';
 
 const baseWarp = (preset: (typeof PRESET_WARP_IDS)[number], bend: number): WarpSpec => ({
@@ -46,6 +48,12 @@ describe('preset warps', () => {
     const centerHeight = mapWarpPoint(0.5, 1, warp)[1] - mapWarpPoint(0.5, 0, warp)[1];
     expect(centerHeight).toBeGreaterThan(leftHeight);
   });
+
+  it('does not treat zero bend with distortion as identity', () => {
+    const warp = { ...baseWarp('textWave1', 0), distortH: 0.5 };
+    expect(isIdentityWarp(warp)).toBe(false);
+    expect(mapWarpPoint(0.2, 0, warp)).not.toEqual([0.2, 0]);
+  });
 });
 
 describe('perspective warp', () => {
@@ -59,5 +67,21 @@ describe('perspective warp', () => {
     expect(mapPerspectivePoint(1, 1, corners)[1]).toBeCloseTo(corners[2][1]);
     expect(mapPerspectivePoint(0, 1, corners)[0]).toBeCloseTo(corners[3][0]);
     expect(mapPerspectivePoint(0, 1, corners)[1]).toBeCloseTo(corners[3][1]);
+  });
+});
+
+describe('path warp', () => {
+  it('uses one continuous subpath instead of measuring jumps between moves', () => {
+    const point = mapPathPoint(0.5, 0.5, {
+      commands: [
+        { type: 'M', point: [0, 0] },
+        { type: 'L', point: [0.1, 0] },
+        { type: 'M', point: [0, 1] },
+        { type: 'L', point: [1, 1] },
+      ],
+    });
+
+    expect(point[0]).toBeCloseTo(0.5);
+    expect(point[1]).toBeCloseTo(1);
   });
 });

@@ -10,7 +10,7 @@ export function drawWarpedSurface(
   bounds: Bounds,
   warp: WarpSpec,
 ): void {
-  if (warp.kind === 'none' || (warp.kind === 'preset' && Math.abs(warp.bend) < 1e-8)) {
+  if (isIdentityWarp(warp)) {
     context.drawImage(source, bounds.x, bounds.y, bounds.width, bounds.height);
     return;
   }
@@ -35,6 +35,16 @@ export function drawWarpedSurface(
       drawImageTriangle(context, source, [sourceTopLeft, sourceBottomRight, sourceBottomLeft], [topLeft, bottomRight, bottomLeft]);
     }
   }
+}
+
+export function isIdentityWarp(warp: WarpSpec): boolean {
+  return (
+    warp.kind === 'none' ||
+    (warp.kind === 'preset' &&
+      Math.abs(warp.bend) < 1e-8 &&
+      warp.distortH === 0 &&
+      warp.distortV === 0)
+  );
 }
 
 export function getWarpedBounds(bounds: Bounds, warp: WarpSpec): Bounds {

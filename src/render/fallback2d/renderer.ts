@@ -1,7 +1,7 @@
 import { elementMatrix, transformBounds, type Matrix } from '../../geometry/matrix';
 import { layoutText, type LaidOutText, type TextContext } from '../../text/layout';
 import type { BlendMode, Effect, FillEffect, TextElement, WordWarpDocument } from '../../model/types';
-import type { Bounds } from '../../geometry/bounds';
+import { expandBounds, intersectBounds, roundOutBounds, type Bounds } from '../../geometry/bounds';
 import type { RenderResult, RenderViewport } from '../contracts';
 import { renderEffectStack } from '../effects/cpu-effects';
 import { createCanvasSurface, get2dContext } from '../surface';
@@ -77,6 +77,11 @@ function drawTextElement(
 ): void {
   const layout = layoutText(context, element);
   const matrix = elementMatrix(element.transform, layout.bounds);
+  const warpedBounds = getWarpedBounds(layout.bounds, element.warp);
+  const transformedBounds = transformBounds(warpedBounds, matrix);
+  const renderBounds = getElementRenderBounds(transformedBounds, element.effects, viewport);
+  result.elementBounds.set(element.id, transformedBounds);
+  if (!renderBounds) return;
   const sourceWidth = Math.max(1, Math.ceil(layout.bounds.width));
   const sourceHeight = Math.max(1, Math.ceil(layout.bounds.height));
   const source = createCanvasSurface(sourceWidth, sourceHeight);
@@ -108,9 +113,11 @@ function drawTextElement(
     }
   }
 
-  const face = createCanvasSurface(context.canvas.width, context.canvas.height);
+  const faceWidth = Math.max(1, Math.ceil(renderBounds.width * scale));
+  const faceHeight = Math.max(1, Math.ceil(renderBounds.height * scale));
+  const face = createCanvasSurface(faceWidth, faceHeight);
   const faceContext = get2dContext(face);
-  faceContext.setTransform(scale, 0, 0, scale, -viewport.x * scale, -viewport.y * scale);
+  faceContext.setTransform(scale, 0, 0, scale, -renderBounds.x * scale, -renderBounds.y * scale);
   applyCanvasMatrix(faceContext, matrix);
   drawWarpedSurface(faceContext, source, layout.bounds, element.warp);
   const hasEffects = element.effects.some((effect) => effect.enabled && effect.kind !== 'fill');
@@ -122,12 +129,37 @@ function drawTextElement(
   context.setTransform(1, 0, 0, 1, 0, 0);
   context.globalAlpha = element.opacity;
   context.globalCompositeOperation = mapBlendMode(element.blendMode);
-  context.drawImage(rendered, 0, 0);
-  context.restore();
-  result.elementBounds.set(
-    element.id,
-    transformBounds(getWarpedBounds(layout.bounds, element.warp), matrix),
+  context.drawImage(
+    rendered,
+    (renderBounds.x - viewport.x) * scale,
+    (renderBounds.y - viewport.y) * scale,
   );
+  context.restore();
+  if (element.warp.keepUpright && element.warp.kind !== 'none') {
+    result.diagnostics.push({
+      elementId: element.id,
+      severity: 'warning',
+      message: 'Keep upright requires an outline-backed font and is unavailable for native-font raster warps',
+    });
+  }
+}
+
+function getElementRenderBounds(
+  faceBounds: Bounds,
+  effects: Effect[],
+  viewport: RenderViewport,
+): Bounds | null {
+  let reach = 2;
+  for (const effect of effects) {
+    reach = Math.max(reach, effectReach(effect));
+    if (effect.kind === 'reflection' && effect.enabled) {
+      reach = Math.max(reach, effect.offset + effect.height * faceBounds.height + effect.blur);
+    }
+    if (effect.kind === 'longShadow' && effect.enabled && effect.length === 'toEdge') {
+      reach = Math.max(reach, Math.hypot(viewport.width, viewport.height));
+    }
+  }
+  return intersectBounds(roundOutBounds(expandBounds(faceBounds, reach)), viewport);
 }
 
 function configureLayoutContext(context: TextContext, layout: LaidOutText): void {
