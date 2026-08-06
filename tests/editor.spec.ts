@@ -229,3 +229,42 @@ test('style library scrolls to every preset and previews the real render', async
     new Set(nodes.map((node) => (node as HTMLImageElement).src)).size);
   expect(distinct).toBeGreaterThan(4);
 });
+
+test('Fit zoom fits the artboard and is idempotent', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('./');
+
+  const readZoom = async () => (await page.locator('.zoom-strip output').textContent())?.trim();
+  const fit = page.getByRole('button', { name: 'Fit', exact: true });
+  const fitsInViewport = () => page.evaluate(() => {
+    const viewport = document.querySelector('.canvas-viewport');
+    const wrap = document.querySelector('.artboard-wrap');
+    if (!viewport || !wrap) throw new Error('Canvas viewport is unavailable');
+    const styles = getComputedStyle(viewport);
+    const availableWidth = viewport.clientWidth
+      - Number.parseFloat(styles.paddingLeft) - Number.parseFloat(styles.paddingRight);
+    const availableHeight = viewport.clientHeight
+      - Number.parseFloat(styles.paddingTop) - Number.parseFloat(styles.paddingBottom);
+    const rect = wrap.getBoundingClientRect();
+    return rect.width <= availableWidth + 1 && rect.height <= availableHeight + 1;
+  });
+
+  await fit.click();
+  const fitted = await readZoom();
+  // `.artboard-wrap` transitions its transform, so the rendered rect trails the committed zoom.
+  await expect.poll(fitsInViewport).toBe(true);
+
+  // Fit computes an absolute zoom, so clicking it again must be a no-op. Multiplying the current
+  // zoom into the result instead compounds: it measured 124% then 154% then 254%, overflowing.
+  await fit.click();
+  expect(await readZoom()).toBe(fitted);
+  await expect.poll(fitsInViewport).toBe(true);
+
+  // And it has to reach the same answer from a different starting zoom, not a scaled one.
+  for (let step = 0; step < 6; step += 1) await page.getByRole('button', { name: 'Zoom in' }).click();
+  expect(await readZoom()).not.toBe(fitted);
+  await fit.click();
+  expect(await readZoom()).toBe(fitted);
+  await expect.poll(fitsInViewport).toBe(true);
+});
