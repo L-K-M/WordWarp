@@ -35,4 +35,7 @@ if "$INSTALL_BROWSERS"; then
 fi
 
 echo "==> Running browser tests"
+# The Vite build and the Playwright config must agree on the base path; Vite
+# defaults to './' for portable archives while the browser tests default to '/'.
+export VITE_BASE_PATH="${VITE_BASE_PATH:-/}"
 npm run test:e2e
