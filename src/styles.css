@@ -290,6 +290,35 @@ button:disabled {
   font-size: 9px;
 }
 
+.preset-categories {
+  display: flex;
+  overflow-x: auto;
+  gap: 4px;
+  padding: 0 12px 11px;
+  scrollbar-width: none;
+}
+
+.preset-categories button {
+  flex: 0 0 auto;
+  min-height: 24px;
+  padding: 0 8px;
+  border: 1px solid #30384a;
+  border-radius: 2px;
+  color: #6f798d;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: #0d1018;
+}
+
+.preset-categories button.active {
+  border-color: #397d8f;
+  color: #9ceeff;
+  background: #122a33;
+}
+
 .preset-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -472,7 +501,12 @@ button:disabled {
 
 .render-artboard canvas {
   z-index: 1;
+  cursor: grab;
   touch-action: none;
+}
+
+.render-artboard canvas:active {
+  cursor: grabbing;
 }
 
 .selection-overlay {
@@ -616,14 +650,16 @@ button:disabled {
 }
 
 .muted-section h2,
-.warp-section h2 {
+.warp-section h2,
+.light-section h2 {
   display: flex;
   justify-content: space-between;
   color: #8790a2;
 }
 
 .muted-section h2 span,
-.warp-section h2 span {
+.warp-section h2 span,
+.light-section h2 span {
   color: #50596d;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 8px;

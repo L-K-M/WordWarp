@@ -8,12 +8,30 @@ interface DocumentCanvasProps {
   document: WordWarpDocument;
   selectedElementId: string | null;
   onSelect: (id: string | null) => void;
+  onMoveStart?: (id: string) => void;
+  onMove?: (id: string, x: number, y: number) => void;
+  onMoveEnd?: () => void;
 }
 
-export function DocumentCanvas({ document, selectedElementId, onSelect }: DocumentCanvasProps) {
+interface DragState {
+  pointerId: number;
+  elementId: string;
+  start: [number, number];
+  origin: [number, number];
+}
+
+export function DocumentCanvas({
+  document,
+  selectedElementId,
+  onSelect,
+  onMoveStart,
+  onMove,
+  onMoveEnd,
+}: DocumentCanvasProps) {
   const deferredDocument = useDeferredValue(document);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<PreviewRenderer | null>(null);
+  const dragRef = useRef<DragState | null>(null);
   const [bounds, setBounds] = useState<Record<string, Bounds>>({});
   const [backend, setBackend] = useState<'webgl2' | 'canvas2d'>('canvas2d');
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +89,41 @@ export function DocumentCanvas({ document, selectedElementId, onSelect }: Docume
             .reverse()
             .find((element) => element.visible && bounds[element.id] && containsPoint(bounds[element.id]!, point));
           onSelect(selected?.id ?? null);
+          if (selected && !selected.locked) {
+            event.currentTarget.setPointerCapture(event.pointerId);
+            dragRef.current = {
+              pointerId: event.pointerId,
+              elementId: selected.id,
+              start: point,
+              origin: [selected.transform.x, selected.transform.y],
+            };
+            onMoveStart?.(selected.id);
+          }
+        }}
+        onPointerMove={(event) => {
+          const drag = dragRef.current;
+          if (!drag || drag.pointerId !== event.pointerId) return;
+          const rectangle = event.currentTarget.getBoundingClientRect();
+          const point: [number, number] = [
+            ((event.clientX - rectangle.left) / rectangle.width) * document.canvas.width,
+            ((event.clientY - rectangle.top) / rectangle.height) * document.canvas.height,
+          ];
+          onMove?.(
+            drag.elementId,
+            drag.origin[0] + point[0] - drag.start[0],
+            drag.origin[1] + point[1] - drag.start[1],
+          );
+        }}
+        onPointerUp={(event) => {
+          if (dragRef.current?.pointerId !== event.pointerId) return;
+          dragRef.current = null;
+          event.currentTarget.releasePointerCapture(event.pointerId);
+          onMoveEnd?.();
+        }}
+        onPointerCancel={(event) => {
+          if (dragRef.current?.pointerId !== event.pointerId) return;
+          dragRef.current = null;
+          onMoveEnd?.();
         }}
       />
       <svg

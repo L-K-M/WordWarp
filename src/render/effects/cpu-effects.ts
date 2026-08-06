@@ -10,6 +10,7 @@ import type {
   Rgba,
   TextureOverlayEffect,
 } from '../../model/types';
+import { officeRampColors } from '../../presets/office-ramps';
 
 interface EffectOptions {
   scale: number;
@@ -421,7 +422,8 @@ function paintColor(paint: Paint): Rgba {
   if (paint.kind === 'solid') return paint.color;
   if (paint.kind === 'gradient') return sampleGradient(paint.gradient, 0.5);
   if (paint.kind === 'ramp') {
-    return paint.rampId.toLowerCase().includes('gold') ? [0.86, 0.66, 0.25, 1] : [0.62, 0.7, 0.78, 1];
+    const colors = officeRampColors(paint.rampId);
+    return colors?.[Math.floor(colors.length / 2)] ?? [0.62, 0.7, 0.78, 1];
   }
   if (paint.kind === 'matcap') return [0.68, 0.76, 0.86, 1];
   return [0.5, 0.5, 0.5, 1];
