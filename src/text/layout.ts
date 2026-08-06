@@ -83,10 +83,10 @@ function fontShorthand(element: TextElement): string {
 }
 
 export function applyTextTransform(text: string, transform: TextElement['layout']['transform']): string {
-  if (transform === 'upper') return text.toLocaleUpperCase();
-  if (transform === 'lower') return text.toLocaleLowerCase();
+  if (transform === 'upper') return text.toUpperCase();
+  if (transform === 'lower') return text.toLowerCase();
   if (transform === 'title') {
-    return text.replace(/(?<![\p{L}\p{N}])\p{L}/gu, (character) => character.toLocaleUpperCase());
+    return text.replace(/(?<![\p{L}\p{N}])\p{L}/gu, (character) => character.toUpperCase());
   }
   return text;
 }
