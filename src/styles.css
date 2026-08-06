@@ -261,6 +261,10 @@ button:disabled {
 .workspace {
   display: grid;
   grid-template-columns: 224px minmax(360px, 1fr) 270px;
+
+  /* The single implicit row would stretch to fill a definite-height container anyway, but saying
+     so explicitly keeps the panels bounded if a second row is ever added here. */
+  grid-template-rows: minmax(0, 1fr);
   min-height: 0;
 }
 
