@@ -278,9 +278,20 @@ function renderBevel(
   for (let index = 0; index < rawHeight.length; index += 1) {
     rawHeight[index] = bevelHeight(distance[index]!, size, effect.style, effect.technique);
   }
-  const heightField = effect.soften > 0
-    ? blurFloat(rawHeight, width, height, (effect.soften * options.scale) / 3)
-    : rawHeight;
+  // The height is derived from a distance field, and a distance field's gradient *direction* is
+  // quantised: it points at the nearest boundary pixel, which sits a whole number of pixels away.
+  // Along a near-vertical stroke that direction swings in discrete steps, so differentiating the
+  // height straight away laid a ladder of horizontal notches down every stroke. Reconstruct the
+  // surface first -- a roughly one-pixel Gaussian is the matched filter for pixel-grid
+  // quantisation. The radius follows the render scale so an export shades like the preview, and it
+  // stays a fraction of the bevel so a fine bevel is smoothed rather than washed away.
+  const reconstruction = Math.min(1.6 * options.scale, size / 4);
+  const heightField = blurFloat(
+    rawHeight,
+    width,
+    height,
+    Math.max(reconstruction, (effect.soften * options.scale) / 3),
+  );
 
   const relief = effect.depth / 100;
   const direction = effect.direction === 'up' ? 1 : -1;
@@ -294,10 +305,15 @@ function renderBevel(
           ? Math.abs(value) <= size
           : value <= 1 && value >= -size;
       if (!inBand) continue;
-      // Central differences on the height, scaled by depth; z stays at 1 so depth alone controls
-      // how far the normal tilts away from vertical.
-      const dx = (heightField[index + 1]! - heightField[index - 1]!) * 0.5 * size * relief;
-      const dy = (heightField[index + width]! - heightField[index - width]!) * 0.5 * size * relief;
+      // Sobel rather than a two-tap central difference, so the slope is read across the
+      // neighbouring rows too and stays steady where the nearest-edge direction flips. The /8
+      // keeps it the same scale as the central difference it replaces; z stays at 1 so depth
+      // alone controls how far the normal tilts away from vertical.
+      const slope = (size * relief) / 8;
+      const dx = (heightField[index + 1 - width]! + 2 * heightField[index + 1]! + heightField[index + 1 + width]!
+        - heightField[index - 1 - width]! - 2 * heightField[index - 1]! - heightField[index - 1 + width]!) * slope;
+      const dy = (heightField[index + width - 1]! + 2 * heightField[index + width]! + heightField[index + width + 1]!
+        - heightField[index - width - 1]! - 2 * heightField[index - width]! - heightField[index - width + 1]!) * slope;
       const magnitude = Math.hypot(dx, dy, 1);
       const dot = ((-dx / magnitude) * lightX + (-dy / magnitude) * lightY + (1 / magnitude) * lightZ) * direction;
       const coverage = effect.style === 'outer' ? 1 : faceAlpha[index]! / 255;

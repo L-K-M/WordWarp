@@ -91,6 +91,39 @@ test.describe('render quality', () => {
     expect(quadrupleBand).toBeLessThan(singleBand * 1.6);
   });
 
+  test('bevel shading does not staircase down a stroke', async ({ page }) => {
+    await page.getByLabel('Content').fill('WWW');
+    await page.getByRole('button', { name: 'Bubble Inflate' }).click();
+
+    const image = await exportAt(page, '2');
+
+    // The bevel normal comes from a distance field, whose gradient direction can only point at a
+    // whole-pixel neighbour. Differentiating it raw made that direction flip in steps down a
+    // near-vertical stroke, printing a ladder of horizontal notches across the glyph. The
+    // signature is vertical, so a second difference down each column isolates it -- shading that
+    // varies smoothly has almost none, a staircase has a spike at every step.
+    let total = 0;
+    let counted = 0;
+    const opaque = (x: number, y: number) => alphaAt(image, y * image.width + x) > 250;
+    const luma = (x: number, y: number) => {
+      const offset = (y * image.width + x) * 4;
+      return (Number(image.data[offset]) + Number(image.data[offset + 1]) + Number(image.data[offset + 2])) / 3;
+    };
+    for (let y = 1; y < image.height - 1; y += 1) {
+      for (let x = 1; x < image.width - 1; x += 1) {
+        // Interior only, so glyph edges are not mistaken for steps.
+        if (!opaque(x, y) || !opaque(x, y - 1) || !opaque(x, y + 1) || !opaque(x - 1, y) || !opaque(x + 1, y)) continue;
+        total += Math.abs(luma(x, y + 1) - 2 * luma(x, y) + luma(x, y - 1));
+        counted += 1;
+      }
+    }
+    expect(counted).toBeGreaterThan(500);
+
+    // Measured 2.49 before this was fixed and 1.06 after, against a floor of 0.54 with the bevel
+    // switched off entirely. 1.6 sits clear of both.
+    expect(total / counted).toBeLessThan(1.6);
+  });
+
   test('transparent export keeps shadows free of grey fringing', async ({ page }) => {
     await page.getByLabel('Content').fill('ALPHA');
     await page.getByRole('button', { name: 'Deep Extrude' }).click();
