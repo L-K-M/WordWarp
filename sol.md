@@ -789,6 +789,22 @@ from concurrent renderer/UI work. Each should use its own branch and PR:
 | Reuse EDT work buffers | PERF-02 | `src/render/effects/fields.ts`, effect tests/measurement |
 | Add a high-contrast two-pass selection outline | UX-14 | `DocumentCanvas.tsx`, `styles.css` |
 
+Implementation results:
+
+| PR | Finding | Result |
+|---|---|---|
+| `#39` | C-11 | Preview always evaluates frame zero; stacked on `#26` |
+| `#40` | C-12 | Locale-independent upper/lower/title transforms |
+| `#41` | C-15 | Strict expected-revision checks in IndexedDB and local fallback |
+| `#42` | C-17 | Zero-opacity effects no longer expand or block export |
+| `#43` | UX-20 | Focused interactive controls ignore canvas shortcuts; stacked on `#27` |
+| `#44` | UX-14 | Dark solid under-stroke plus cyan dashed selection outline |
+| `#45` | PERF-02 | EDT scratch allocations reduced from per-line to per-transform |
+
+All seven branches passed targeted regression coverage, lint, typecheck, and production builds.
+`#45` merged updated `main` and retained both the new subpixel-SDF test and the rectangular buffer
+reuse test after `#28` landed.
+
 Large renderer, export-memory, project-management, effect-inspector, and mobile-flow changes are
 high-confidence priorities but not safe to improvise as isolated patches while stacked renderer and
 layout PRs are open. Schema tightening for C-02/C-10/C-14/C-19 also needs a document-version migration,
