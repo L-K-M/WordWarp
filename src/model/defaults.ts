@@ -1,5 +1,6 @@
 import { DOC_VERSION } from './types';
 import type { FillEffect, TextElement, WordWarpDocument } from './types';
+import { createId } from '../lib/id';
 
 interface DefaultOptions {
   documentId?: string;
@@ -8,9 +9,7 @@ interface DefaultOptions {
   now?: string;
 }
 
-const newId = (): string => crypto.randomUUID();
-
-export function createDefaultFill(id = newId()): FillEffect {
+export function createDefaultFill(id = createId()): FillEffect {
   return {
     id,
     kind: 'fill',
@@ -39,7 +38,7 @@ export function createDefaultFill(id = newId()): FillEffect {
   };
 }
 
-export function createDefaultTextElement(id = newId(), fillId = newId()): TextElement {
+export function createDefaultTextElement(id = createId(), fillId = createId()): TextElement {
   return {
     id,
     type: 'text',
@@ -94,7 +93,7 @@ export function createDefaultDocument(options: DefaultOptions = {}): WordWarpDoc
   const now = options.now ?? new Date().toISOString();
   return {
     version: DOC_VERSION,
-    id: options.documentId ?? newId(),
+    id: options.documentId ?? createId(),
     name: 'Untitled warp',
     canvas: {
       width: 1200,

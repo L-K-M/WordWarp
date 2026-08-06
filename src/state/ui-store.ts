@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import { createId } from '../lib/id';
+
 interface Toast {
   id: string;
   message: string;
@@ -19,7 +21,7 @@ export const useUiStore = create<UiState>((set) => ({
   toasts: [],
   setModal: (activeModal) => set({ activeModal }),
   pushToast: (message, tone = 'info') => {
-    const id = crypto.randomUUID();
+    const id = createId();
     set((state) => ({ toasts: [...state.toasts, { id, message, tone }] }));
     return id;
   },
