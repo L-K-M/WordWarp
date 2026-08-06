@@ -36,8 +36,7 @@ export async function saveDocument(document: WordWarpDocument, expectedModified?
     if (
       expectedModified !== undefined &&
       existing &&
-      existing.meta.modified !== expectedModified &&
-      existing.meta.modified !== document.meta.modified
+      existing.meta.modified !== expectedModified
     ) {
       throw new Error('This document was updated in another tab; reload before saving more changes');
     }
@@ -93,8 +92,7 @@ function saveLocalFallback(document: WordWarpDocument, expectedModified?: string
     const existing = loadDocument(JSON.parse(existingSerialized) as unknown);
     if (
       existing.id === document.id &&
-      existing.meta.modified !== expectedModified &&
-      existing.meta.modified !== document.meta.modified
+      existing.meta.modified !== expectedModified
     ) {
       throw new Error('This document was updated in another tab; reload before saving more changes');
     }
