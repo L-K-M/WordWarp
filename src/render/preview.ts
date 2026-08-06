@@ -2,6 +2,7 @@ import type { WordWarpDocument } from '../model/types';
 import type { RenderResult } from './contracts';
 import { renderDocument2d } from './fallback2d/renderer';
 import { WebGlPresenter } from './gl/presenter';
+import { get2dContext } from './surface';
 
 export class PreviewRenderer {
   readonly backend: 'webgl2' | 'canvas2d';
@@ -14,9 +15,7 @@ export class PreviewRenderer {
   constructor(target: HTMLCanvasElement) {
     this.target = target;
     this.staging = createStagingCanvas();
-    const stagingContext = this.staging.getContext('2d', { alpha: true, willReadFrequently: false });
-    if (!stagingContext) throw new Error('Canvas2D staging context is unavailable');
-    this.stagingContext = stagingContext;
+    this.stagingContext = get2dContext(this.staging);
 
     let presenter: WebGlPresenter | null = null;
     try {

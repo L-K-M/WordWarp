@@ -1,12 +1,14 @@
 import { useState } from 'react';
 
+import { createEffect, EFFECT_KINDS, type EffectKind } from '../effects/defaults';
 import { downloadPng, exportPng } from '../export/png';
 import { createDefaultTextElement } from '../model/defaults';
-import type { TextElement } from '../model/types';
+import { PRESET_WARP_IDS, type Effect, type TextElement } from '../model/types';
 import { useDocumentStore } from '../state/document-store';
 import { useEditorStore } from '../state/editor-store';
 import { useUiStore } from '../state/ui-store';
 import { DocumentCanvas } from '../ui/DocumentCanvas';
+import { warpDisplayName } from '../warp';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 
 const presetSwatches = [
@@ -20,6 +22,7 @@ const presetSwatches = [
 
 export function App() {
   const [isExporting, setIsExporting] = useState(false);
+  const [newEffectKind, setNewEffectKind] = useState<EffectKind>('stroke');
   const document = useDocumentStore((state) => state.document);
   const pastCount = useDocumentStore((state) => state.past.length);
   const futureCount = useDocumentStore((state) => state.future.length);
@@ -112,6 +115,57 @@ export function App() {
       const effect = element?.effects.find((candidate) => candidate.id === effectId);
       if (effect) effect.enabled = !effect.enabled;
     });
+  };
+
+  const addEffect = () => {
+    if (!selectedText) return;
+    const effect = createEffect(newEffectKind);
+    updateDocument('Add effect', (draft) => {
+      const element = draft.elements.find((candidate) => candidate.id === selectedText.id);
+      if (element?.type === 'text') element.effects.push(effect);
+    });
+  };
+
+  const removeEffect = (effectId: string) => {
+    if (!selectedText) return;
+    updateDocument('Remove effect', (draft) => {
+      const element = draft.elements.find((candidate) => candidate.id === selectedText.id);
+      if (element?.type !== 'text') return;
+      const index = element.effects.findIndex((effect) => effect.id === effectId);
+      if (index >= 0) element.effects.splice(index, 1);
+    });
+  };
+
+  const moveEffect = (effectId: string, direction: -1 | 1) => {
+    if (!selectedText) return;
+    updateDocument('Reorder effect', (draft) => {
+      const element = draft.elements.find((candidate) => candidate.id === selectedText.id);
+      if (element?.type !== 'text') return;
+      const index = element.effects.findIndex((effect) => effect.id === effectId);
+      const nextIndex = index + direction;
+      if (index < 0 || nextIndex < 0 || nextIndex >= element.effects.length) return;
+      const [effect] = element.effects.splice(index, 1);
+      element.effects.splice(nextIndex, 0, effect!);
+    });
+  };
+
+  const updateEffectPrimary = (effectId: string, value: number) => {
+    if (!selectedText) return;
+    updateDocument('Adjust effect', (draft) => {
+      const element = draft.elements.find((candidate) => candidate.id === selectedText.id);
+      const effect = element?.effects.find((candidate) => candidate.id === effectId);
+      if (!effect) return;
+      if (effect.kind === 'stroke') effect.width = value;
+      else if (effect.kind === 'bevel') effect.size = value;
+      else if (effect.kind === 'extrude') effect.depth = value;
+      else if (effect.kind === 'innerShadow' || effect.kind === 'innerGlow') effect.size = value;
+      else if (effect.kind === 'outerGlow' || effect.kind === 'dropShadow' || effect.kind === 'satin') effect.size = value;
+      else if (effect.kind === 'longShadow') effect.length = value;
+      else if (effect.kind === 'textureOverlay') effect.scale = value;
+      else if (effect.kind === 'reflection') effect.height = value;
+      else if (effect.kind === 'post') effect.params.amount = value;
+      else effect.opacity = value;
+    }, `effect:${effectId}`);
   };
 
   const handleExport = async () => {
@@ -306,9 +360,73 @@ export function App() {
                 </div>
               </section>
 
-              <section className="inspector-section muted-section">
-                <h2>Warp <span>NONE</span></h2>
-                <button type="button" disabled>Choose envelope</button>
+              <section className="inspector-section warp-section">
+                <h2>Warp <span>{selectedText.warp.kind.toUpperCase()}</span></h2>
+                <label>
+                  <span>Envelope</span>
+                  <select
+                    value={selectedText.warp.kind === 'preset' ? selectedText.warp.preset : 'none'}
+                    onChange={(event) => {
+                      const preset = event.target.value;
+                      updateDocument('Change warp', (draft) => {
+                        const element = draft.elements.find((item) => item.id === selectedText.id);
+                        if (element?.type !== 'text') return;
+                        if (preset === 'none') {
+                          element.warp.kind = 'none';
+                          element.warp.preset = undefined;
+                          element.warp.bend = 0;
+                        } else {
+                          element.warp.kind = 'preset';
+                          element.warp.preset = preset as (typeof PRESET_WARP_IDS)[number];
+                          if (Math.abs(element.warp.bend) < 0.01) element.warp.bend = 0.78;
+                        }
+                      });
+                    }}
+                  >
+                    <option value="none">No warp</option>
+                    {PRESET_WARP_IDS.filter((preset) => preset !== 'textNoShape' && preset !== 'textPlain').map((preset) => (
+                      <option key={preset} value={preset}>{warpDisplayName(preset)}</option>
+                    ))}
+                  </select>
+                </label>
+                {selectedText.warp.kind === 'preset' && (
+                  <>
+                    <label className="range-field">
+                      <span>Bend <output>{selectedText.warp.bend.toFixed(2)}</output></span>
+                      <input
+                        type="range"
+                        min="-1"
+                        max="1"
+                        step="0.01"
+                        value={selectedText.warp.bend}
+                        onChange={(event) => {
+                          const bend = Number(event.target.value);
+                          updateDocument('Adjust warp bend', (draft) => {
+                            const element = draft.elements.find((item) => item.id === selectedText.id);
+                            if (element?.type === 'text') element.warp.bend = bend;
+                          }, `warp:${selectedText.id}`);
+                        }}
+                      />
+                    </label>
+                    <label className="range-field">
+                      <span>Shape <output>{selectedText.warp.adj[0].toFixed(2)}</output></span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={selectedText.warp.adj[0]}
+                        onChange={(event) => {
+                          const adjustment = Number(event.target.value);
+                          updateDocument('Adjust warp shape', (draft) => {
+                            const element = draft.elements.find((item) => item.id === selectedText.id);
+                            if (element?.type === 'text') element.warp.adj[0] = adjustment;
+                          }, `warp-adj:${selectedText.id}`);
+                        }}
+                      />
+                    </label>
+                  </>
+                )}
               </section>
 
               <section className="effects-section">
@@ -325,19 +443,30 @@ export function App() {
                         <strong>{effectLabel(effect.kind)}</strong>
                         <small>{effect.slot.toUpperCase()} / {index + 1}</small>
                       </span>
-                      <button
-                        className={effect.enabled ? 'enabled' : ''}
-                        type="button"
-                        aria-label={`${effect.enabled ? 'Disable' : 'Enable'} ${effectLabel(effect.kind)}`}
-                        aria-pressed={effect.enabled}
-                        onClick={() => toggleEffect(effect.id)}
-                      >
-                        {effect.enabled ? 'ON' : 'OFF'}
-                      </button>
+                      <span className="effect-actions">
+                        <button type="button" onClick={() => moveEffect(effect.id, -1)} aria-label="Move effect up">UP</button>
+                        <button type="button" onClick={() => moveEffect(effect.id, 1)} aria-label="Move effect down">DN</button>
+                        <button
+                          className={effect.enabled ? 'enabled' : ''}
+                          type="button"
+                          aria-label={`${effect.enabled ? 'Disable' : 'Enable'} ${effectLabel(effect.kind)}`}
+                          aria-pressed={effect.enabled}
+                          onClick={() => toggleEffect(effect.id)}
+                        >
+                          {effect.enabled ? 'ON' : 'OFF'}
+                        </button>
+                        <button type="button" onClick={() => removeEffect(effect.id)} aria-label={`Remove ${effectLabel(effect.kind)}`}>X</button>
+                      </span>
+                      <EffectQuickControl effect={effect} onChange={(value) => updateEffectPrimary(effect.id, value)} />
                     </li>
                   ))}
                 </ol>
-                <button className="add-effect" type="button" disabled>+ Add effect</button>
+                <div className="effect-adder">
+                  <select value={newEffectKind} onChange={(event) => setNewEffectKind(event.target.value as EffectKind)}>
+                    {EFFECT_KINDS.map((kind) => <option key={kind} value={kind}>{effectLabel(kind)}</option>)}
+                  </select>
+                  <button className="add-effect" type="button" onClick={addEffect}>+ Add</button>
+                </div>
               </section>
             </>
           ) : (
@@ -391,6 +520,46 @@ function swatchGradient(colors: readonly string[]): string {
 function hexToRgba(hex: string): [number, number, number, number] {
   const value = Number.parseInt(hex.slice(1), 16);
   return [((value >> 16) & 255) / 255, ((value >> 8) & 255) / 255, (value & 255) / 255, 1];
+}
+
+function EffectQuickControl({ effect, onChange }: { effect: Effect; onChange: (value: number) => void }) {
+  const control = effectControl(effect);
+  return (
+    <label className="effect-quick-control">
+      <span>{control.label}</span>
+      <input
+        type="range"
+        min={control.min}
+        max={control.max}
+        step={control.step}
+        value={control.value}
+        onChange={(event) => onChange(Number(event.target.value))}
+      />
+      <output>{control.value.toFixed(control.step < 1 ? 2 : 0)}</output>
+    </label>
+  );
+}
+
+function effectControl(effect: Effect): { label: string; min: number; max: number; step: number; value: number } {
+  if (effect.kind === 'stroke') return { label: 'Width', min: 0, max: 80, step: 1, value: effect.width };
+  if (effect.kind === 'bevel') return { label: 'Size', min: 1, max: 80, step: 1, value: effect.size };
+  if (effect.kind === 'extrude') return { label: 'Depth', min: 0, max: 180, step: 1, value: effect.depth };
+  if (effect.kind === 'innerShadow' || effect.kind === 'innerGlow') {
+    return { label: 'Size', min: 0, max: 80, step: 1, value: effect.size };
+  }
+  if (effect.kind === 'outerGlow' || effect.kind === 'dropShadow' || effect.kind === 'satin') {
+    return { label: 'Size', min: 0, max: 100, step: 1, value: effect.size };
+  }
+  if (effect.kind === 'longShadow') {
+    return { label: 'Length', min: 0, max: 300, step: 1, value: effect.length === 'toEdge' ? 300 : effect.length };
+  }
+  if (effect.kind === 'textureOverlay') return { label: 'Scale', min: 0.2, max: 5, step: 0.1, value: effect.scale };
+  if (effect.kind === 'reflection') return { label: 'Height', min: 0.05, max: 1, step: 0.05, value: effect.height };
+  if (effect.kind === 'post') {
+    const amount = effect.params.amount;
+    return { label: 'Amount', min: 0, max: 1, step: 0.01, value: typeof amount === 'number' ? amount : 0.2 };
+  }
+  return { label: 'Opacity', min: 0, max: 1, step: 0.01, value: effect.opacity };
 }
 
 function effectLabel(kind: TextElement['effects'][number]['kind']): string {

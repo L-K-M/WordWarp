@@ -271,48 +271,51 @@ export interface TextLayout {
   curveSpacing: 'uniform' | 'arc-length';
 }
 
-export type PresetWarpId =
-  | 'textNoShape'
-  | 'textPlain'
-  | 'textArchDown'
-  | 'textArchDownPour'
-  | 'textArchUp'
-  | 'textArchUpPour'
-  | 'textButton'
-  | 'textButtonPour'
-  | 'textCanDown'
-  | 'textCanUp'
-  | 'textCascadeDown'
-  | 'textCascadeUp'
-  | 'textChevron'
-  | 'textChevronInverted'
-  | 'textCircle'
-  | 'textCirclePour'
-  | 'textCurveDown'
-  | 'textCurveUp'
-  | 'textDeflate'
-  | 'textDeflateBottom'
-  | 'textDeflateInflate'
-  | 'textDeflateInflateDeflate'
-  | 'textDeflateTop'
-  | 'textDoubleWave1'
-  | 'textFadeDown'
-  | 'textFadeLeft'
-  | 'textFadeRight'
-  | 'textFadeUp'
-  | 'textInflate'
-  | 'textInflateBottom'
-  | 'textInflateTop'
-  | 'textRingInside'
-  | 'textRingOutside'
-  | 'textSlantDown'
-  | 'textSlantUp'
-  | 'textStop'
-  | 'textTriangle'
-  | 'textTriangleInverted'
-  | 'textWave1'
-  | 'textWave2'
-  | 'textWave4';
+export const PRESET_WARP_IDS = [
+  'textNoShape',
+  'textPlain',
+  'textArchDown',
+  'textArchDownPour',
+  'textArchUp',
+  'textArchUpPour',
+  'textButton',
+  'textButtonPour',
+  'textCanDown',
+  'textCanUp',
+  'textCascadeDown',
+  'textCascadeUp',
+  'textChevron',
+  'textChevronInverted',
+  'textCircle',
+  'textCirclePour',
+  'textCurveDown',
+  'textCurveUp',
+  'textDeflate',
+  'textDeflateBottom',
+  'textDeflateInflate',
+  'textDeflateInflateDeflate',
+  'textDeflateTop',
+  'textDoubleWave1',
+  'textFadeDown',
+  'textFadeLeft',
+  'textFadeRight',
+  'textFadeUp',
+  'textInflate',
+  'textInflateBottom',
+  'textInflateTop',
+  'textRingInside',
+  'textRingOutside',
+  'textSlantDown',
+  'textSlantUp',
+  'textStop',
+  'textTriangle',
+  'textTriangleInverted',
+  'textWave1',
+  'textWave2',
+  'textWave4',
+] as const;
+
+export type PresetWarpId = (typeof PRESET_WARP_IDS)[number];
 
 export interface PathData {
   commands: Array<
