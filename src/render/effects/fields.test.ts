@@ -16,6 +16,24 @@ describe('effect fields', () => {
     expect(Math.abs(distance[3 * 7 + 1]!)).toBeCloseTo(1);
   });
 
+  it('keeps exact distances when row and column lengths differ', () => {
+    const width = 3;
+    const height = 7;
+    const centerX = 1;
+    const centerY = 3;
+    const alpha = new Uint8Array(width * height);
+    alpha[centerY * width + centerX] = 255;
+
+    const distance = signedDistanceField(alpha, width, height);
+
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const expected = x === centerX && y === centerY ? -1 : Math.hypot(x - centerX, y - centerY);
+        expect(distance[y * width + x]).toBeCloseTo(expected);
+      }
+    }
+  });
+
   it('resolves the edge to sub-pixel accuracy from partial coverage', () => {
     // A vertical edge whose boundary column is 25% covered: the true edge sits a quarter of a
     // pixel into that column, so the field there should read +0.25, not a whole-pixel distance.
