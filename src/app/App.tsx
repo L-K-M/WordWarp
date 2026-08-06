@@ -372,6 +372,27 @@ export function App() {
 
   const previewDocument = animationTime > 0 ? evaluateDocumentAtTime(document, animationTime) : document;
 
+  const fitZoomToViewport = () => {
+    const viewport = window.document.querySelector('.canvas-viewport');
+    const wrap = window.document.querySelector<HTMLElement>('.artboard-wrap');
+    if (!(viewport instanceof HTMLElement) || !wrap) return;
+    // `offsetWidth` is a layout measurement and ignores the `transform: scale(zoom)` on the wrap,
+    // so it is the unzoomed size directly. Measuring the transformed rect and dividing by `zoom`
+    // instead would make this depend on the zoom being applied already -- and the wrap animates
+    // over 120ms, so a rect read mid-transition belongs to a zoom the element has not reached.
+    if (wrap.offsetWidth === 0 || wrap.offsetHeight === 0) return;
+    // `clientWidth` includes the viewport's own padding, which is not usable space.
+    const styles = window.getComputedStyle(viewport);
+    const availableWidth = viewport.clientWidth
+      - Number.parseFloat(styles.paddingLeft) - Number.parseFloat(styles.paddingRight);
+    const availableHeight = viewport.clientHeight
+      - Number.parseFloat(styles.paddingTop) - Number.parseFloat(styles.paddingBottom);
+    // The result is the absolute zoom that fits, not a factor to apply to the current one.
+    const scale = Math.min(availableWidth / wrap.offsetWidth, availableHeight / wrap.offsetHeight);
+    if (!Number.isFinite(scale) || scale <= 0) return;
+    setZoom(scale);
+  };
+
   if (restoreError) {
     return (
       <div className="loading-screen recovery-screen" role="alert">
@@ -552,7 +573,8 @@ export function App() {
           </div>
 
           <div className="zoom-strip">
-            <button type="button" onClick={() => setZoom(1)}>Fit</button>
+            <button type="button" onClick={fitZoomToViewport}>Fit</button>
+            <button type="button" onClick={() => setZoom(1)}>100%</button>
             <button type="button" onClick={() => setZoom(zoom - 0.1)} aria-label="Zoom out">-</button>
             <output>{Math.round(zoom * 100)}%</output>
             <button type="button" onClick={() => setZoom(zoom + 0.1)} aria-label="Zoom in">+</button>
