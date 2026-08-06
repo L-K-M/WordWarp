@@ -125,7 +125,7 @@ function drawTextElement(
   faceContext.setTransform(scale, 0, 0, scale, -renderBounds.x * scale, -renderBounds.y * scale);
   applyCanvasMatrix(faceContext, matrix);
   drawWarpedSurface(faceContext, source, layout.bounds, element.warp);
-  const hasEffects = element.effects.some((effect) => effect.enabled && effect.kind !== 'fill');
+  const hasEffects = element.effects.some((effect) => effectContributesPixels(effect) && effect.kind !== 'fill');
   const rendered = hasEffects
     ? renderEffectStack(face, element.effects, {
       scale,
@@ -156,6 +156,10 @@ function drawTextElement(
   }
 }
 
+export function effectContributesPixels(effect: Effect): boolean {
+  return effect.enabled && effect.opacity > 0;
+}
+
 export function effectStackReach(
   faceBounds: Bounds,
   effects: Effect[],
@@ -164,7 +168,7 @@ export function effectStackReach(
   let reach = 2;
   let postReach = 0;
   for (const effect of effects) {
-    if (!effect.enabled) continue;
+    if (!effectContributesPixels(effect)) continue;
     if (effect.kind === 'reflection') continue;
     if (effect.kind === 'post') {
       postReach += effectReach(effect);
@@ -176,7 +180,7 @@ export function effectStackReach(
     }
   }
   for (const effect of effects) {
-    if (!effect.enabled || effect.kind !== 'reflection') continue;
+    if (!effectContributesPixels(effect) || effect.kind !== 'reflection') continue;
     const reflectedHeight = effect.height * (faceBounds.height + reach * 2);
     reach = Math.max(reach, reach + Math.abs(effect.offset) + reflectedHeight + effect.blur);
   }
@@ -225,7 +229,7 @@ function mapBlendMode(mode: BlendMode): GlobalCompositeOperation {
 }
 
 export function effectReach(effect: Effect): number {
-  if (!effect.enabled) return 0;
+  if (!effectContributesPixels(effect)) return 0;
   if (effect.kind === 'stroke') return effect.width;
   if (effect.kind === 'bevel') return effect.style === 'outer' || effect.style === 'emboss' ? effect.size : 0;
   if (effect.kind === 'extrude') return effect.depth;
