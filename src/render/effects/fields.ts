@@ -53,6 +53,16 @@ export function signedDistanceField(alpha: Uint8Array, width: number, height: nu
   for (let index = 0; index < result.length; index += 1) {
     result[index] = inside[index] ? -distanceToOutside[index]! : distanceToInside[index]!;
   }
+
+  // The transform above works on a mask binarised at 128, so it can only ever report whole-pixel
+  // distances and every effect derived from it inherits that quantisation. Inside the anti-aliased
+  // band the coverage already tells us where the true edge falls, so use it: a pixel that is 25%
+  // covered has its edge a quarter of a pixel inside it. Fully covered and fully empty pixels keep
+  // their transform distance.
+  for (let index = 0; index < result.length; index += 1) {
+    const coverage = alpha[index]!;
+    if (coverage > 0 && coverage < 255) result[index] = 0.5 - coverage / 255;
+  }
   return result;
 }
 

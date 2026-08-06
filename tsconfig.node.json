@@ -10,5 +10,7 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["vite.config.ts", "playwright.config.ts", "tests/**/*.ts", "eslint.config.js"]
+  // Browser tests build fixture documents from the application's own model helpers, so src has to
+  // be visible here as well as to tsconfig.app.json.
+  "include": ["vite.config.ts", "playwright.config.ts", "tests/**/*.ts", "eslint.config.js", "src/**/*.ts"]
 }
