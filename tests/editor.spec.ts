@@ -129,6 +129,29 @@ test('starts mobile panels closed and exposes touch-sized controls', async ({ pa
   await expect(page.locator('.layers-strip')).toBeVisible();
 });
 
+test('ignores canvas shortcuts on a focused button while preserving undo and redo', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  await page.goto('./');
+
+  const layers = page.locator('.layer-list > button');
+  const addLayer = page.getByRole('button', { name: 'Add text layer' });
+  await expect(layers).toHaveCount(1);
+  await addLayer.click();
+  await expect(layers).toHaveCount(2);
+
+  const exportButton = page.getByRole('button', { name: /Export PNG/ });
+  await exportButton.focus();
+  await expect(exportButton).toBeFocused();
+  await page.keyboard.press('Delete');
+  await page.keyboard.press('Backspace');
+  await expect(layers).toHaveCount(2);
+
+  await page.keyboard.press('Control+Z');
+  await expect(layers).toHaveCount(1);
+  await page.keyboard.press('Control+Shift+Z');
+  await expect(layers).toHaveCount(2);
+});
+
 test('saves pending edits before opening a shared document', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium');
   await page.addInitScript(() => {

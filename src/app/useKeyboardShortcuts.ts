@@ -10,6 +10,24 @@ interface ShortcutActions {
   nudge: (dx: number, dy: number) => void;
 }
 
+const interactiveControlSelector = [
+  'a[href]',
+  'area[href]',
+  'audio[controls]',
+  'button',
+  'details',
+  'input',
+  'select',
+  'summary',
+  'textarea',
+  'video[controls]',
+].join(', ');
+
+function isInteractiveControl(target: EventTarget | null): target is HTMLElement {
+  return target instanceof HTMLElement &&
+    (target.isContentEditable || target.matches(interactiveControlSelector));
+}
+
 export function useKeyboardShortcuts(actions: ShortcutActions, enabled = true): void {
   const onKeyDown = useEffectEvent((event: KeyboardEvent) => {
     const target = event.target;
@@ -18,6 +36,7 @@ export function useKeyboardShortcuts(actions: ShortcutActions, enabled = true): 
       target instanceof HTMLTextAreaElement ||
       target instanceof HTMLSelectElement ||
       (target instanceof HTMLElement && target.isContentEditable);
+    const isInteractive = isInteractiveControl(target);
     const command = event.metaKey || event.ctrlKey;
 
     if (command && event.key.toLowerCase() === 'z') {
@@ -33,18 +52,17 @@ export function useKeyboardShortcuts(actions: ShortcutActions, enabled = true): 
       return;
     }
 
-    if (command && event.key.toLowerCase() === 'd') {
-      if (isEditing) return;
-      event.preventDefault();
-      actions.duplicate();
-      return;
-    }
-
-    if (isEditing) {
-      if (event.key === 'Escape' && target instanceof HTMLElement) {
+    if (isInteractive) {
+      if (isEditing && event.key === 'Escape' && target instanceof HTMLElement) {
         target.blur();
         actions.deselect();
       }
+      return;
+    }
+
+    if (command && event.key.toLowerCase() === 'd') {
+      event.preventDefault();
+      actions.duplicate();
       return;
     }
 
