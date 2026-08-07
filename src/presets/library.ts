@@ -317,6 +317,10 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('rusty-sign', 'Rusty Sign', 'texture', ['#8a4b1f', '#d9813a', '#3d1f08', '#c9a227'], [
     fill(ramp('mahogany')), texture('noise', 0.3), bevel(9, 'inner', 150), innerShadow('#2e1504', 6, 10, 0.6),
   ], warp('textDeflate', 0.4), ['rust', 'vintage']),
+
+  definePreset('slime-time', 'Slime Time', 'nineties', ['#c9ff4a', '#12a02e', '#083f16', '#eaffb0'], [
+    shadow('#0d3b0d', 8, 10, 0.5), fill(gradient(['#c9ff4a', '#4ddb33', '#12a02e', '#0a5c1a'], 100)), bevel(26, 'pillow', 210), innerGlow('#eaffb0', 12, 0.5), stroke(3, '#083f16'),
+  ], warp('textInflateBottom', 0.65, 0.6), ['slime', 'goo', 'nickelodeon']),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {
