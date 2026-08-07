@@ -44,9 +44,14 @@ describe('depth-mapped colour bands', () => {
 
   it.each(BANDED)('%s paints its bands opaquely over each other', (id, count) => {
     // A band has to replace what is under it rather than mix with it, or the ramp turns into a
-    // pile of accumulated colour. This is the inner-glow default rather than an override, which
-    // is exactly why it is worth asserting: nothing in the preset would show it changing.
-    for (const band of bands(id, count)) expect(band.blendMode).toBe('normal');
+    // pile of accumulated colour. That takes both halves: `normal` decides how the colours
+    // combine, and a full alpha decides whether the one underneath shows through at all. Both are
+    // defaults rather than overrides, which is exactly why they are worth asserting -- nothing in
+    // the preset would show either of them changing.
+    for (const band of bands(id, count)) {
+      expect(band.blendMode).toBe('normal');
+      expect(band.opacity).toBe(1);
+    }
   });
 
   it.each(BANDED)('%s keeps every band narrow enough to reach the middle of ordinary text', (id, count) => {
