@@ -280,6 +280,18 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('inflated-balloon', 'Inflated Balloon', 'dimensional', ['#ff4d6d', '#ffffff', '#a91039', '#ffb1c0'], [
     shadow('#8a0f31', 10, 16, 0.5), fill(gradient(['#ffffff', '#ff9aad', '#ff4d6d', '#a91039'])), bevel(30, 'pillow', 220), innerGlow('#ffffff', 14, 0.7),
   ], warp('textInflate', 0.94, 0.8), ['balloon', 'pillow']),
+  definePreset('topographic-taffy', 'Topographic Taffy', 'dimensional', ['#fff4cf', '#d9ed92', '#2d8b8c', '#e85d4f'], [
+    shadow('#0e1d2d', 10, 8, 0.52),
+    extrude(18, '#173d4a', 48),
+    fill(solid('#fff4cf')),
+    texture('grain', 0.12),
+    stroke(15, '#d9ed92', 'inside'),
+    stroke(12, '#65c6a6', 'inside'),
+    stroke(9, '#2d8b8c', 'inside'),
+    stroke(6, '#f2b84b', 'inside'),
+    stroke(3, '#e85d4f', 'inside'),
+    stroke(2, '#182936'),
+  ], warp('textCanUp', 0.36, 0.55), ['topographic', 'contour', 'map', 'strata', 'taffy', 'paper-cut', 'cartography']),
 
   definePreset('vaporwave-mall', 'Vaporwave Mall', 'synthwave', ['#ff71ce', '#01cdfe', '#fffb96', '#2d1b4e'], [
     glow('#ff71ce', 26, 0.6), fill(gradient(['#ff71ce', '#b967ff', '#01cdfe'], 100)), post('scanlines', { amount: 0.14, period: 4 }, 0.5), post('aberration', { amount: 2 }, 0.4),

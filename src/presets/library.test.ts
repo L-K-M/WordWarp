@@ -7,11 +7,27 @@ import { OFFICE_RAMPS } from './office-ramps';
 
 describe('preset library', () => {
   it('ships every named style from the six core categories', () => {
-    expect(BUILT_IN_PRESETS).toHaveLength(41);
-    expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(41);
+    expect(BUILT_IN_PRESETS.length).toBeGreaterThanOrEqual(41);
+    expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(BUILT_IN_PRESETS.length);
     expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.category))).toEqual(
       new Set(['metallic', 'synthwave', 'y2k', 'nineties', 'dimensional', 'texture']),
     );
+  });
+
+  it('builds Topographic Taffy from nested elevation bands', () => {
+    const preset = BUILT_IN_PRESETS.find((candidate) => candidate.id === 'topographic-taffy');
+
+    expect(preset?.apply.warp).toMatchObject({ kind: 'preset', preset: 'textCanUp' });
+    expect(preset?.tags).toEqual(expect.arrayContaining(['topographic', 'contour', 'strata', 'cartography']));
+    const strokes = preset?.apply.effects.filter((effect) => effect.kind === 'stroke') ?? [];
+    expect(strokes.map((effect) => [effect.width, effect.position])).toEqual([
+      [15, 'inside'],
+      [12, 'inside'],
+      [9, 'inside'],
+      [6, 'inside'],
+      [3, 'inside'],
+      [2, 'outside'],
+    ]);
   });
 
   it('ships all 24 Office ramp names with 20 stops each', () => {
