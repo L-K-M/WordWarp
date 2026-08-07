@@ -390,6 +390,8 @@ function renderTexture(
         // meant to keep going past the letterform, and an opaque black field around them would
         // composite as a visible box. So they paint white and carry the line in alpha instead --
         // the gaps between rings are genuinely empty, whatever the blend mode.
+        // The field is positive outside the glyph and negative inside, so negate it: `depth` is
+        // how far *in* a pixel sits, and a negative depth means it fell outside the letterform.
         const depth = -distance[index]!;
         const falloff = depth < 0 ? clamp01(1 + depth / outerReach) : 1;
         const line = topographyCoverage(depth, period, lineWidth) * falloff;
