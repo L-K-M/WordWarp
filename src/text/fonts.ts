@@ -80,11 +80,16 @@ export function ensureFontLoaded(family: string): Promise<boolean> {
 /**
  * Load every bundled font a document uses. Resolves `true` when at least one font became ready
  * during this call -- the signal the preview uses to schedule a re-render with the real face.
+ * System and unknown families are skipped entirely: there is no face to arrive for them, so they
+ * must not trip the re-render signal on every document change.
  */
 export async function ensureFontsForDocument(document: WordWarpDocument): Promise<boolean> {
   const families = new Set<string>();
   for (const element of document.elements) {
-    if (element.type === 'text') families.add(element.font.family);
+    if (element.type !== 'text') continue;
+    if (getFontCatalogEntry(element.font.family)?.source === 'bundled') {
+      families.add(element.font.family);
+    }
   }
   let loadedSomething = false;
   await Promise.all([...families].map(async (family) => {

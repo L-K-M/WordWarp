@@ -707,8 +707,11 @@ export function App() {
                         element.font.family = entry.family;
                         element.font.source = entry.source;
                         element.font.weight = entry.weight;
+                        // The catalogue's bundled display faces ship upright-only, and global
+                        // font-synthesis is off, so an inherited italic flag would render
+                        // nothing. Resetting it keeps the pick honest.
                         element.font.italic = false;
-                      });
+                      }, `font:${selectedText.id}`);
                     }}
                   />
                 </div>
