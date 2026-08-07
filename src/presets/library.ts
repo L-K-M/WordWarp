@@ -317,6 +317,13 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('rusty-sign', 'Rusty Sign', 'texture', ['#8a4b1f', '#d9813a', '#3d1f08', '#c9a227'], [
     fill(ramp('mahogany')), texture('noise', 0.3), bevel(9, 'inner', 150), innerShadow('#2e1504', 6, 10, 0.6),
   ], warp('textDeflate', 0.4), ['rust', 'vintage']),
+  definePreset('thermal-camera', 'Thermal Camera', 'texture', ['#fb9a06', '#cf4446', '#4a0c6b', '#fcffa4'], [
+    glow('#fb9a06', 14, 0.35),
+    fill(gradient(['#000004', '#1b0c41', '#4a0c6b', '#781c6d', '#a52c60', '#cf4446', '#ed6925', '#fb9a06', '#f7d13d', '#fcffa4'])),
+    bevel(4, 'inner', 80),
+    post('scanlines', { amount: 0.18, period: 5 }, 0.4),
+    post('grain', { amount: 0.1 }, 0.3),
+  ], none(), ['thermal', 'heatmap', 'inferno']),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {
