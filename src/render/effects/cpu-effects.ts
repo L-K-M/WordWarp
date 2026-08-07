@@ -329,6 +329,24 @@ function renderBevel(
   ];
 }
 
+/** Width of the coarsest mottle cell, in logical pixels, before the effect's `scale` is applied. */
+const MOTTLE_CELL = 16;
+/**
+ * Octave weights. Front-loaded, so the shape reads as blotches with detail rather than as fog.
+ *
+ * The frequency ratios are deliberately not powers of two: octaves that line up on a common grid
+ * reinforce each other in the same places every cell, and the pattern starts to look woven.
+ */
+const MOTTLE_OCTAVES = [
+  { frequency: 1, weight: 0.55 },
+  { frequency: 2.3, weight: 0.29 },
+  { frequency: 5.7, weight: 0.16 },
+];
+/** Contrast applied about the midpoint, so patches resolve into ink and no-ink rather than a haze. */
+const MOTTLE_CONTRAST = 2.1;
+/** Per-octave seed stride. Rounded, so every seed reaching `hashNoise` is a whole number. */
+const MOTTLE_SEED_STRIDE = 977;
+
 function renderTexture(
   effect: TextureOverlayEffect,
   faceAlpha: Uint8Array,
@@ -349,11 +367,21 @@ function renderTexture(
       const coverage = effect.clipToShape ? faceAlpha[index]! / 255 : 1;
       const globalX = x + options.originX;
       const globalY = y + options.originY;
-      let value = hashNoise(globalX, globalY, seed);
-      if (pattern === 'weave') value = ((Math.floor(globalX / 3) + Math.floor(globalY / 3)) & 1) === 0 ? 0.8 : 0.25;
-      if (pattern === 'halftone') value = (modulo(globalX, 8) - 4) ** 2 + (modulo(globalY, 8) - 4) ** 2 < 8 ? 0.9 : 0.1;
-      if (pattern === 'grain') value = 0.35 + value * 0.3;
-      if (pattern === 'mottle') value = mottleValue(globalX, globalY, seed, mottleCell);
+      // Branch rather than compute-then-overwrite: `mottle` already spends twelve hashes a pixel
+      // building its lattice, and a thirteenth thrown away on top of it is the last thing this
+      // loop needs.
+      let value: number;
+      if (pattern === 'weave') {
+        value = ((Math.floor(globalX / 3) + Math.floor(globalY / 3)) & 1) === 0 ? 0.8 : 0.25;
+      } else if (pattern === 'halftone') {
+        value = (modulo(globalX, 8) - 4) ** 2 + (modulo(globalY, 8) - 4) ** 2 < 8 ? 0.9 : 0.1;
+      } else if (pattern === 'grain') {
+        value = 0.35 + hashNoise(globalX, globalY, seed) * 0.3;
+      } else if (pattern === 'mottle') {
+        value = mottleValue(globalX, globalY, seed, mottleCell);
+      } else {
+        value = hashNoise(globalX, globalY, seed);
+      }
       const offset = index * 4;
       const channel = Math.round(value * 255);
       pixels[offset] = channel;
@@ -364,17 +392,6 @@ function renderTexture(
   }
   return imageSurface(pixels, width, height);
 }
-
-/** Width of the coarsest mottle cell, in logical pixels, before the effect's `scale` is applied. */
-const MOTTLE_CELL = 16;
-/** Octave weights. Front-loaded, so the shape reads as blotches with detail rather than as fog. */
-const MOTTLE_OCTAVES = [
-  { frequency: 1, weight: 0.55 },
-  { frequency: 2.3, weight: 0.29 },
-  { frequency: 5.7, weight: 0.16 },
-];
-/** Contrast applied about the midpoint, so patches resolve into ink and no-ink rather than a haze. */
-const MOTTLE_CONTRAST = 2.1;
 
 /**
  * Smooth value noise on a lattice `cell` pixels wide, interpolated with a smoothstep.
@@ -413,8 +430,8 @@ function latticeNoise(x: number, y: number, seed: number, cell: number): number 
 export function mottleValue(x: number, y: number, seed: number, cell: number): number {
   let total = 0;
   for (const octave of MOTTLE_OCTAVES) {
-    total += latticeNoise(x * octave.frequency, y * octave.frequency, seed + octave.frequency * 977, cell)
-      * octave.weight;
+    const octaveSeed = seed + Math.round(octave.frequency * MOTTLE_SEED_STRIDE);
+    total += latticeNoise(x * octave.frequency, y * octave.frequency, octaveSeed, cell) * octave.weight;
   }
   return clamp01((total - 0.5) * MOTTLE_CONTRAST + 0.5);
 }

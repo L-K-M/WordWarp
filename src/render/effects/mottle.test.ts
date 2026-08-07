@@ -19,9 +19,16 @@ function roughness(step: number, cell: number): number {
 }
 
 describe('mottle value noise', () => {
-  it('is deterministic for the same coordinates and seed', () => {
-    expect(mottleValue(17.5, 42.25, SEED, CELL)).toBe(mottleValue(17.5, 42.25, SEED, CELL));
-    expect(mottleValue(17.5, 42.25, SEED + 1, CELL)).not.toBe(mottleValue(17.5, 42.25, SEED, CELL));
+  it('is deterministic for the same coordinates and seed, whatever came before', () => {
+    const first = mottleValue(17.5, 42.25, SEED, CELL);
+    // Sample elsewhere in between. A repeat call on its own only proves the function is not
+    // random; interleaving other coordinates, seeds and cells also rules out any state that
+    // carries between calls -- a wrongly keyed cache would fail here and pass a bare repeat.
+    for (const other of [[0, 0], [17.5, 42.5], [900, -30]] as const) {
+      mottleValue(other[0], other[1], SEED + 5, CELL * 2);
+    }
+    expect(mottleValue(17.5, 42.25, SEED, CELL)).toBe(first);
+    expect(mottleValue(17.5, 42.25, SEED + 1, CELL)).not.toBe(first);
   });
 
   it('stays inside the unit range', () => {
