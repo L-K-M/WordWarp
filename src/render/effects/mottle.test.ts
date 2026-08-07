@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { mottleValue } from './cpu-effects';
+import { createMottleSampler, mottleValue } from './cpu-effects';
 
 const SEED = 4242;
 const CELL = 16;
@@ -52,6 +52,28 @@ describe('mottle value noise', () => {
   it('makes features grow with the cell, so a coarser scale is genuinely coarser', () => {
     // At a fixed step, a larger cell means less has changed between the two samples.
     expect(roughness(8, 64)).toBeLessThan(roughness(8, 16));
+  });
+
+  it('gives a scanning sampler exactly what a one-off sample would give', () => {
+    // The sampler holds the lattice corners between calls so a row scan does not re-hash them.
+    // That cache is the only reason the pattern is affordable, and it is also the only place this
+    // could silently diverge -- so pin it against the uncached path, in scan order.
+    const sampler = createMottleSampler(SEED, CELL);
+    for (let y = 0; y < 40; y += 1) {
+      for (let x = 0; x < 40; x += 1) {
+        expect(sampler(x, y), `${x},${y}`).toBe(mottleValue(x, y, SEED, CELL));
+      }
+    }
+  });
+
+  it('does not depend on the order it is sampled in', () => {
+    // A cache keyed on anything but position would show up here: same sampler, jumbled order.
+    const points = [[3, 3], [140, 9], [4, 3], [-20, 55], [3, 4], [140, 9]] as const;
+    const scanning = createMottleSampler(SEED, CELL);
+    const jumbled = createMottleSampler(SEED, CELL);
+    const expected = points.map(([x, y]) => mottleValue(x, y, SEED, CELL));
+    expect(points.map(([x, y]) => scanning(x, y))).toEqual(expected);
+    expect([...points].reverse().map(([x, y]) => jumbled(x, y))).toEqual([...expected].reverse());
   });
 
   it('averages near the midpoint, so a symmetric blend leaves the tone alone', () => {
