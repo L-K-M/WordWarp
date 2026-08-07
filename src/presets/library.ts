@@ -317,6 +317,12 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('rusty-sign', 'Rusty Sign', 'texture', ['#8a4b1f', '#d9813a', '#3d1f08', '#c9a227'], [
     fill(ramp('mahogany')), texture('noise', 0.3), bevel(9, 'inner', 150), innerShadow('#2e1504', 6, 10, 0.6),
   ], warp('textDeflate', 0.4), ['rust', 'vintage']),
+
+  definePreset('terminal', 'Terminal', 'texture', ['#46f97f', '#0b3d1a', '#d6ffe0', '#041b0c'], [
+    glow('#33ff66', 10, 0.5), fill(solid('#46f97f')), innerGlow('#d6ffe0', 3, 0.3), post('scanlines', { amount: 0.3, period: 3 }, 0.6),
+  ], none(), ['crt', 'phosphor', 'matrix', 'animated'], [
+    { id: 'terminal-roll', kind: 'scanlineRoll', enabled: true, duration: 4, params: {}, seed: 41 },
+  ]),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {
