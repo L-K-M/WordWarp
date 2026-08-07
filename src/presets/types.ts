@@ -1,6 +1,14 @@
 import type { AnimationTrack, Effect, FontSpec, TextElement, WarpSpec } from '../model/types';
 
-export type PresetCategory = 'metallic' | 'synthwave' | 'y2k' | 'nineties' | 'dimensional' | 'texture' | 'user';
+export type PresetCategory =
+  | 'metallic'
+  | 'synthwave'
+  | 'y2k'
+  | 'nineties'
+  | 'dimensional'
+  | 'texture'
+  | 'cosmic'
+  | 'user';
 
 export interface Preset {
   id: string;

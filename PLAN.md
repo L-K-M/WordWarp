@@ -296,6 +296,19 @@ Misregistration (2–3 flat inks offset 2–4px, multiply), Scanlines (period, o
 CRT Bloom, Film Grain, Distressed (mask by noise threshold), Chromatic Aberration (radial RGB
 offset).
 
+### 4.7 Cosmic / space
+
+| # | Style | Palette | Stack |
+|---|---|---|---|
+| X1 | **Aurora** | `#7dffd6 #39ff88 #1b6a4d #6a4dff` | Glow → green→violet gradient → satin sheen → inner glow → wave warp |
+| X2 | **Nebula** | `#ff9ec7 #c86bff #5a1fd6 #1a0533` | Radial gradient → grain dust → glow → inner glow. *Animated: hue cycle.* |
+| X3 | **Comet Trail** | `#ffffff #ffd166 #6a8aff` | Perspective extrude (180°) → glow head → white stroke → slant |
+| X4 | **Solar Flare** | `#fff3a0 #ffb84d #ff6a1a #c62800` | Intense glow → pillow bevel → inner glow → chromatic aberration → inflate |
+| X5 | **Galaxy Spiral** | `#ff6ec7 #a84dff #3a2fd6 #6ec7ff` | Conic rainbow spiral → satin → grain → thin stroke → circle warp. *Animated: specular sweep.* |
+| X6 | **Black Hole** | `#ffd166 #a84dff #000000` | Double glow → near-black body → gold stroke → aberration → scanlines → ring-inside warp |
+| X7 | **Red Giant** | `#ffc9a0 #ff7a4d #d6153a #6a0018` | Glow → chisel bevel → inner glow → grain → deflate warp |
+| X8 | **Starfield** | `#e8ecff #ffd166 #0a0a1f` | Light fill → halftone star dots → grain → white stroke → wave warp. *Animated: sparkle.* |
+
 ---
 
 ## 5. Core data model
@@ -1154,7 +1167,7 @@ content or transform:
 export interface Preset {
   id: string;
   name: string;
-  category: 'metallic' | 'synthwave' | 'y2k' | 'nineties' | 'dimensional' | 'texture' | 'user';
+  category: 'metallic' | 'synthwave' | 'y2k' | 'nineties' | 'dimensional' | 'texture' | 'cosmic' | 'user';
   tags: string[];
   author?: string;
   thumbnail?: string;           // pre-rendered WebP for the built-ins

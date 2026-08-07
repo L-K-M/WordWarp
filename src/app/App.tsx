@@ -30,6 +30,7 @@ const presetCategories: Array<{ id: PresetCategory | 'all'; label: string }> = [
   { id: 'nineties', label: '90s' },
   { id: 'dimensional', label: '3D' },
   { id: 'texture', label: 'FX' },
+  { id: 'cosmic', label: 'Cosmic' },
 ];
 
 type ExportFormat = 'png' | 'apng' | 'gif';
