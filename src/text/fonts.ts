@@ -52,6 +52,15 @@ export function getFontCatalogEntry(family: string): FontCatalogEntry | undefine
   return FONT_CATALOG.find((entry) => entry.family === family);
 }
 
+/**
+ * CSS font-family strings for style attributes. Single-word names (and generics) go bare;
+ * anything else is quoted with backslashes and quotes escaped, since a document's family can
+ * arrive over a share link.
+ */
+export function quoteFontFamily(family: string): string {
+  return /^[a-z-]+$/i.test(family) ? family : `"${family.replaceAll(/[\\"]/g, '\\$&')}"`;
+}
+
 /** Tracks every family that finished loading, so callers can tell a fresh load from a cache hit. */
 const ready = new Set<string>();
 const pending = new Map<string, Promise<boolean>>();
@@ -118,8 +127,9 @@ async function loadBundledFont(entry: FontCatalogEntry): Promise<boolean> {
     });
     const loaded = await face.load();
     set.add(loaded);
+    // `ready` short-circuits every later call before `pending` is consulted, so the resolved
+    // promise can stay cached; only failures (below) need eviction to allow a retry.
     ready.add(entry.family);
-    pending.delete(entry.family);
     return true;
   } catch (error) {
     // Drop the rejected promise so a transient failure (offline first visit, slow connection)

@@ -203,6 +203,12 @@ button:disabled {
 
 /* Jellybean chips (preset categories) */
 .bean {
+  /* Defaults keep a bean that lost its flavour class renderable, mirroring .orb. */
+  --bean-hi: #d9baff;
+  --bean: #a06bff;
+  --bean-lo: #7440d6;
+  --bean-edge: #4a21a0;
+
   flex: 0 0 auto;
   min-height: 32px;
   padding: 0 16px;

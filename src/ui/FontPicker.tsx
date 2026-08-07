@@ -5,6 +5,8 @@ import {
   ensureFontLoaded,
   FONT_TAG_ORDER,
   getFontCatalogEntry,
+  isFontReady,
+  quoteFontFamily,
   type FontCatalogEntry,
 } from '../text/fonts';
 
@@ -38,6 +40,7 @@ export function FontPicker({ value, onPick }: FontPickerProps) {
 
   useEffect(() => {
     if (!open) return;
+    if (DOCUMENT_FONTS.every((entry) => isFontReady(entry.family))) return;
     let cancelled = false;
     void Promise.all(DOCUMENT_FONTS.map((entry) => ensureFontLoaded(entry.family))).then(() => {
       if (!cancelled) setFacesReady((count) => count + 1);
@@ -144,7 +147,7 @@ export function FontPicker({ value, onPick }: FontPickerProps) {
         <span
           id={`${baseId}-value`}
           className="font-picker-current"
-          style={{ fontFamily: quoteFamily(value), fontWeight: known?.weight ?? 400 }}
+          style={{ fontFamily: quoteFontFamily(value), fontWeight: known?.weight ?? 400 }}
         >
           {value}
         </span>
@@ -173,7 +176,7 @@ export function FontPicker({ value, onPick }: FontPickerProps) {
                       role="option"
                       aria-selected={entry.family === value}
                       className={`font-picker-option ${entry.family === activeFamily ? 'active' : ''}`}
-                      style={{ fontFamily: quoteFamily(entry.family), fontWeight: entry.weight }}
+                      style={{ fontFamily: quoteFontFamily(entry.family), fontWeight: entry.weight }}
                       onPointerEnter={() => setActiveFamily(entry.family)}
                       onClick={() => pick(entry.family)}
                     >
@@ -192,8 +195,4 @@ export function FontPicker({ value, onPick }: FontPickerProps) {
 
 function slugify(family: string): string {
   return family.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
-}
-
-function quoteFamily(family: string): string {
-  return /^[a-z-]+$/i.test(family) ? family : `"${family.replaceAll('"', '')}"`;
 }

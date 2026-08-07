@@ -6,6 +6,7 @@ import {
   FONT_CATALOG,
   FONT_TAG_ORDER,
   getFontCatalogEntry,
+  quoteFontFamily,
 } from './fonts';
 
 describe('font catalog', () => {
@@ -48,5 +49,22 @@ describe('font catalog', () => {
     // Current state: every bundled display face ships single-weight 400. Not a design rule --
     // revisit when a variable display face joins the catalogue.
     expect(bundled.every((entry) => entry.weight === 400)).toBe(true);
+  });
+});
+
+describe('quoteFontFamily', () => {
+  it('leaves single-word and generic families bare', () => {
+    expect(quoteFontFamily('Arial')).toBe('Arial');
+    expect(quoteFontFamily('sans-serif')).toBe('sans-serif');
+  });
+
+  it('quotes multi-word families', () => {
+    expect(quoteFontFamily('Arial Black')).toBe('"Arial Black"');
+    expect(quoteFontFamily('Press Start 2P')).toBe('"Press Start 2P"');
+  });
+
+  it('escapes quotes and backslashes inside quoted names', () => {
+    expect(quoteFontFamily('Evil";x')).toBe('"Evil\\";x"');
+    expect(quoteFontFamily('back\\slash')).toBe('"back\\\\slash"');
   });
 });
