@@ -444,6 +444,42 @@ function applyPostEffect(
         transformed.set(source.subarray(sourceOffset, sourceOffset + 4), destination);
       }
     }
+  } else if (effect.type === 'pixelate') {
+    // Resolution is part of the artwork, not of the screen showing it, so the block follows the
+    // render scale -- the same reasoning a bevel size does. Left in device pixels, a 4x export
+    // would quarter the block relative to the letterform and the sprite would dissolve.
+    const block = Math.max(1, Math.round(numericParam(effect, 'size', 8) * options.scale));
+    const crisp = booleanParam(effect, 'crisp', true);
+    // Blocks are indexed globally, so a tiled export lands them on the same grid in every tile.
+    // A core pixel's whole block is inside its tile because `effectReach` reserves a block of
+    // halo for this; the partial blocks along a tile's rendered edge are all in the halo and get
+    // discarded, so no seam survives into the output.
+    const firstBlockX = Math.floor(options.originX / block);
+    const lastBlockX = Math.floor((options.originX + width - 1) / block);
+    const firstBlockY = Math.floor(options.originY / block);
+    const lastBlockY = Math.floor((options.originY + height - 1) / block);
+    for (let blockY = firstBlockY; blockY <= lastBlockY; blockY += 1) {
+      const top = Math.max(0, blockY * block - options.originY);
+      const bottom = Math.min(height, (blockY + 1) * block - options.originY);
+      for (let blockX = firstBlockX; blockX <= lastBlockX; blockX += 1) {
+        const left = Math.max(0, blockX * block - options.originX);
+        const right = Math.min(width, (blockX + 1) * block - options.originX);
+        const mean = averageBlock(source, width, left, top, right, bottom);
+        if (!mean) continue;
+        // Coverage decides the silhouette: a genuine low-resolution sprite has no partly filled
+        // pixels, so `crisp` rounds each block in or out instead of leaving a soft edge.
+        const outAlpha = crisp ? (mean[3] >= 128 ? 255 : 0) : Math.round(mean[3]);
+        for (let y = top; y < bottom; y += 1) {
+          for (let x = left; x < right; x += 1) {
+            const offset = (y * width + x) * 4;
+            transformed[offset] = mean[0];
+            transformed[offset + 1] = mean[1];
+            transformed[offset + 2] = mean[2];
+            transformed[offset + 3] = outAlpha;
+          }
+        }
+      }
+    }
   } else if (effect.type === 'halftone') {
     const frequency = Math.max(3, Math.round(numericParam(effect, 'frequency', 8)));
     for (let y = 0; y < height; y += 1) {
@@ -706,6 +742,52 @@ function alphaBounds(alpha: Uint8Array, width: number, height: number): { x: num
 function numericParam(effect: PostEffect, name: string, fallback: number): number {
   const value = effect.params[name];
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function booleanParam(effect: PostEffect, name: string, fallback: boolean): boolean {
+  const value = effect.params[name];
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+/**
+ * Mean colour of a rectangle of `source`, as `[r, g, b, meanAlpha]`, or null for an empty rect.
+ *
+ * The colour is averaged in premultiplied space -- each channel weighted by its own pixel's alpha,
+ * then divided by the total alpha rather than the pixel count. Straight RGBA averaging would let
+ * the colour of fully transparent pixels into the result, and a transparent pixel's colour is
+ * arbitrary: it is whatever was last written under a zero alpha. Every block straddling the glyph
+ * edge would then drift toward that value, which is the classic dark or white halo around a
+ * naively downsampled sprite.
+ *
+ * Alpha itself comes back as a plain mean over the rectangle, because coverage is what it is.
+ */
+export function averageBlock(
+  source: Uint8ClampedArray,
+  width: number,
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
+): [number, number, number, number] | null {
+  let red = 0;
+  let green = 0;
+  let blue = 0;
+  let alpha = 0;
+  let count = 0;
+  for (let y = top; y < bottom; y += 1) {
+    for (let x = left; x < right; x += 1) {
+      const offset = (y * width + x) * 4;
+      const pixelAlpha = source[offset + 3]!;
+      red += source[offset]! * pixelAlpha;
+      green += source[offset + 1]! * pixelAlpha;
+      blue += source[offset + 2]! * pixelAlpha;
+      alpha += pixelAlpha;
+      count += 1;
+    }
+  }
+  if (count === 0) return null;
+  if (alpha === 0) return [0, 0, 0, 0];
+  return [Math.round(red / alpha), Math.round(green / alpha), Math.round(blue / alpha), alpha / count];
 }
 
 function sampleChannel(

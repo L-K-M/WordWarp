@@ -290,6 +290,12 @@ export function effectReach(effect: Effect): number {
   if (effect.kind === 'reflection') return effect.offset + effect.blur;
   if (effect.kind === 'satin') return effect.distance + effect.size;
   if (effect.kind === 'post' && effect.type === 'glitch') return 16;
+  // A block straddles up to one block width of neighbouring pixels, so a tiled export needs that
+  // much halo for every core pixel's block to be complete inside its own tile.
+  if (effect.kind === 'post' && effect.type === 'pixelate') {
+    const size = effect.params.size;
+    return typeof size === 'number' && Number.isFinite(size) ? Math.max(1, size) : 8;
+  }
   if (effect.kind === 'post' && effect.type === 'aberration') {
     const amount = effect.params.amount;
     return typeof amount === 'number' && Number.isFinite(amount) ? Math.max(1, amount) : 3;
