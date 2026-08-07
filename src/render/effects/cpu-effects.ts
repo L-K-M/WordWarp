@@ -448,7 +448,7 @@ function applyPostEffect(
     // Resolution is part of the artwork, not of the screen showing it, so the block follows the
     // render scale -- the same reasoning a bevel size does. Left in device pixels, a 4x export
     // would quarter the block relative to the letterform and the sprite would dissolve.
-    const block = Math.max(1, Math.round(numericParam(effect, 'size', 8) * options.scale));
+    const block = Math.max(1, Math.round(numericParam(effect, 'size', PIXELATE_DEFAULT_SIZE) * options.scale));
     pixelateBlocks(source, transformed, width, height, {
       originX: options.originX,
       originY: options.originY,
@@ -723,6 +723,15 @@ function booleanParam(effect: PostEffect, name: string, fallback: boolean): bool
   const value = effect.params[name];
   return typeof value === 'boolean' ? value : fallback;
 }
+
+/**
+ * Block edge, in logical pixels, for a pixelate pass that does not state one.
+ *
+ * Shared with `effectReach`: the halo it reserves has to be computed from the same number the
+ * renderer will actually use, or a document that omits `size` gets a tile overlap sized for a
+ * different grid than the one it draws.
+ */
+export const PIXELATE_DEFAULT_SIZE = 8;
 
 interface PixelateOptions {
   /** Where this surface sits inside the element's whole effect layer, in device pixels. */

@@ -3,7 +3,7 @@ import { layoutText, type LaidOutText, type TextContext } from '../../text/layou
 import type { BlendMode, Effect, FillEffect, TextElement, WordWarpDocument } from '../../model/types';
 import { expandBounds, intersectBounds, roundOutBounds, type Bounds } from '../../geometry/bounds';
 import type { RenderResult, RenderViewport } from '../contracts';
-import { renderEffectStack } from '../effects/cpu-effects';
+import { PIXELATE_DEFAULT_SIZE, renderEffectStack } from '../effects/cpu-effects';
 import { createCanvasSurface, get2dContext } from '../surface';
 import { createPaintStyle } from './paint';
 import { drawWarpedSurface, getWarpedBounds } from './warp';
@@ -300,9 +300,13 @@ export function effectReach(effect: Effect): number {
   if (effect.kind === 'post' && effect.type === 'glitch') return 16;
   // A block straddles up to one block width of neighbouring pixels, so a tiled export needs that
   // much halo for every core pixel's block to be complete inside its own tile.
+  //
+  // The floor at 1 is what makes that hold once the scale is applied: the halo is
+  // `ceil(reach * scale)` and the block is `max(1, round(size * scale))`, and for size >= 1 the
+  // former is never the smaller of the two. A size allowed below 1 would break that.
   if (effect.kind === 'post' && effect.type === 'pixelate') {
     const size = effect.params.size;
-    return typeof size === 'number' && Number.isFinite(size) ? Math.max(1, size) : 8;
+    return typeof size === 'number' && Number.isFinite(size) ? Math.max(1, size) : PIXELATE_DEFAULT_SIZE;
   }
   if (effect.kind === 'post' && effect.type === 'aberration') {
     const amount = effect.params.amount;

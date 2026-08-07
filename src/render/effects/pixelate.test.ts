@@ -120,6 +120,22 @@ describe('pixelate block pass', () => {
     }
   });
 
+  it('keeps a block whose coverage lands exactly on the threshold', () => {
+    // Eight pixels at 255 and eight at 1 average to exactly 128, and the rule is `>= 128`, so the
+    // block is kept. Flipping it to `>` would drop it. (An exactly half-covered block averages
+    // 127.5 and is dropped -- the boundary sits between the two, which is why it takes a
+    // contrived alpha to land on it.)
+    const data = surface(4, 4, (_x, y) => [70, 140, 210, y < 2 ? 255 : 1]);
+    const out = run(data, 4, 4, { block: 4 });
+    expect(at(out, 4, 0, 0)).toEqual([70, 140, 210, 255]);
+  });
+
+  it('zeroes a block that has nothing in it at all', () => {
+    const data = surface(4, 4, () => [90, 90, 90, 0]);
+    const out = run(data, 4, 4, { block: 4 });
+    expect(at(out, 4, 2, 2)).toEqual([0, 0, 0, 0]);
+  });
+
   it('covers every pixel of a surface that is not a whole number of blocks', () => {
     const data = surface(7, 3, () => [10, 20, 30, 200]);
     const out = run(data, 7, 3, { block: 4, crisp: false });
