@@ -3,6 +3,7 @@ import { createId } from '../lib/id';
 import type {
   AnimationTrack,
   BevelEffect,
+  BlendMode,
   DropShadowEffect,
   Effect,
   ExtrudeEffect,
@@ -134,6 +135,29 @@ function texture(
   const effect = createEffect('textureOverlay');
   effect.source = { type: 'procedural', pattern };
   effect.opacity = opacity;
+  return effect;
+}
+
+/**
+ * Contour-line overlay driven by the glyph's own distance field.
+ *
+ * The pattern paints white lines and leaves the gaps empty, so the blend mode decides what a ring
+ * does to whatever is under it: `screen` and `linear-dodge` light them up, while `difference`
+ * inverts the ground, which is how the same pattern draws dark rings on a pale fill. `scale` sets
+ * ring spacing and is what the inspector's texture slider already edits. Unclipping lets the rings
+ * carry on outside the letterform, which is the difference between a hatched glyph and a contour
+ * map of a word.
+ */
+function topography(
+  scale: number,
+  blendMode: BlendMode,
+  opacity: number,
+  clipToShape = true,
+): TextureOverlayEffect {
+  const effect = texture('topography', opacity);
+  effect.scale = scale;
+  effect.blendMode = blendMode;
+  effect.clipToShape = clipToShape;
   return effect;
 }
 
@@ -317,6 +341,27 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('rusty-sign', 'Rusty Sign', 'texture', ['#8a4b1f', '#d9813a', '#3d1f08', '#c9a227'], [
     fill(ramp('mahogany')), texture('noise', 0.3), bevel(9, 'inner', 150), innerShadow('#2e1504', 6, 10, 0.6),
   ], warp('textDeflate', 0.4), ['rust', 'vintage']),
+
+  definePreset('topo-survey', 'Topo Survey', 'texture', ['#c8f5b0', '#1d5c46', '#0b241d', '#e9f7cf'], [
+    // Unclipped, so the rings keep going past the letters and the word reads as an island. The
+    // wide soft shadow is what the outer rings sit on: contours are drawn in white, so without a
+    // dark ground behind them the ring field would disappear on a pale page.
+    shadow('#04140f', 0, 34, 0.8), fill(gradient(['#1d5c46', '#123a2f', '#0b241d'], 168)),
+    topography(1, 'screen', 0.85, false), innerGlow('#9de8a8', 14, 0.28), stroke(2, '#c8f5b0'),
+  ], none(), ['topographic', 'map', 'contour', 'cartography']),
+  definePreset('sonar-ping', 'Sonar Ping', 'texture', ['#5ffbf1', '#0a3a5c', '#03121f', '#b6fff9'], [
+    shadow('#01080f', 0, 30, 0.8), glow('#12d6ff', 16, 0.5),
+    fill(gradient(['#0d4a6e', '#062a44', '#03121f'], 168)),
+    topography(0.75, 'linear-dodge', 0.8, false), stroke(1.5, '#5ffbf1'),
+  ], none(), ['topographic', 'sonar', 'radar', 'depth']),
+  definePreset('strata', 'Strata', 'texture', ['#f0b978', '#a8511f', '#5a2410', '#1f0c04'], [
+    // Clipped instead, and tight: the rings stop being a map and start reading as cut layers, the
+    // way a laser-cut terrain model steps down. Contours are white, so the fill has to stay dark
+    // enough for them to register -- a pale sandstone would swallow every line.
+    shadow('#150803', 12, 14, 0.65), fill(gradient(['#f0b978', '#a8511f', '#3a1608'], 168)),
+    bevel(13, 'inner', 200), topography(0.9, 'screen', 0.7), innerShadow('#251004', 5, 9, 0.55),
+    stroke(2, '#1f0c04'),
+  ], none(), ['topographic', 'strata', 'layered', 'terrain']),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {

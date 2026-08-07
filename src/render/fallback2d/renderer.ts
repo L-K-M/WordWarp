@@ -3,7 +3,7 @@ import { layoutText, type LaidOutText, type TextContext } from '../../text/layou
 import type { BlendMode, Effect, FillEffect, TextElement, WordWarpDocument } from '../../model/types';
 import { expandBounds, intersectBounds, roundOutBounds, type Bounds } from '../../geometry/bounds';
 import type { RenderResult, RenderViewport } from '../contracts';
-import { renderEffectStack } from '../effects/cpu-effects';
+import { renderEffectStack, textureOverlayReach } from '../effects/cpu-effects';
 import { createCanvasSurface, get2dContext } from '../surface';
 import { createPaintStyle } from './paint';
 import { drawWarpedSurface, getWarpedBounds } from './warp';
@@ -289,6 +289,7 @@ export function effectReach(effect: Effect): number {
   if (effect.kind === 'longShadow') return effect.length === 'toEdge' ? 0 : effect.length;
   if (effect.kind === 'reflection') return effect.offset + effect.blur;
   if (effect.kind === 'satin') return effect.distance + effect.size;
+  if (effect.kind === 'textureOverlay') return textureOverlayReach(effect);
   if (effect.kind === 'post' && effect.type === 'glitch') return 16;
   if (effect.kind === 'post' && effect.type === 'aberration') {
     const amount = effect.params.amount;

@@ -246,7 +246,7 @@ function renderFaceEffect(
   if (effect.kind === 'bevel') return renderBevel(effect, faceAlpha, getDistance(), width, height, options);
 
   if (effect.kind === 'textureOverlay') {
-    return [renderTexture(effect, faceAlpha, width, height, options)];
+    return [renderTexture(effect, faceAlpha, getDistance, width, height, options)];
   }
 
   return [];
@@ -332,12 +332,23 @@ function renderBevel(
 function renderTexture(
   effect: TextureOverlayEffect,
   faceAlpha: Uint8Array,
+  getDistance: () => Float32Array,
   width: number,
   height: number,
   options: EffectOptions,
 ): CanvasSurface {
   const pixels = new Uint8ClampedArray(width * height * 4);
   const pattern = effect.source.type === 'procedural' ? effect.source.pattern : 'noise';
+  // Every other procedural pattern is a function of the pixel grid alone. Topography is the first
+  // that is a function of the *shape*, so it needs the distance field the bevel and stroke already
+  // build -- read lazily so the other patterns never pay for it.
+  const distance = pattern === 'topography' ? getDistance() : null;
+  // Contour spacing and line weight both follow the render scale, because they describe the
+  // artwork rather than the display: an export has to put the same number of rings inside the same
+  // letter. `scale` is the effect's own multiplier and is what the inspector slider already edits.
+  const period = Math.max(2, TOPOGRAPHY_PERIOD * effect.scale * options.scale);
+  const lineWidth = Math.max(1, TOPOGRAPHY_LINE_WIDTH * options.scale);
+  const outerReach = period * TOPOGRAPHY_OUTER_RINGS;
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const index = y * width + x;
@@ -349,6 +360,21 @@ function renderTexture(
       if (pattern === 'halftone') value = (modulo(globalX, 8) - 4) ** 2 + (modulo(globalY, 8) - 4) ** 2 < 8 ? 0.9 : 0.1;
       if (pattern === 'grain') value = 0.35 + value * 0.3;
       const offset = index * 4;
+      if (distance) {
+        // The other patterns fill their whole rectangle with an opaque grey and rely on
+        // `clipToShape` to hide the parts that miss the glyph. Contours cannot: unclipped they are
+        // meant to keep going past the letterform, and an opaque black field around them would
+        // composite as a visible box. So they paint white and carry the line in alpha instead --
+        // the gaps between rings are genuinely empty, whatever the blend mode.
+        const depth = -distance[index]!;
+        const falloff = depth < 0 ? clamp01(1 + depth / outerReach) : 1;
+        const line = topographyCoverage(depth, period, lineWidth) * falloff;
+        pixels[offset] = 255;
+        pixels[offset + 1] = 255;
+        pixels[offset + 2] = 255;
+        pixels[offset + 3] = Math.round(255 * coverage * line * effect.opacity);
+        continue;
+      }
       const channel = Math.round(value * 255);
       pixels[offset] = channel;
       pixels[offset + 1] = channel;
@@ -357,6 +383,49 @@ function renderTexture(
     }
   }
   return imageSurface(pixels, width, height);
+}
+
+/** Spacing between contour rings, in logical pixels, before the effect's own `scale` is applied. */
+const TOPOGRAPHY_PERIOD = 4;
+/** Weight of an ordinary contour, in logical pixels. Index contours are drawn at twice this. */
+const TOPOGRAPHY_LINE_WIDTH = 1;
+/** Every fifth contour is an index contour. This is the cartographic convention, not a free knob. */
+const TOPOGRAPHY_INDEX_INTERVAL = 5;
+/** Rings drawn outside the glyph before the pattern fades out, when `clipToShape` is off. */
+const TOPOGRAPHY_OUTER_RINGS = 7;
+
+/**
+ * How far outside the glyph a topography overlay paints, in logical pixels.
+ *
+ * Unclipped contours keep going past the letterform -- that outward ring field is what turns a
+ * word into an island on a map -- so the render bounds have to be grown to hold them or the last
+ * rings are sliced off by the layer edge. Every other procedural pattern is clipped to the shape
+ * and needs no reach at all.
+ */
+export function textureOverlayReach(effect: TextureOverlayEffect): number {
+  if (effect.clipToShape) return 0;
+  if (effect.source.type !== 'procedural' || effect.source.pattern !== 'topography') return 0;
+  return TOPOGRAPHY_PERIOD * effect.scale * TOPOGRAPHY_OUTER_RINGS;
+}
+
+/**
+ * Coverage of the contour line nearest `depth`, anti-aliased over one pixel.
+ *
+ * `depth` is how far inside the glyph a pixel sits, so rings land on iso-distance curves: they
+ * follow the letterform rather than the pixel grid, tighten where a stem narrows, and close into
+ * islands around a counter. That is what makes the result read as elevation instead of as stripes.
+ *
+ * Every fifth ring is drawn heavier. Real contour maps do this -- the index contour is what lets a
+ * reader count elevation without tracing every line -- and it is the single detail that separates
+ * "concentric rings" from "a map".
+ */
+export function topographyCoverage(depth: number, period: number, lineWidth: number): number {
+  if (!(period > 0)) return 0;
+  const nearestRing = Math.round(depth / period);
+  const distanceToRing = Math.abs(depth - nearestRing * period);
+  const isIndex = modulo(nearestRing, TOPOGRAPHY_INDEX_INTERVAL) === 0;
+  const width = lineWidth * (isIndex ? 2 : 1);
+  return clamp01(width / 2 - distanceToRing + 0.5);
 }
 
 function drawReflection(output: CanvasSurface, offset: number, heightRatio: number, opacity: number): void {
