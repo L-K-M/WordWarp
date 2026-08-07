@@ -34,6 +34,9 @@ const presetCategories: Array<{ id: PresetCategory | 'all'; label: string }> = [
   { id: 'texture', label: 'FX' },
 ];
 
+/* Jellybean flavours come in bean-0 .. bean-6 in styles.css; cycle chips through them. */
+const BEAN_COLOR_COUNT = 7;
+
 type ExportFormat = 'png' | 'apng' | 'gif';
 
 export function App() {
@@ -595,7 +598,7 @@ export function App() {
               <button
                 key={category.id}
                 type="button"
-                className={`bean bean-${index % 7} ${presetCategory === category.id ? 'active' : ''}`}
+                className={`bean bean-${index % BEAN_COLOR_COUNT} ${presetCategory === category.id ? 'active' : ''}`}
                 onClick={() => setPresetCategory(category.id)}
               >
                 {category.label}

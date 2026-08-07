@@ -23,6 +23,8 @@ const PREVIEW_TEXT = 'Ww';
 // Rendering a preset costs a full effect stack, so hold onto the result: the library re-renders on
 // every search keystroke and category switch, and cards scroll in and out of view constantly.
 const cache = new Map<string, string>();
+// Concurrent calls for the same preset share one render instead of rasterising it twice.
+const inflight = new Map<string, Promise<string | undefined>>();
 
 export function getCachedPresetPreview(preset: Preset): string | undefined {
   return cache.get(preset.id);
@@ -59,13 +61,22 @@ function renderPresetPreview(doc: WordWarpDocument, presetId: string): string | 
  */
 export async function renderPresetPreviewAsync(preset: Preset): Promise<string | undefined> {
   if (cache.has(preset.id)) return cache.get(preset.id);
-  try {
-    const doc = previewDocument(preset);
-    await ensureFontsForDocument(doc);
-    return renderPresetPreview(doc, preset.id);
-  } catch {
-    return undefined;
+  let render = inflight.get(preset.id);
+  if (!render) {
+    render = (async () => {
+      try {
+        const doc = previewDocument(preset);
+        await ensureFontsForDocument(doc);
+        return renderPresetPreview(doc, preset.id);
+      } catch {
+        return undefined;
+      } finally {
+        inflight.delete(preset.id);
+      }
+    })();
+    inflight.set(preset.id, render);
   }
+  return render;
 }
 
 function previewDocument(preset: Preset): WordWarpDocument {

@@ -10,7 +10,6 @@
   text-rendering: optimizeLegibility;
 
   /* Deep-teal goo lagoon */
-  --ink: #03262c;
   --pool: #04333a;
   --pool-deep: #03262c;
   --gel: #0a5a62;
@@ -221,7 +220,7 @@ button:disabled {
     inset 0 -4px 7px rgb(0 0 0 / 26%),
     0 3px 0 var(--bean-edge),
     0 6px 10px rgb(0 0 0 / 30%);
-  transition: transform 90ms ease, filter 90ms ease;
+  transition: transform 90ms ease, filter 90ms ease, box-shadow 90ms ease;
 }
 
 .bean:hover:not(:disabled) {

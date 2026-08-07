@@ -15,11 +15,13 @@ describe('font catalog', () => {
   });
 
   it('points every bundled font at a file the asset pipeline ships', () => {
+    const problems: string[] = [];
     for (const entry of FONT_CATALOG) {
       if (entry.source !== 'bundled') continue;
-      expect(entry.file, `${entry.family} needs a file`).toBeTruthy();
-      expect(bundledFontUrl(entry.file!), `${entry.family} -> ${entry.file}`).toBeTruthy();
+      if (!entry.file) problems.push(`${entry.family} needs a file`);
+      else if (!bundledFontUrl(entry.file)) problems.push(`${entry.family} -> ${entry.file} not shipped`);
     }
+    expect(problems, problems.join('\n')).toEqual([]);
   });
 
   it('uses declared tags only', () => {
