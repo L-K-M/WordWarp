@@ -72,8 +72,8 @@ describe('texture overlay reach', () => {
     // off at the layer edge -- the exact failure this function exists to prevent. 0.2 is the
     // inspector's minimum texture scale, so it is reachable by dragging one slider.
     const floored = textureOverlayReach(overlay('topography', false, 0.2));
-    const unfloored = textureOverlayReach(overlay('topography', false, 0.5));
-    expect(floored).toBe(unfloored);
+    const atFloor = textureOverlayReach(overlay('topography', false, 0.5));
+    expect(floored).toBe(atFloor);
     expect(floored).toBeGreaterThan(0);
   });
 });
