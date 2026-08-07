@@ -42,7 +42,7 @@ export function App() {
   const [exportFormat, setExportFormat] = useState<ExportFormat>('png');
   const [exportScale, setExportScale] = useState(2);
   const [exportProgress, setExportProgress] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [playRequested, setPlayRequested] = useState(false);
   const [animationTime, setAnimationTime] = useState(0);
   const [isHydrated, setIsHydrated] = useState(false);
   const [restoreError, setRestoreError] = useState<string | null>(null);
@@ -167,13 +167,18 @@ export function App() {
 
   useEffect(() => subscribeToServiceWorkerUpdate((update) => setServiceWorkerUpdate(() => update)), []);
 
+  const hasAnimations = hasEnabledAnimationTracks(document);
+  // Derived rather than synchronised: when the last enabled track goes, playback stops on its own.
+  // An effect writing the flag back instead would leave a window where the loop is still
+  // running behind a disabled button, and `react-hooks/set-state-in-effect` objects to the shape.
+  const isPlaying = playRequested && hasAnimations;
   const animationDuration = documentAnimationDuration(document);
   useEffect(() => {
     if (!isPlaying) return;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     const pauseForReducedMotion = () => {
       if (!reducedMotion.matches) return false;
-      setIsPlaying(false);
+      setPlayRequested(false);
       pushToast('Animation preview is paused by reduced-motion preferences', 'info');
       return true;
     };
@@ -451,17 +456,6 @@ export function App() {
   };
 
   const previewDocument = evaluateDocumentAtTime(document, animationTime);
-  const hasAnimations = hasEnabledAnimationTracks(document);
-
-  // The playback loop only watches `isPlaying`, so removing the last enabled track while it runs
-  // would leave it ticking with the Play button greyed out and no way to stop it -- exactly the
-  // wasted frames this is meant to avoid, reached from the other direction. Keying off the same
-  // derived value the button uses covers every route in: applying a static preset, disabling the
-  // last track by hand, deleting the animated element, or undo.
-  useEffect(() => {
-    if (!hasAnimations) setIsPlaying(false);
-  }, [hasAnimations]);
-
   const fitZoomToViewport = () => {
     const viewport = window.document.querySelector('.canvas-viewport');
     const wrap = window.document.querySelector<HTMLElement>('.artboard-wrap');
@@ -674,7 +668,7 @@ export function App() {
               className={isPlaying ? 'playing' : ''}
               disabled={!hasAnimations}
               title={hasAnimations ? undefined : 'Add an animated preset to preview motion'}
-              onClick={() => setIsPlaying((playing) => !playing)}
+              onClick={() => setPlayRequested((playing) => !playing)}
               aria-pressed={isPlaying}
             >
               {isPlaying ? 'Pause' : 'Play'}
