@@ -1,7 +1,22 @@
 import { describe, expect, it } from 'vitest';
 
-import type { InnerGlowEffect } from '../model/types';
+import type { FillEffect, InnerGlowEffect, Paint } from '../model/types';
 import { BUILT_IN_PRESETS } from './library';
+
+/** Rec. 709 relative luminance of a solid paint, in 0..1. */
+function luminance(paint: Paint): number {
+  if (paint.kind !== 'solid') throw new Error(`Expected a solid paint, got ${paint.kind}`);
+  const [red, green, blue] = paint.color;
+  return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+}
+
+function coreFill(id: string): FillEffect {
+  const preset = BUILT_IN_PRESETS.find((candidate) => candidate.id === id);
+  if (!preset) throw new Error(`No preset ${id}`);
+  const fills = preset.apply.effects.filter((effect): effect is FillEffect => effect.kind === 'fill');
+  expect(fills, `fills in ${id}`).toHaveLength(1);
+  return fills[0]!;
+}
 
 /** Preset id against the number of heat bands it is built from. */
 const BANDED: Array<[string, number]> = [
@@ -34,6 +49,26 @@ describe('depth-mapped colour bands', () => {
     for (let index = 1; index < sizes.length; index += 1) {
       expect(sizes[index]!, `band ${index} of ${id}`).toBeLessThan(sizes[index - 1]!);
     }
+  });
+
+  it.each(BANDED)('%s gets brighter with every step inward', (id, count) => {
+    // The size ordering says the bands are stacked correctly. It says nothing about which colour
+    // is on which band -- swap the colour arguments and leave the sizes alone, and every other
+    // rule here still passes while the picture is inverted: hot at the rim, cold at the core.
+    // That is the failure the ordering comment above warns about, and this is the rule that
+    // actually catches it.
+    //
+    // Luminance rather than hue, because the three presets do not share a hue path: ironbow runs
+    // violet through magenta to yellow, night vision stays green throughout. What they have in
+    // common is that depth reads as brightness, which is what "hotter" means in all three.
+    const byDepth = [...bands(id, count)].sort((first, second) => first.size - second.size);
+    const levels = byDepth.map((band) => luminance(band.paint));
+    for (let index = 1; index < levels.length; index += 1) {
+      expect(levels[index]!, `${id} band ${index}`).toBeGreaterThan(levels[index - 1]!);
+    }
+    // And the fill, which is whatever is left at the very core, has to out-brighten all of them
+    // or the ramp peaks early and falls away again at the centre.
+    expect(luminance(coreFill(id).paint), `${id} core`).toBeGreaterThan(levels[levels.length - 1]!);
   });
 
   it.each(BANDED)('%s measures every band from the outline', (id, count) => {
