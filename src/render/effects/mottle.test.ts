@@ -6,18 +6,21 @@ const SEED = 4242;
 const CELL = 16;
 
 /**
- * Mean absolute difference between pixels `step` apart, sampled over a patch.
+ * Mean absolute difference between pixels `step` apart along `axis`, sampled over a patch.
  *
  * Sampled through the sampler rather than the one-shot wrapper: it is the path the renderer uses,
- * and a separate test pins the two as identical.
+ * and a separate test pins the two as identical. Both axes are measured because the interpolation
+ * runs independently in each -- a mistake in the vertical half would leave the horizontal one
+ * looking perfectly smooth.
  */
-function roughness(step: number, cell: number): number {
+function roughness(step: number, cell: number, axis: 'x' | 'y' = 'x'): number {
   const sample = createMottleSampler(SEED, cell);
   let total = 0;
   let samples = 0;
   for (let y = 0; y < 120; y += 3) {
     for (let x = 0; x < 120; x += 3) {
-      total += Math.abs(sample(x, y) - sample(x + step, y));
+      const shifted = axis === 'x' ? sample(x + step, y) : sample(x, y + step);
+      total += Math.abs(sample(x, y) - shifted);
       samples += 1;
     }
   }
@@ -59,11 +62,13 @@ describe('mottle value noise', () => {
     // octave weights and the contrast curve -- if retuning those ever pushes it over, the pattern
     // really has stopped being smooth and the test is right to say so.
     expect(roughness(1, CELL)).toBeLessThan(roughness(CELL, CELL) / 4);
+    expect(roughness(1, CELL, 'y')).toBeLessThan(roughness(CELL, CELL, 'y') / 4);
   });
 
   it('makes features grow with the cell, so a coarser scale is genuinely coarser', () => {
     // At a fixed step, a larger cell means less has changed between the two samples.
     expect(roughness(8, 64)).toBeLessThan(roughness(8, 16));
+    expect(roughness(8, 64, 'y')).toBeLessThan(roughness(8, 16, 'y'));
   });
 
   it('gives a scanning sampler exactly what a one-off sample would give', () => {
