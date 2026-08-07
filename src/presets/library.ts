@@ -280,6 +280,13 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('inflated-balloon', 'Inflated Balloon', 'dimensional', ['#ff4d6d', '#ffffff', '#a91039', '#ffb1c0'], [
     shadow('#8a0f31', 10, 16, 0.5), fill(gradient(['#ffffff', '#ff9aad', '#ff4d6d', '#a91039'])), bevel(30, 'pillow', 220), innerGlow('#ffffff', 14, 0.7),
   ], warp('textInflate', 0.94, 0.8), ['balloon', 'pillow']),
+  definePreset('stained-glass', 'Stained Glass', 'dimensional', ['#c01a4a', '#1a6cc0', '#1ac089', '#0a0a0a'], [
+    shadow('#000000', 9, 6, 0.55),
+    fill(gradient(['#c01a4a', '#1a6cc0', '#1ac089', '#e0a312'], 45)),
+    bevel(5, 'emboss', 110),
+    innerGlow('#ffd97a', 7, 0.3),
+    stroke(7, '#0a0a0a'),
+  ], warp('textArchUp', 0.5), ['stained-glass', 'lead', 'tiffany']),
 
   definePreset('vaporwave-mall', 'Vaporwave Mall', 'synthwave', ['#ff71ce', '#01cdfe', '#fffb96', '#2d1b4e'], [
     glow('#ff71ce', 26, 0.6), fill(gradient(['#ff71ce', '#b967ff', '#01cdfe'], 100)), post('scanlines', { amount: 0.14, period: 4 }, 0.5), post('aberration', { amount: 2 }, 0.4),
