@@ -53,6 +53,27 @@ describe('effect fields', () => {
     expect(distance[width + 0]).toBeGreaterThan(0);
   });
 
+  it('does not read an edge out of a translucent interior', () => {
+    // Partial coverage means "the edge runs through here" only for a pixel the edge runs through.
+    // A fill at reduced opacity, or the seam where two warp triangles meet, is partly covered
+    // everywhere; treating that as an edge stamped a boundary through the middle of the shape and
+    // every effect downstream traced it -- a stroke down each mesh seam, a bevel that quilted.
+    const width = 9;
+    const height = 9;
+    const alpha = new Uint8Array(width * height);
+    for (let y = 2; y <= 6; y += 1) {
+      for (let x = 2; x <= 6; x += 1) alpha[y * width + x] = 184;
+    }
+
+    const distance = signedDistanceField(alpha, width, height);
+
+    // The centre is two pixels deep and must say so, not report itself a fifth of a pixel from an
+    // edge that is not there.
+    expect(distance[4 * width + 4]).toBeCloseTo(-3, 5);
+    // The rim of the square is a real edge, and still resolves to sub-pixel accuracy.
+    expect(distance[4 * width + 2]).toBeCloseTo(0.5 - 184 / 255, 5);
+  });
+
   it('blurs alpha symmetrically without changing total energy materially', () => {
     const alpha = new Uint8Array(9 * 9);
     alpha[4 * 9 + 4] = 255;

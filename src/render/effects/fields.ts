@@ -39,6 +39,9 @@ export function blurAlpha(alpha: Uint8Array, width: number, height: number, sigm
   return output;
 }
 
+/** Furthest a pixel can sit from the binarised boundary and still be one of its own edge pixels. */
+const BOUNDARY_REACH = 1.5;
+
 export function signedDistanceField(alpha: Uint8Array, width: number, height: number): Float32Array {
   const inside = new Uint8Array(alpha.length);
   const outside = new Uint8Array(alpha.length);
@@ -59,9 +62,19 @@ export function signedDistanceField(alpha: Uint8Array, width: number, height: nu
   // band the coverage already tells us where the true edge falls, so use it: a pixel that is 25%
   // covered has its edge a quarter of a pixel inside it. Fully covered and fully empty pixels keep
   // their transform distance.
+  //
+  // Coverage only locates an edge for a pixel the edge actually runs through. Partial coverage has
+  // other causes -- a fill at reduced opacity, a blend that leaves the interior translucent, the
+  // seam where two warp triangles meet -- and reading an edge out of those stamps a false boundary
+  // through the middle of the shape that every effect downstream then traces. So refine only where
+  // the transform already puts the pixel against the binarised boundary. That distance is exactly
+  // 1 for an orthogonal neighbour of the opposite class and sqrt(2) for a diagonal one; anything
+  // beyond is interior, and keeps the distance the transform measured.
   for (let index = 0; index < result.length; index += 1) {
     const coverage = alpha[index]!;
-    if (coverage > 0 && coverage < 255) result[index] = 0.5 - coverage / 255;
+    if (coverage === 0 || coverage === 255) continue;
+    if (Math.abs(result[index]!) > BOUNDARY_REACH) continue;
+    result[index] = 0.5 - coverage / 255;
   }
   return result;
 }
