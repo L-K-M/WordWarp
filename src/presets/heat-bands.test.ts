@@ -49,11 +49,9 @@ describe('depth-mapped colour bands', () => {
     for (const band of bands(id, count)) expect(band.blendMode).toBe('normal');
   });
 
-  it('keeps every band narrow enough to reach the middle of ordinary text', () => {
+  it.each(BANDED)('%s keeps every band narrow enough to reach the middle of ordinary text', (id, count) => {
     // Depth inside a glyph is bounded by half the stem width. A band wider than this never
     // reaches the core of normal-weight text, and the style collapses to its outermost colour.
-    for (const [id, count] of BANDED) {
-      for (const band of bands(id, count)) expect(band.size, `${id} band`).toBeLessThanOrEqual(20);
-    }
+    for (const band of bands(id, count)) expect(band.size, `${id} band`).toBeLessThanOrEqual(20);
   });
 });
