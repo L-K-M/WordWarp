@@ -19,6 +19,14 @@ interface EffectOptions {
   originY: number;
   extentWidth: number;
   extentHeight: number;
+  /**
+   * Size of the element's whole effect layer in device pixels, which for a tiled export is larger
+   * than the tile being rendered. An effect that is a function of position *within the element* --
+   * rather than of the pixel grid, like grain -- has to measure from this, or every tile would
+   * restart the effect at its own centre and the seams would show.
+   */
+  layerWidth: number;
+  layerHeight: number;
 }
 
 export function renderEffectStack(
@@ -424,11 +432,34 @@ function applyPostEffect(
     }
   } else if (effect.type === 'aberration') {
     const shift = Math.max(1, Math.round(numericParam(effect, 'amount', 3)));
-    for (let y = 0; y < height; y += 1) {
-      for (let x = 0; x < width; x += 1) {
-        const offset = (y * width + x) * 4;
-        transformed[offset] = sampleChannel(source, width, height, x + shift, y, 0);
-        transformed[offset + 2] = sampleChannel(source, width, height, x - shift, y, 2);
+    if (stringParam(effect, 'mode', 'linear') === 'radial') {
+      // Lateral chromatic aberration, which is what glass and lenses actually do: a real optic
+      // fans the channels out along the radius from the axis, and by an amount that grows with
+      // the distance from it -- dead centre is in focus and the fringe widens toward the rim.
+      // The default 'linear' mode is a fixed horizontal split, which models an RGB signal fault
+      // (the VHS look the existing presets use it for) rather than an optical one.
+      //
+      // The centre is the whole layer's centre in its own coordinates, not this tile's, so a
+      // tiled export fans out around one axis instead of restarting it in every tile.
+      const centerX = options.layerWidth / 2 - options.originX;
+      const centerY = options.layerHeight / 2 - options.originY;
+      const maxRadius = Math.max(1, Math.hypot(options.layerWidth, options.layerHeight) / 2);
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          const offset = (y * width + x) * 4;
+          const deltaX = dispersionOffset(x - centerX, shift, maxRadius);
+          const deltaY = dispersionOffset(y - centerY, shift, maxRadius);
+          transformed[offset] = sampleChannel(source, width, height, x + deltaX, y + deltaY, 0);
+          transformed[offset + 2] = sampleChannel(source, width, height, x - deltaX, y - deltaY, 2);
+        }
+      }
+    } else {
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          const offset = (y * width + x) * 4;
+          transformed[offset] = sampleChannel(source, width, height, x + shift, y, 0);
+          transformed[offset + 2] = sampleChannel(source, width, height, x - shift, y, 2);
+        }
       }
     }
   } else if (effect.type === 'glitch') {
@@ -706,6 +737,26 @@ function alphaBounds(alpha: Uint8Array, width: number, height: number): { x: num
 function numericParam(effect: PostEffect, name: string, fallback: number): number {
   const value = effect.params[name];
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function stringParam(effect: PostEffect, name: string, fallback: string): string {
+  const value = effect.params[name];
+  return typeof value === 'string' ? value : fallback;
+}
+
+/**
+ * How far one axis of a channel is displaced, for radial chromatic aberration.
+ *
+ * `offsetFromCenter` is the pixel's distance from the optical axis along that axis, and the
+ * displacement is proportional to it: nothing on axis, `shift` pixels at the corner. Applying this
+ * per axis rather than along the radius is the same vector -- both are the offset scaled by
+ * `shift / maxRadius` -- and avoids a square root and a divide per pixel.
+ *
+ * Rounded, because the sample it feeds is a nearest-neighbour lookup; leaving it fractional would
+ * silently truncate and pull half the fringe a pixel toward the origin.
+ */
+export function dispersionOffset(offsetFromCenter: number, shift: number, maxRadius: number): number {
+  return Math.round((offsetFromCenter * shift) / maxRadius);
 }
 
 function sampleChannel(

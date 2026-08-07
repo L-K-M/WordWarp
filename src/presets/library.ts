@@ -159,6 +159,26 @@ function post(type: PostEffect['type'], params: PostEffect['params'], opacity = 
   return effect;
 }
 
+/**
+ * Prism dispersion: the channels fan out along the radius, widening toward the rim.
+ *
+ * The default aberration is a fixed horizontal RGB split, which is a signal fault -- the right
+ * model for the VHS presets that use it, and the wrong one for glass. Real optics separate
+ * wavelengths *radially*, which is why a lens is sharp on axis and fringed at the edge.
+ */
+function dispersion(amount: number, opacity: number): PostEffect {
+  return post('aberration', { amount, mode: 'radial' }, opacity);
+}
+
+function pillowBevel(size: number, depth: number, highlight: string): BevelEffect {
+  const effect = bevel(size, 'pillow', depth);
+  effect.highlight = { color: hexColor(highlight), blendMode: 'screen', opacity: 0.95 };
+  effect.useGlobalLight = false;
+  effect.angle = 118;
+  effect.altitude = 52;
+  return effect;
+}
+
 function sparkleTrack(): AnimationTrack {
   return { id: 'sparkle-track', kind: 'sparkle', enabled: true, duration: 2, params: { amount: 16 }, seed: 971 };
 }
@@ -317,6 +337,30 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('rusty-sign', 'Rusty Sign', 'texture', ['#8a4b1f', '#d9813a', '#3d1f08', '#c9a227'], [
     fill(ramp('mahogany')), texture('noise', 0.3), bevel(9, 'inner', 150), innerShadow('#2e1504', 6, 10, 0.6),
   ], warp('textDeflate', 0.4), ['rust', 'vintage']),
+
+  definePreset('liquid-glass', 'Liquid Glass', 'dimensional', ['#ffffff', '#cfe6f7', '#5f7d94', '#101922'], [
+    // A glass letter is almost entirely edge. The body is barely tinted, and everything that makes
+    // it read as a solid object -- the swollen surface, the rim light, the bright edge -- lives in
+    // the first few pixels inside the outline. The dispersion at the end is the only part that
+    // says "this is refracting" rather than "this is shiny".
+    shadow('#08121c', 16, 26, 0.42), fill(solid('#dbecf8', 0.62)), pillowBevel(26, 300, '#ffffff'),
+    innerGlow('#ffffff', 9, 0.85), satin('#9fd4ff', 0.3), stroke(1.5, '#ffffff'),
+    dispersion(3, 0.55),
+  ], none(), ['glass', 'translucent', 'liquid', 'refraction']),
+  definePreset('prism-glass', 'Prism Glass', 'dimensional', ['#ff7ae0', '#7affd8', '#7ab8ff', '#0b0f1c'], [
+    // Same construction, dispersion pushed until the fringe becomes the subject. The iridescent
+    // rim gives the split something saturated to fan out.
+    shadow('#05070f', 12, 24, 0.5),
+    glow('#8affe0', 22, 0.4), fill(solid('#e8f4ff', 0.58)), pillowBevel(24, 320, '#ffffff'),
+    innerGlow('#ffd7f5', 12, 0.7), stroke(2, '#ffffff'), dispersion(9, 0.9),
+  ], none(), ['glass', 'prism', 'iridescent', 'dispersion']),
+  definePreset('frosted-ice', 'Frosted Ice', 'dimensional', ['#eaf7ff', '#a7d8f0', '#4d7f9e', '#0d1c26'], [
+    // Frost is glass that scatters instead of transmitting, so the body carries more tint and a
+    // fine noise, and the dispersion drops to the barest fringe.
+    shadow('#061019', 14, 22, 0.45), fill(gradient(['#f4fbff', '#b9e2f5', '#6ba3c4'], 168)),
+    pillowBevel(22, 260, '#ffffff'), texture('noise', 0.22), innerGlow('#ffffff', 14, 0.6),
+    stroke(1.5, '#e6f6ff'), dispersion(2, 0.35),
+  ], none(), ['glass', 'ice', 'frost', 'winter']),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {
