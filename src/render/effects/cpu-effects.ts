@@ -339,6 +339,7 @@ function renderTexture(
   const pixels = new Uint8ClampedArray(width * height * 4);
   const pattern = effect.source.type === 'procedural' ? effect.source.pattern : 'noise';
   const seed = hashString(effect.id);
+  const logicalScale = Number.isFinite(options.scale) && options.scale > 0 ? options.scale : 1;
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const index = y * width + x;
@@ -351,8 +352,8 @@ function renderTexture(
       if (pattern === 'grain') value = 0.35 + value * 0.3;
       if (pattern === 'crystal') {
         value = sampleCrystalTexture(
-          globalX / options.scale,
-          globalY / options.scale,
+          globalX / logicalScale,
+          globalY / logicalScale,
           seed,
           26 * effect.scale,
           effect.rotation,
