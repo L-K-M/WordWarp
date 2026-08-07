@@ -317,6 +317,13 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('rusty-sign', 'Rusty Sign', 'texture', ['#8a4b1f', '#d9813a', '#3d1f08', '#c9a227'], [
     fill(ramp('mahogany')), texture('noise', 0.3), bevel(9, 'inner', 150), innerShadow('#2e1504', 6, 10, 0.6),
   ], warp('textDeflate', 0.4), ['rust', 'vintage']),
+
+  definePreset('aurora', 'Aurora', 'synthwave', ['#07223f', '#12c48a', '#9a6bff', '#7dffb2'], [
+    glow('#b967ff', 22, 0.35), glow('#7dffb2', 16, 0.4), fill(gradient(['#07223f', '#0b5a52', '#12c48a', '#9a6bff'], 100)), innerGlow('#c9ffe9', 10, 0.4),
+  ], warp('textWave2', 0.4), ['aurora', 'northern-lights', 'animated'], [
+    { id: 'aurora-hue', kind: 'hueCycle', enabled: true, duration: 9, params: {}, seed: 21 },
+    { id: 'aurora-ripple', kind: 'waveUndulate', enabled: true, duration: 5, params: { amount: 0.12 }, seed: 22 },
+  ]),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {
