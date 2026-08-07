@@ -60,7 +60,7 @@ WORDWARP_PORT=3000 docker compose up --build
 The service binds to `127.0.0.1` by default. Set `WORDWARP_HOST=0.0.0.0` to expose it on the network,
 and put it behind HTTPS anywhere other than localhost. Stop it with `docker compose down`.
 
-Tagged releases publish `ghcr.io/l-k-m/wordwarp:<version>` for `linux/amd64` and `linux/arm64`.
+Tagged releases publish the immutable `ghcr.io/l-k-m/wordwarp:<version>` tag for `linux/amd64` and `linux/arm64`.
 The first GHCR package may be private until its package visibility is changed.
 
 ### GitHub Pages
@@ -73,7 +73,7 @@ as its source and set the variable to true.
 
 ## Releases
 
-Install the shared [`lkm-release`](https://github.com/L-K-M/release-tool) tool, then run:
+On macOS, install the shared [`lkm-release`](https://github.com/L-K-M/release-tool) tool, then run:
 
 ```bash
 scripts/release.sh 0.2.0 --push
@@ -83,6 +83,9 @@ The helper updates `package.json`, `package-lock.json`, and this README marker t
 bump, and creates `v0.2.0`. The tag workflow independently verifies the versions and `main` history,
 re-runs CI, publishes a portable `.tar.gz` plus SHA-256 checksum, publishes the GHCR image, and
 creates the GitHub Release. Do not create release tags by hand.
+
+The shared release engine currently requires BSD `sed`; the WordWarp wrapper refuses release mutation
+on GNU/Linux before changing files. `scripts/release.sh --check` remains portable.
 
 Application SemVer is independent from the serialized document version (`DOC_VERSION`) and IndexedDB
 schema version. Only bump those storage versions when their schemas change, with migrations and tests.

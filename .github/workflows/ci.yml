@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   # Preserve a result for every main/tag commit; only superseded PR runs are disposable.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
@@ -46,12 +46,19 @@ jobs:
           retention-days: 7
 
   browser:
-    name: Browser and PWA tests
+    name: Browser and PWA tests (${{ matrix.deployment }})
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - deployment: pages
+            base-path: /WordWarp/
+          - deployment: portable
+            base-path: ./
     env:
-      # Exercise the project-site path used by GitHub Pages, including workers and PWA scope.
-      VITE_BASE_PATH: /WordWarp/
+      VITE_BASE_PATH: ${{ matrix.base-path }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -68,14 +75,19 @@ jobs:
       - name: Install Playwright browsers
         run: ./node_modules/.bin/playwright install --with-deps chromium webkit
 
-      - name: Run browser tests
+      - name: Run Pages browser tests
+        if: matrix.deployment == 'pages'
         run: npm run test:e2e
+
+      - name: Run portable archive browser tests
+        if: matrix.deployment == 'portable'
+        run: npm run test:e2e -- --project=chromium
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: playwright-report-${{ github.sha }}-${{ github.run_attempt }}
+          name: playwright-report-${{ matrix.deployment }}-${{ github.sha }}-${{ github.run_attempt }}
           path: playwright-report/
           if-no-files-found: ignore
           retention-days: 7
@@ -84,7 +96,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: playwright-results-${{ github.sha }}-${{ github.run_attempt }}
+          name: playwright-results-${{ matrix.deployment }}-${{ github.sha }}-${{ github.run_attempt }}
           path: test-results/
           if-no-files-found: ignore
           retention-days: 7

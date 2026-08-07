@@ -40,7 +40,8 @@ WordWarp is a client-only React/Vite PWA for building and exporting warped text 
 
 - `ci.yml` is secret-free and read-only. It checks source, browsers/PWA, and Docker Compose on PRs,
   `main`, manual dispatch, and release workflow calls.
-- `pages.yml` deploys only a successful `main` push and only when `WORDWARP_PAGES_ENABLED=true`.
+- `pages.yml` deploys only a successful CI revision that is still current `main`, and only when
+  `WORDWARP_PAGES_ENABLED=true`.
 - `release.yml` accepts `vX.Y.Z` tags whose commit is on `main` and whose version matches both npm
   files. It re-runs CI, then publishes a portable archive, checksum, GHCR image, and GitHub Release.
 - `zai-code-review.yml` uses `pull_request_target` only for non-draft same-repository PRs. It must
@@ -52,6 +53,7 @@ WordWarp is a client-only React/Vite PWA for building and exporting warped text 
 
 Use `scripts/release.sh X.Y.Z --push`. Never hand-edit only one npm version file and never create a
 `v*` tag by hand. The shared release tool requires a clean tree and updates the README version marker.
+Its mutating commands currently require macOS/BSD `sed`; the wrapper fails closed on GNU/Linux.
 
 `dist/`, `node_modules/`, Playwright reports, local environment files, and generated secrets are not
 source. Never commit them.

@@ -8,7 +8,6 @@ on:
       - main
     types:
       - completed
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -19,25 +18,45 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    name: Build Pages artifact
+  current:
+    name: Verify current main revision
     if: >-
       ${{ vars.WORDWARP_PAGES_ENABLED == 'true' &&
-          (github.event_name == 'workflow_dispatch' ||
-           (github.event.workflow_run.conclusion == 'success' &&
-            github.event.workflow_run.event == 'push')) }}
+          github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'push' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      deploy: ${{ steps.revision.outputs.deploy }}
+    steps:
+      - name: Compare tested revision to current main
+        id: revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          CURRENT_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)"
+          if [ "$TESTED_SHA" = "$CURRENT_SHA" ]; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Tested revision $TESTED_SHA is no longer current main ($CURRENT_SHA); skipping deployment."
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    name: Build Pages artifact
+    needs: current
+    if: needs.current.outputs.deploy == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: read
-      pages: write
-      id-token: write
     env:
       VITE_BASE_PATH: /WordWarp/
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.event.workflow_run.head_sha }}
           persist-credentials: false
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -58,9 +77,6 @@ jobs:
           test -s dist/sw.js
           grep --quiet '/WordWarp/' dist/manifest.webmanifest
 
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
@@ -78,6 +94,17 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Confirm revision is still current main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          CURRENT_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)"
+          if [ "$TESTED_SHA" != "$CURRENT_SHA" ]; then
+            echo "::error::Refusing to deploy stale revision $TESTED_SHA; current main is $CURRENT_SHA."
+            exit 1
+          fi
+
       - name: Deploy Pages artifact
         id: deployment
         uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0

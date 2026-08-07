@@ -240,7 +240,7 @@ test('uses the configured PWA base path', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium');
   await page.goto('./');
 
-  const expectedPath = new URL(page.url()).pathname;
+  const expectedUrl = new URL('./', page.url()).href;
   const manifest = await page.evaluate(async () => {
     const href = document.querySelector<HTMLLinkElement>('link[rel="manifest"]')?.href;
     if (!href) throw new Error('Manifest link is unavailable');
@@ -255,6 +255,7 @@ test('uses the configured PWA base path', async ({ page }, testInfo) => {
     // the raw './' against '/' fails while the manifest is in fact correct.
     const resolve = (value: unknown) => (typeof value === 'string' ? new URL(value, href).pathname : undefined);
     return {
+      href,
       id: resolve(record.id),
       scope: resolve(record.scope),
       start_url: resolve(record.start_url),
@@ -262,10 +263,10 @@ test('uses the configured PWA base path', async ({ page }, testInfo) => {
   });
   const scope = await page.evaluate(async () => (await navigator.serviceWorker.ready).scope);
 
-  expect(manifest.id).toBe(expectedPath);
-  expect(manifest.scope).toBe(expectedPath);
-  expect(manifest.start_url).toBe(expectedPath);
-  expect(new URL(scope).pathname).toBe(expectedPath);
+  expect(new URL(manifest.id ?? '', manifest.href).href).toBe(expectedUrl);
+  expect(new URL(manifest.scope ?? '', manifest.href).href).toBe(expectedUrl);
+  expect(new URL(manifest.start_url ?? '', manifest.href).href).toBe(expectedUrl);
+  expect(scope).toBe(expectedUrl);
 });
 
 test('style library scrolls to every preset and previews the real render', async ({ page }, testInfo) => {
