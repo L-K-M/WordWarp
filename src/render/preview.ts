@@ -17,7 +17,8 @@ export class PreviewRenderer {
     this.staging = createStagingCanvas();
     this.stagingContext = get2dContext(this.staging);
 
-    let presenter: WebGlPresenter | null = null;
+    // Both branches assign, so an initialiser here would only ever be discarded.
+    let presenter: WebGlPresenter | null;
     try {
       presenter = new WebGlPresenter(target);
     } catch {
