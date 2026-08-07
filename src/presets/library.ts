@@ -317,6 +317,11 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('rusty-sign', 'Rusty Sign', 'texture', ['#8a4b1f', '#d9813a', '#3d1f08', '#c9a227'], [
     fill(ramp('mahogany')), texture('noise', 0.3), bevel(9, 'inner', 150), innerShadow('#2e1504', 6, 10, 0.6),
   ], warp('textDeflate', 0.4), ['rust', 'vintage']),
+  definePreset('molten-core', 'Molten Core', 'texture', ['#ff6a00', '#3d1505', '#0a0302', '#ff2a00'], [
+    shadow('#1a0202', 12, 14, 0.6), glow('#ff2a00', 34, 0.55),
+    fill(gradient(['#3d1505', '#1a0a05', '#0a0302'])), innerGlow('#ff7a00', 16, 0.9),
+    satin('#ff4500', 0.4), texture('grain', 0.22),
+  ], warp('textDeflate', 0.42), ['molten', 'lava', 'magma']),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {
