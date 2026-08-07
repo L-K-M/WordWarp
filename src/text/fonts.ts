@@ -7,7 +7,7 @@ export interface FontCatalogEntry {
   source: 'bundled' | 'local';
   /** Weight stamped into the document's FontSpec when this family is picked. */
   weight: number;
-  /** woff2 file inside `public/fonts/`; absent for system fonts. */
+  /** woff2 file inside `src/assets/fonts/`; absent for system fonts. */
   file?: string;
   /** FontFace weight descriptor, e.g. "400 800" for a variable font. */
   weightRange?: string;
@@ -104,8 +104,10 @@ async function loadBundledFont(entry: FontCatalogEntry): Promise<boolean> {
   if (typeof FontFace === 'undefined') return false;
   const set = fontFaceSet();
   if (!set) return false;
+  const url = bundledFontUrl(entry.file!);
+  if (!url) return false;
   try {
-    const face = new FontFace(entry.family, `url("${fontFileUrl(entry.file!)}") format("woff2")`, {
+    const face = new FontFace(entry.family, `url("${url}") format("woff2")`, {
       style: 'normal',
       weight: entry.weightRange ?? String(entry.weight),
     });
@@ -119,8 +121,20 @@ async function loadBundledFont(entry: FontCatalogEntry): Promise<boolean> {
   }
 }
 
-function fontFileUrl(file: string): string {
-  return `${import.meta.env.BASE_URL}fonts/${file}`;
+/**
+ * Font files ride the Vite asset pipeline rather than `public/` so their URLs are content-hashed
+ * and, crucially, rebased correctly inside the export worker for every `VITE_BASE_PATH` flavour --
+ * a `public/` URL built from `import.meta.env.BASE_URL` resolves against the worker module's own
+ * URL under the portable `./` base and 404s.
+ */
+const fontAssets = import.meta.glob<string>('../assets/fonts/*.woff2', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+
+export function bundledFontUrl(file: string): string | undefined {
+  return fontAssets[`../assets/fonts/${file}`];
 }
 
 /**

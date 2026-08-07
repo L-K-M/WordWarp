@@ -1,8 +1,10 @@
 WordWarp bundled fonts
 ======================
 
-The .woff2 files in this directory are subset (latin) builds of fonts published
-under the SIL Open Font License, Version 1.1, reproduced below.
+WordWarp ships subset (latin) .woff2 builds of the fonts listed below (kept in
+src/assets/fonts/ in the source tree and emitted as hashed build assets). Each
+is published under the SIL Open Font License, Version 1.1, reproduced here as
+required by the license.
 
   Baloo 2 (variable wght 400-800)  Copyright 2019 Ek Type (www.ek-type.com)
   Black Ops One                    Copyright 2011 James Grieshaber

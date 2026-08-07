@@ -1,9 +1,7 @@
-import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
-
 import { describe, expect, it } from 'vitest';
 
 import {
+  bundledFontUrl,
   DOCUMENT_FONTS,
   FONT_CATALOG,
   FONT_TAG_ORDER,
@@ -16,14 +14,11 @@ describe('font catalog', () => {
     expect(new Set(families).size).toBe(families.length);
   });
 
-  it('points every bundled font at a file that ships in public/fonts', () => {
+  it('points every bundled font at a file the asset pipeline ships', () => {
     for (const entry of FONT_CATALOG) {
       if (entry.source !== 'bundled') continue;
       expect(entry.file, `${entry.family} needs a file`).toBeTruthy();
-      expect(
-        existsSync(resolve(__dirname, '../../public/fonts', entry.file!)),
-        `${entry.family} -> ${entry.file}`,
-      ).toBe(true);
+      expect(bundledFontUrl(entry.file!), `${entry.family} -> ${entry.file}`).toBeTruthy();
     }
   });
 
