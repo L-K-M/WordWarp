@@ -280,6 +280,18 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('inflated-balloon', 'Inflated Balloon', 'dimensional', ['#ff4d6d', '#ffffff', '#a91039', '#ffb1c0'], [
     shadow('#8a0f31', 10, 16, 0.5), fill(gradient(['#ffffff', '#ff9aad', '#ff4d6d', '#a91039'])), bevel(30, 'pillow', 220), innerGlow('#ffffff', 14, 0.7),
   ], warp('textInflate', 0.94, 0.8), ['balloon', 'pillow']),
+  definePreset('frosted-glass', 'Frosted Glass', 'dimensional', ['#eafdff', '#bfe9ff', '#9fd4ff', '#ffffff'], [
+    shadow('#1b3a55', 12, 18, 0.28), glow('#bfe9ff', 26, 0.4),
+    Object.assign(fill(gradient(['#eafdff', '#bfe9ff', '#9fd4ff', '#dff7ff'])), { opacity: 0.5 }),
+    innerGlow('#ffffff', 14, 0.55),
+    Object.assign(bevel(6, 'inner', 90), {
+      highlight: { color: [1, 1, 1, 1], blendMode: 'screen', opacity: 0.5 },
+      shadow: { color: [0.5, 0.65, 0.8, 1], blendMode: 'multiply', opacity: 0.35 },
+    }),
+    texture('grain', 0.08),
+    Object.assign(stroke(1.5, '#ffffff'), { opacity: 0.6 }),
+    reflection(0.35, 0.2),
+  ], none(), ['glass', 'glassmorphism', 'modern']),
 
   definePreset('vaporwave-mall', 'Vaporwave Mall', 'synthwave', ['#ff71ce', '#01cdfe', '#fffb96', '#2d1b4e'], [
     glow('#ff71ce', 26, 0.6), fill(gradient(['#ff71ce', '#b967ff', '#01cdfe'], 100)), post('scanlines', { amount: 0.14, period: 4 }, 0.5), post('aberration', { amount: 2 }, 0.4),
