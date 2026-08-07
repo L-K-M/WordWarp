@@ -317,6 +317,10 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('rusty-sign', 'Rusty Sign', 'texture', ['#8a4b1f', '#d9813a', '#3d1f08', '#c9a227'], [
     fill(ramp('mahogany')), texture('noise', 0.3), bevel(9, 'inner', 150), innerShadow('#2e1504', 6, 10, 0.6),
   ], warp('textDeflate', 0.4), ['rust', 'vintage']),
+
+  definePreset('comic-pow', 'Comic Pow!', 'nineties', ['#ffd400', '#111111', '#d00000', '#fff9c4'], [
+    shadow('#d00000', 11, 0.5, 0.95), fill(gradient(['#fff36e', '#ffd400', '#f7a500'], 100)), stroke(8, '#111111'), post('halftone', { frequency: 6 }, 0.32),
+  ], warp('textArchUp', 0.28), ['comic', 'pop-art', 'halftone']),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {
