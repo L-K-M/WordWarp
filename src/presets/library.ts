@@ -61,11 +61,17 @@ function stroke(width: number, color: string, position: StrokeEffect['position']
   return effect;
 }
 
-function bevel(size: number, style: BevelEffect['style'] = 'inner', depth = 130): BevelEffect {
+function bevel(
+  size: number,
+  style: BevelEffect['style'] = 'inner',
+  depth = 130,
+  technique: BevelEffect['technique'] = 'smooth',
+): BevelEffect {
   const effect = createEffect('bevel');
   effect.size = size;
   effect.style = style;
   effect.depth = depth;
+  effect.technique = technique;
   return effect;
 }
 
@@ -130,10 +136,14 @@ function longShadow(length: number, color: string, angle = 45, fade = false): Lo
 function texture(
   pattern: Extract<TextureOverlayEffect['source'], { type: 'procedural' }>['pattern'],
   opacity = 0.2,
+  scale = 1,
+  rotation = 0,
 ): TextureOverlayEffect {
   const effect = createEffect('textureOverlay');
   effect.source = { type: 'procedural', pattern };
   effect.opacity = opacity;
+  effect.scale = scale;
+  effect.rotation = rotation;
   return effect;
 }
 
@@ -317,6 +327,17 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('rusty-sign', 'Rusty Sign', 'texture', ['#8a4b1f', '#d9813a', '#3d1f08', '#c9a227'], [
     fill(ramp('mahogany')), texture('noise', 0.3), bevel(9, 'inner', 150), innerShadow('#2e1504', 6, 10, 0.6),
   ], warp('textDeflate', 0.4), ['rust', 'vintage']),
+  definePreset('cross-polar-crystal', 'Cross-Polar Crystal', 'texture', ['#ff4f9a', '#ffd76a', '#5ff2cf', '#6a63ff'], [
+    shadow('#090713', 12, 8, 0.58),
+    glow('#7868ff', 12, 0.24),
+    extrude(14, '#17152f', 52),
+    fill(gradient(['#171126', '#ff4f9a', '#ffd76a', '#5ff2cf', '#4676ff', '#bd4bff', '#171126'], 28, 'angular')),
+    texture('crystal', 0.86, 1.05, 11),
+    innerShadow('#090713', 3, 4, 0.48),
+    bevel(6, 'inner', 170, 'chiselHard'),
+    stroke(2, '#080711'),
+    post('grain', { amount: 0.07 }, 0.22),
+  ], warp('textStop', 0.32, 0.52), ['crystal', 'mineral', 'petrographic', 'microscope', 'birefringent', 'interference', 'thin-section']),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {

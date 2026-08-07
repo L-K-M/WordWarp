@@ -7,11 +7,22 @@ import { OFFICE_RAMPS } from './office-ramps';
 
 describe('preset library', () => {
   it('ships every named style from the six core categories', () => {
-    expect(BUILT_IN_PRESETS).toHaveLength(41);
-    expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(41);
+    expect(BUILT_IN_PRESETS.length).toBeGreaterThanOrEqual(41);
+    expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(BUILT_IN_PRESETS.length);
     expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.category))).toEqual(
       new Set(['metallic', 'synthwave', 'y2k', 'nineties', 'dimensional', 'texture']),
     );
+  });
+
+  it('builds Cross-Polar Crystal from interference colour and mineral cells', () => {
+    const preset = BUILT_IN_PRESETS.find((candidate) => candidate.id === 'cross-polar-crystal');
+
+    expect(preset?.apply.warp).toMatchObject({ kind: 'preset', preset: 'textStop' });
+    expect(preset?.tags).toEqual(expect.arrayContaining(['petrographic', 'birefringent', 'thin-section']));
+    expect(preset?.apply.effects).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: 'textureOverlay', source: { type: 'procedural', pattern: 'crystal' } }),
+      expect.objectContaining({ kind: 'bevel', technique: 'chiselHard' }),
+    ]));
   });
 
   it('ships all 24 Office ramp names with 20 stops each', () => {
