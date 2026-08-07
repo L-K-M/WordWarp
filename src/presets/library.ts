@@ -174,6 +174,11 @@ function post(type: PostEffect['type'], params: PostEffect['params'], opacity = 
  */
 function heatBand(color: string, size: number, opacity = 1): InnerGlowEffect {
   const effect = innerGlow(color, size, opacity);
+  // Both of these happen to be the inner-glow defaults, and both are stated anyway because the
+  // ramp depends on them: `edge` is the direction the falloff runs, and `normal` is what makes a
+  // band replace the one under it instead of mixing into it. Neither is a detail a reader should
+  // have to go and look up to know whether the stack is doing what it claims.
+  effect.source = 'edge';
   effect.blendMode = 'normal';
   return effect;
 }
