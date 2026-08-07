@@ -28,7 +28,12 @@ export function getCachedPresetPreview(preset: Preset): string | undefined {
   return cache.get(preset.id);
 }
 
-export function renderPresetPreview(preset: Preset): string | undefined {
+/**
+ * Synchronous thumbnail render. Private on purpose: it must only ever run through
+ * `renderPresetPreviewAsync`, which waits for bundled fonts first -- a direct call here could
+ * cache a fallback-glyph thumbnail that the cache then serves forever.
+ */
+function renderPresetPreview(preset: Preset): string | undefined {
   const cached = cache.get(preset.id);
   if (cached) return cached;
   try {

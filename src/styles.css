@@ -22,7 +22,7 @@
   --foam: #e8fbf4;
   --shadow-teal: #02161a;
 
-  /* The selection outline and focus accents are pinned: browser tests assert these colours. */
+  /* The selection outline is pinned: browser tests assert this exact colour. */
   --cyan: #48e4ff;
   --pink: #ff5fb0;
   --yellow: #ffd84a;
@@ -135,6 +135,13 @@ select:focus-visible,
    --------------------------------------------------------------------------- */
 
 .orb {
+  /* Defaults keep an orb that lost its colour class renderable instead of invalidating the
+     whole background/box-shadow stack; the .orb-* flavours below override them. */
+  --orb-hi: #aef6ff;
+  --orb: #4fdcf2;
+  --orb-lo: #1fabc4;
+  --orb-edge: #0b7285;
+
   position: relative;
   display: inline-flex;
   flex: 0 0 auto;
