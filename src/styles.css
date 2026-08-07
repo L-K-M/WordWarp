@@ -20,7 +20,6 @@
   --cream: #fff6df;
   --mint: #b8f0e2;
   --foam: #e8fbf4;
-  --shadow-teal: #02161a;
 
   /* The selection outline is pinned: browser tests assert this exact colour. */
   --cyan: #48e4ff;
@@ -497,7 +496,7 @@ button:disabled {
   box-shadow:
     inset 0 2px 4px rgb(255 255 255 / 45%),
     inset 0 -6px 10px rgb(0 0 0 / 28%),
-    0 5px 0 var(--orb-edge, #2f7a10),
+    0 5px 0 var(--orb-edge),
     0 0 18px rgb(143 227 79 / 65%);
 }
 
@@ -1592,7 +1591,7 @@ button:disabled {
        past the viewport here and must not be pinned to it. */
     height: auto;
     overflow: visible;
-    grid-template-rows: 68px minmax(520px, calc(100vh - 132px)) 76px;
+    grid-template-rows: 68px minmax(520px, calc(100vh - 144px)) 76px;
   }
 
   .topbar {

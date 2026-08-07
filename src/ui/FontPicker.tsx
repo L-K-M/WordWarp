@@ -27,8 +27,10 @@ export function FontPicker({ value, onPick }: FontPickerProps) {
   const [facesReady, setFacesReady] = useState(0);
 
   const known = getFontCatalogEntry(value);
+  // UI-only faces (Baloo 2) are catalogued but never listed for documents, so a current family
+  // that is one of them still needs the pinned keep option, exactly like an unknown family.
   const options: FontCatalogEntry[] = useMemo(
-    () => known
+    () => known && !known.ui
       ? [...DOCUMENT_FONTS]
       : [{ family: value, source: 'local', weight: 400, tag: 'system' }, ...DOCUMENT_FONTS],
     [known, value],

@@ -40,6 +40,14 @@ export async function renderPngOnSurface(
   return { bytes, width: rendered.width, height: rendered.height };
 }
 
+/**
+ * Rasterise a document to straight (un-premultiplied) RGBA pixels.
+ *
+ * Precondition: every bundled font the document uses must already be registered in this realm's
+ * FontFaceSet -- call `ensureFontsForDocument` first (`renderPngOnSurface` and `exportAnimation`
+ * both do). Skipping it renders fallback glyphs instead of failing, which is worse: it is wrong
+ * silently.
+ */
 export function renderRgbaOnSurface(
   document: WordWarpDocument,
   scale: number,
