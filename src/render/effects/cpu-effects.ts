@@ -449,37 +449,12 @@ function applyPostEffect(
     // render scale -- the same reasoning a bevel size does. Left in device pixels, a 4x export
     // would quarter the block relative to the letterform and the sprite would dissolve.
     const block = Math.max(1, Math.round(numericParam(effect, 'size', 8) * options.scale));
-    const crisp = booleanParam(effect, 'crisp', true);
-    // Blocks are indexed globally, so a tiled export lands them on the same grid in every tile.
-    // A core pixel's whole block is inside its tile because `effectReach` reserves a block of
-    // halo for this; the partial blocks along a tile's rendered edge are all in the halo and get
-    // discarded, so no seam survives into the output.
-    const firstBlockX = Math.floor(options.originX / block);
-    const lastBlockX = Math.floor((options.originX + width - 1) / block);
-    const firstBlockY = Math.floor(options.originY / block);
-    const lastBlockY = Math.floor((options.originY + height - 1) / block);
-    for (let blockY = firstBlockY; blockY <= lastBlockY; blockY += 1) {
-      const top = Math.max(0, blockY * block - options.originY);
-      const bottom = Math.min(height, (blockY + 1) * block - options.originY);
-      for (let blockX = firstBlockX; blockX <= lastBlockX; blockX += 1) {
-        const left = Math.max(0, blockX * block - options.originX);
-        const right = Math.min(width, (blockX + 1) * block - options.originX);
-        const mean = averageBlock(source, width, left, top, right, bottom);
-        if (!mean) continue;
-        // Coverage decides the silhouette: a genuine low-resolution sprite has no partly filled
-        // pixels, so `crisp` rounds each block in or out instead of leaving a soft edge.
-        const outAlpha = crisp ? (mean[3] >= 128 ? 255 : 0) : Math.round(mean[3]);
-        for (let y = top; y < bottom; y += 1) {
-          for (let x = left; x < right; x += 1) {
-            const offset = (y * width + x) * 4;
-            transformed[offset] = mean[0];
-            transformed[offset + 1] = mean[1];
-            transformed[offset + 2] = mean[2];
-            transformed[offset + 3] = outAlpha;
-          }
-        }
-      }
-    }
+    pixelateBlocks(source, transformed, width, height, {
+      originX: options.originX,
+      originY: options.originY,
+      block,
+      crisp: booleanParam(effect, 'crisp', true),
+    });
   } else if (effect.type === 'halftone') {
     const frequency = Math.max(3, Math.round(numericParam(effect, 'frequency', 8)));
     for (let y = 0; y < height; y += 1) {
@@ -747,6 +722,68 @@ function numericParam(effect: PostEffect, name: string, fallback: number): numbe
 function booleanParam(effect: PostEffect, name: string, fallback: boolean): boolean {
   const value = effect.params[name];
   return typeof value === 'boolean' ? value : fallback;
+}
+
+interface PixelateOptions {
+  /** Where this surface sits inside the element's whole effect layer, in device pixels. */
+  originX: number;
+  originY: number;
+  /** Block edge, in device pixels. */
+  block: number;
+  /** Round each block's coverage in or out, rather than leaving a partly covered edge. */
+  crisp: boolean;
+}
+
+/**
+ * Quantise `source` onto a block grid, writing the result into `transformed`.
+ *
+ * Blocks are indexed in the layer's global coordinates, not the surface's, so a tiled export lands
+ * them on one grid rather than restarting it in every tile. Every *core* pixel's block is complete
+ * within its own tile because `effectReach` reserves a block of halo for exactly this; the partial
+ * blocks along a tile's rendered edge all fall in the halo and are discarded before the tile is
+ * copied out, so no seam reaches the output.
+ */
+export function pixelateBlocks(
+  source: Uint8ClampedArray,
+  transformed: Uint8ClampedArray,
+  width: number,
+  height: number,
+  { originX, originY, block, crisp }: PixelateOptions,
+): void {
+  const firstBlockX = Math.floor(originX / block);
+  const lastBlockX = Math.floor((originX + width - 1) / block);
+  const firstBlockY = Math.floor(originY / block);
+  const lastBlockY = Math.floor((originY + height - 1) / block);
+  for (let blockY = firstBlockY; blockY <= lastBlockY; blockY += 1) {
+    const top = Math.max(0, blockY * block - originY);
+    const bottom = Math.min(height, (blockY + 1) * block - originY);
+    for (let blockX = firstBlockX; blockX <= lastBlockX; blockX += 1) {
+      const left = Math.max(0, blockX * block - originX);
+      const right = Math.min(width, (blockX + 1) * block - originX);
+      const mean = averageBlock(source, width, left, top, right, bottom);
+      if (!mean) continue;
+      // Coverage decides the silhouette: a genuine low-resolution image has no partly filled
+      // pixels, so `crisp` rounds each block in or out instead of leaving a soft edge.
+      const covered = !crisp || mean[3] >= 128;
+      const alpha = crisp ? (covered ? 255 : 0) : Math.round(mean[3]);
+      // A block that rounds itself out of existence gets zeroed rather than keeping the colour it
+      // would have had. Nothing composites an RGB sitting under a zero alpha, but leaving one
+      // behind makes the buffer's empty regions non-canonical, and readback paths that
+      // un-premultiply have to special-case it.
+      const red = covered ? mean[0] : 0;
+      const green = covered ? mean[1] : 0;
+      const blue = covered ? mean[2] : 0;
+      for (let y = top; y < bottom; y += 1) {
+        for (let x = left; x < right; x += 1) {
+          const offset = (y * width + x) * 4;
+          transformed[offset] = red;
+          transformed[offset + 1] = green;
+          transformed[offset + 2] = blue;
+          transformed[offset + 3] = alpha;
+        }
+      }
+    }
+  }
 }
 
 /**

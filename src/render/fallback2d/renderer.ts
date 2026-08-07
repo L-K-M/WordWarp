@@ -279,6 +279,14 @@ function mapBlendMode(mode: BlendMode): GlobalCompositeOperation {
   return mapping[mode] ?? 'source-over';
 }
 
+/**
+ * How far past the glyph an effect can paint, in *logical* pixels.
+ *
+ * Callers scale it: the preview expands the element bounds before multiplying by the render scale,
+ * and the tiled exporter takes `Math.ceil(reach * scale)` as its halo. So every case here -- and
+ * `aberration` and `pixelate` in particular, whose renderers multiply their own parameter by the
+ * scale -- returns the unscaled value.
+ */
 export function effectReach(effect: Effect): number {
   if (!effectContributesPixels(effect)) return 0;
   if (effect.kind === 'stroke') return effect.width;
