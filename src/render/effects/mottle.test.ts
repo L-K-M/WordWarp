@@ -5,13 +5,19 @@ import { createMottleSampler, mottleValue } from './cpu-effects';
 const SEED = 4242;
 const CELL = 16;
 
-/** Mean absolute difference between pixels `step` apart, sampled over a patch. */
+/**
+ * Mean absolute difference between pixels `step` apart, sampled over a patch.
+ *
+ * Sampled through the sampler rather than the one-shot wrapper: it is the path the renderer uses,
+ * and a separate test pins the two as identical.
+ */
 function roughness(step: number, cell: number): number {
+  const sample = createMottleSampler(SEED, cell);
   let total = 0;
   let samples = 0;
   for (let y = 0; y < 120; y += 3) {
     for (let x = 0; x < 120; x += 3) {
-      total += Math.abs(mottleValue(x, y, SEED, cell) - mottleValue(x + step, y, SEED, cell));
+      total += Math.abs(sample(x, y) - sample(x + step, y));
       samples += 1;
     }
   }
@@ -32,9 +38,10 @@ describe('mottle value noise', () => {
   });
 
   it('stays inside the unit range', () => {
+    const sample = createMottleSampler(SEED, CELL);
     for (let y = 0; y < 200; y += 7) {
       for (let x = 0; x < 200; x += 7) {
-        const value = mottleValue(x, y, SEED, CELL);
+        const value = sample(x, y);
         expect(value).toBeGreaterThanOrEqual(0);
         expect(value).toBeLessThanOrEqual(1);
       }
@@ -77,11 +84,12 @@ describe('mottle value noise', () => {
   });
 
   it('averages near the midpoint, so a symmetric blend leaves the tone alone', () => {
+    const sample = createMottleSampler(SEED, CELL);
     let total = 0;
     let samples = 0;
     for (let y = 0; y < 512; y += 2) {
       for (let x = 0; x < 512; x += 2) {
-        total += mottleValue(x, y, SEED, CELL);
+        total += sample(x, y);
         samples += 1;
       }
     }
