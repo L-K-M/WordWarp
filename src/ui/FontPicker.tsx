@@ -40,7 +40,8 @@ export function FontPicker({ value, onPick }: FontPickerProps) {
 
   useEffect(() => {
     if (!open) return;
-    if (DOCUMENT_FONTS.every((entry) => isFontReady(entry.family))) return;
+    // System families never enter the ready set, so only bundled faces count here.
+    if (DOCUMENT_FONTS.every((entry) => entry.source !== 'bundled' || isFontReady(entry.family))) return;
     let cancelled = false;
     void Promise.all(DOCUMENT_FONTS.map((entry) => ensureFontLoaded(entry.family))).then(() => {
       if (!cancelled) setFacesReady((count) => count + 1);

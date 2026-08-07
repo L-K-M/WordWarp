@@ -53,14 +53,20 @@ describe('font catalog', () => {
 });
 
 describe('quoteFontFamily', () => {
-  it('leaves single-word and generic families bare', () => {
-    expect(quoteFontFamily('Arial')).toBe('Arial');
+  it('leaves only true CSS generic families bare', () => {
     expect(quoteFontFamily('sans-serif')).toBe('sans-serif');
+    expect(quoteFontFamily('monospace')).toBe('monospace');
+    expect(quoteFontFamily('Arial')).toBe('"Arial"');
   });
 
   it('quotes multi-word families', () => {
     expect(quoteFontFamily('Arial Black')).toBe('"Arial Black"');
     expect(quoteFontFamily('Press Start 2P')).toBe('"Press Start 2P"');
+  });
+
+  it('quotes CSS-wide keywords so they cannot reset the property', () => {
+    expect(quoteFontFamily('inherit')).toBe('"inherit"');
+    expect(quoteFontFamily('revert-layer')).toBe('"revert-layer"');
   });
 
   it('escapes quotes and backslashes inside quoted names', () => {

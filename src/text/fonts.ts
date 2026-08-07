@@ -52,13 +52,31 @@ export function getFontCatalogEntry(family: string): FontCatalogEntry | undefine
   return FONT_CATALOG.find((entry) => entry.family === family);
 }
 
+const CSS_GENERIC_FAMILIES = new Set([
+  'serif',
+  'sans-serif',
+  'monospace',
+  'cursive',
+  'fantasy',
+  'system-ui',
+  'ui-serif',
+  'ui-sans-serif',
+  'ui-monospace',
+  'ui-rounded',
+  'emoji',
+  'math',
+  'fangsong',
+]);
+
 /**
- * CSS font-family strings for style attributes. Single-word names (and generics) go bare;
- * anything else is quoted with backslashes and quotes escaped, since a document's family can
- * arrive over a share link.
+ * CSS font-family strings for style attributes. Only true CSS generic families go bare --
+ * everything else is quoted with backslashes and quotes escaped, since a document's family can
+ * arrive over a share link. Quoting also neutralises CSS-wide keywords: a family literally
+ * named "inherit" must render as a missing face, not reset the property.
  */
 export function quoteFontFamily(family: string): string {
-  return /^[a-z-]+$/i.test(family) ? family : `"${family.replaceAll(/[\\"]/g, '\\$&')}"`;
+  if (CSS_GENERIC_FAMILIES.has(family.toLowerCase())) return family;
+  return `"${family.replaceAll(/[\\"]/g, '\\$&')}"`;
 }
 
 /** Tracks every family that finished loading, so callers can tell a fresh load from a cache hit. */
