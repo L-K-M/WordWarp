@@ -19,6 +19,9 @@ describe('preset library', () => {
 
     expect(preset?.apply.warp).toMatchObject({ kind: 'preset', preset: 'textCurveDown' });
     expect(preset?.tags).toEqual(expect.arrayContaining(['embroidery', 'needlework', 'textile', 'handmade']));
+    expect(preset?.apply.effects.map((effect) => effect.kind)).toEqual([
+      'dropShadow', 'fill', 'textureOverlay', 'satin', 'bevel', 'innerGlow', 'stroke', 'stroke',
+    ]);
     expect(preset?.apply.effects).toEqual(expect.arrayContaining([
       expect.objectContaining({ kind: 'textureOverlay', source: { type: 'procedural', pattern: 'stitch' } }),
       expect.objectContaining({ kind: 'bevel', style: 'pillow' }),

@@ -390,7 +390,9 @@ export function sampleStitchTexture(
   const phase = modulo(perpendicular + drift + wobble, safeSpacing) / safeSpacing;
   const ridge = (0.5 + Math.cos(phase * Math.PI * 2) * 0.5) ** 0.7;
   const twist = 0.5 + Math.sin(along / safeSpacing * 1.35 + bundleSeed * Math.PI * 2) * 0.5;
-  const glint = (phase < 0.08 || phase > 0.92) ? twist * 0.1 : 0;
+  const glintPosition = clamp01(Math.min(phase, 1 - phase) / 0.08);
+  const glintFalloff = 1 - glintPosition * glintPosition * (3 - 2 * glintPosition);
+  const glint = twist * 0.1 * glintFalloff;
   return clamp01(0.18 + ridge * (0.58 + twist * 0.12) + glint);
 }
 
