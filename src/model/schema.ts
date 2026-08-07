@@ -197,7 +197,7 @@ export const effectSchema = z.discriminatedUnion('kind', [
   z.object({
     ...effectBase,
     kind: z.literal('post'),
-    type: z.enum(['glitch', 'halftone', 'scanlines', 'grain', 'aberration']),
+    type: z.enum(['glitch', 'halftone', 'scanlines', 'grain', 'aberration', 'dither']),
     seed: z.number().int(),
     params: z.record(z.string(), z.union([finite, z.string(), z.boolean()])),
   }),

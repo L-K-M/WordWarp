@@ -444,6 +444,45 @@ function applyPostEffect(
         transformed.set(source.subarray(sourceOffset, sourceOffset + 4), destination);
       }
     }
+  } else if (effect.type === 'dither') {
+    // Ordered (Bayer) dithering: quantise every channel to `levels` steps, but bias each pixel by
+    // its position in a recursive Bayer matrix before rounding. The bias is what turns a flat band
+    // of quantisation error into an interleaved dot pattern, so a smooth ramp survives a two-level
+    // palette as texture rather than as a hard step.
+    //
+    // The matrix is indexed in the effect layer's global coordinates, like grain and scanlines, so
+    // a tiled large export lays down one continuous pattern instead of restarting it per tile.
+    const levels = Math.max(2, Math.min(32, Math.round(numericParam(effect, 'levels', 2))));
+    const matrix = bayerMatrix(numericParam(effect, 'matrix', 8));
+    // `amount` fades the positional bias out. At 0 the effect is a plain posterise with hard
+    // banding; at 1 the dot pattern carries the full step. It is deliberately the parameter the
+    // inspector's generic post slider writes.
+    const strength = clamp01(numericParam(effect, 'amount', 1));
+    const hardEdge = booleanParam(effect, 'hardEdge', true);
+    // Dot pitch is the one post parameter here that follows the render scale. Grain, scanlines and
+    // aberration model the *display* a picture is shown on, so they stay in device pixels; a dither
+    // pattern is part of the picture, like a bevel or a stroke. If the pitch stayed in device
+    // pixels a 4x export would render the same style at a quarter the dot size and lose the look
+    // entirely, so it is snapped to whole device pixels at the current scale instead.
+    const dot = Math.max(1, Math.round(numericParam(effect, 'dot', 1) * options.scale));
+    const step = 255 / (levels - 1);
+    for (let y = 0; y < height; y += 1) {
+      const matrixY = modulo(Math.floor((y + options.originY) / dot), matrix.size) * matrix.size;
+      for (let x = 0; x < width; x += 1) {
+        const offset = (y * width + x) * 4;
+        const alpha = source[offset + 3]!;
+        if (alpha === 0) continue;
+        const column = modulo(Math.floor((x + options.originX) / dot), matrix.size);
+        const bias = matrix.values[matrixY + column]! * strength;
+        for (let channel = 0; channel < 3; channel += 1) {
+          transformed[offset + channel] = ditherQuantise(source[offset + channel]!, step, bias);
+        }
+        // Anti-aliased coverage is the one thing a genuine one-bit image cannot have, so the same
+        // matrix optionally thresholds alpha too. Without this a 1-bit fill still shows a smooth
+        // grey fringe around every stem and the illusion collapses at the edges.
+        if (hardEdge) transformed[offset + 3] = alpha / 255 + bias >= 0.5 ? 255 : 0;
+      }
+    }
   } else if (effect.type === 'halftone') {
     const frequency = Math.max(3, Math.round(numericParam(effect, 'frequency', 8)));
     for (let y = 0; y < height; y += 1) {
@@ -706,6 +745,61 @@ function alphaBounds(alpha: Uint8Array, width: number, height: number): { x: num
 function numericParam(effect: PostEffect, name: string, fallback: number): number {
   const value = effect.params[name];
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function booleanParam(effect: PostEffect, name: string, fallback: boolean): boolean {
+  const value = effect.params[name];
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+/**
+ * Snap one channel to the nearest of `255 / step + 1` palette levels, nudged by a dither bias.
+ *
+ * With `bias` at 0 this is a plain posterise. A bias in (-0.5, 0.5) moves the rounding boundary,
+ * so a value that sits between two levels lands on the higher one in some pixels and the lower one
+ * in others -- in exactly the proportion needed to average back to where it started.
+ */
+export function ditherQuantise(value: number, step: number, bias: number): number {
+  return clampByte(Math.round(value / step + bias) * step);
+}
+
+/**
+ * Recursive Bayer threshold matrix, returned centred on zero.
+ *
+ * The classic construction doubles an n x n matrix into 2n x 2n as
+ * `[[4M, 4M+2], [4M+3, 4M+1]]`, which spreads consecutive thresholds as far apart on the grid as
+ * possible -- that even spread is what stops the pattern reading as stripes. Values come back in
+ * (-0.5, 0.5) so a caller can add one straight to a quantisation index: a threshold of -0.5 always
+ * rounds down, +0.5 always rounds up, and the average bias across the tile is zero, so dithering
+ * preserves the mean colour it started from.
+ *
+ * `requested` is snapped to a power of two in [2, 16]; the 2x2 is coarse and stripy on purpose,
+ * 8x8 is the size the black-and-white bitmap era standardised on.
+ */
+export function bayerMatrix(requested: number): { size: number; values: Float32Array } {
+  const exponent = Math.max(1, Math.min(4, Math.round(Math.log2(Math.max(2, requested)))));
+  const size = 2 ** exponent;
+  let values = new Float32Array([0]);
+  let current = 1;
+  while (current < size) {
+    const next = new Float32Array(current * current * 4);
+    for (let y = 0; y < current; y += 1) {
+      for (let x = 0; x < current; x += 1) {
+        const base = values[y * current + x]! * 4;
+        next[y * current * 2 + x] = base;
+        next[y * current * 2 + x + current] = base + 2;
+        next[(y + current) * current * 2 + x] = base + 3;
+        next[(y + current) * current * 2 + x + current] = base + 1;
+      }
+    }
+    values = next;
+    current *= 2;
+  }
+  const total = size * size;
+  for (let index = 0; index < values.length; index += 1) {
+    values[index] = (values[index]! + 0.5) / total - 0.5;
+  }
+  return { size, values };
 }
 
 function sampleChannel(
