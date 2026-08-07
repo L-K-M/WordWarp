@@ -130,10 +130,14 @@ function longShadow(length: number, color: string, angle = 45, fade = false): Lo
 function texture(
   pattern: Extract<TextureOverlayEffect['source'], { type: 'procedural' }>['pattern'],
   opacity = 0.2,
+  scale = 1,
+  rotation = 0,
 ): TextureOverlayEffect {
   const effect = createEffect('textureOverlay');
   effect.source = { type: 'procedural', pattern };
   effect.opacity = opacity;
+  effect.scale = scale;
+  effect.rotation = rotation;
   return effect;
 }
 
@@ -317,6 +321,16 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('rusty-sign', 'Rusty Sign', 'texture', ['#8a4b1f', '#d9813a', '#3d1f08', '#c9a227'], [
     fill(ramp('mahogany')), texture('noise', 0.3), bevel(9, 'inner', 150), innerShadow('#2e1504', 6, 10, 0.6),
   ], warp('textDeflate', 0.4), ['rust', 'vintage']),
+  definePreset('satin-stitch-sampler', 'Satin Stitch Sampler', 'texture', ['#65132f', '#ed4165', '#ffd2a1', '#173e46'], [
+    shadow('#2a1022', 7, 8, 0.48),
+    fill(gradient(['#65132f', '#ed4165', '#ffd2a1', '#ed4165', '#65132f'], 108)),
+    texture('stitch', 0.72, 0.82, -18),
+    satin('#ffd6a3', 0.16),
+    bevel(10, 'pillow', 145),
+    innerGlow('#ffe4bb', 4, 0.32),
+    stroke(8, '#173e46'),
+    stroke(3, '#f2c66d'),
+  ], warp('textCurveDown', 0.14, 0.42), ['embroidery', 'satin-stitch', 'thread', 'fiber', 'needlework', 'sampler', 'textile', 'handmade']),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {

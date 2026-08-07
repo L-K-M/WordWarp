@@ -338,16 +338,26 @@ function renderTexture(
 ): CanvasSurface {
   const pixels = new Uint8ClampedArray(width * height * 4);
   const pattern = effect.source.type === 'procedural' ? effect.source.pattern : 'noise';
+  const seed = hashString(effect.id);
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const index = y * width + x;
       const coverage = effect.clipToShape ? faceAlpha[index]! / 255 : 1;
       const globalX = x + options.originX;
       const globalY = y + options.originY;
-      let value = hashNoise(globalX, globalY, hashString(effect.id));
+      let value = hashNoise(globalX, globalY, seed);
       if (pattern === 'weave') value = ((Math.floor(globalX / 3) + Math.floor(globalY / 3)) & 1) === 0 ? 0.8 : 0.25;
       if (pattern === 'halftone') value = (modulo(globalX, 8) - 4) ** 2 + (modulo(globalY, 8) - 4) ** 2 < 8 ? 0.9 : 0.1;
       if (pattern === 'grain') value = 0.35 + value * 0.3;
+      if (pattern === 'stitch') {
+        value = sampleStitchTexture(
+          globalX / options.scale,
+          globalY / options.scale,
+          seed,
+          3.2 * effect.scale,
+          effect.rotation,
+        );
+      }
       const offset = index * 4;
       const channel = Math.round(value * 255);
       pixels[offset] = channel;
@@ -357,6 +367,31 @@ function renderTexture(
     }
   }
   return imageSurface(pixels, width, height);
+}
+
+/** Sample parallel satin-stitch threads in logical document pixels. */
+export function sampleStitchTexture(
+  x: number,
+  y: number,
+  seed: number,
+  spacing: number,
+  rotation: number,
+): number {
+  const safeSpacing = Math.max(0.8, spacing);
+  const radians = (rotation * Math.PI) / 180;
+  const cosine = Math.cos(radians);
+  const sine = Math.sin(radians);
+  const perpendicular = x * cosine - y * sine;
+  const along = x * sine + y * cosine;
+  const bundle = Math.floor(perpendicular / (safeSpacing * 6));
+  const bundleSeed = hashNoise(bundle, seed, 113);
+  const drift = (bundleSeed - 0.5) * safeSpacing * 0.3;
+  const wobble = Math.sin(along / (safeSpacing * 4.5) + bundleSeed * Math.PI * 2) * safeSpacing * 0.09;
+  const phase = modulo(perpendicular + drift + wobble, safeSpacing) / safeSpacing;
+  const ridge = (0.5 + Math.cos(phase * Math.PI * 2) * 0.5) ** 0.7;
+  const twist = 0.5 + Math.sin(along / safeSpacing * 1.35 + bundleSeed * Math.PI * 2) * 0.5;
+  const glint = (phase < 0.08 || phase > 0.92) ? twist * 0.1 : 0;
+  return clamp01(0.18 + ridge * (0.58 + twist * 0.12) + glint);
 }
 
 function drawReflection(output: CanvasSurface, offset: number, heightRatio: number, opacity: number): void {
