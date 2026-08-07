@@ -3,6 +3,7 @@ import { createId } from '../lib/id';
 import type {
   AnimationTrack,
   BevelEffect,
+  BlendMode,
   DropShadowEffect,
   Effect,
   ExtrudeEffect,
@@ -82,6 +83,36 @@ function vhsShadow(color: string, angle: number): DropShadowEffect {
   const effect = shadow(color, 5, 0, 0.9);
   effect.angle = angle;
   effect.useGlobalLight = false;
+  return effect;
+}
+
+/**
+ * One spot-ink plate, laid down out of register.
+ *
+ * A riso runs each colour through a separate drum, so no two plates ever land in exactly the same
+ * place -- and that drift is the whole aesthetic rather than a defect. A hard-edged, unblurred,
+ * un-knocked-out drop shadow is exactly a second plate: same stencil, a few pixels off, and set to
+ * multiply so the overlap darkens into a third colour the way wet ink over dry ink does.
+ */
+function inkPlate(color: string, distance: number, angle: number, opacity = 1): DropShadowEffect {
+  const effect = createEffect('dropShadow');
+  effect.color = hexColor(color);
+  effect.distance = distance;
+  effect.size = 0;
+  effect.spread = 0;
+  effect.angle = angle;
+  effect.useGlobalLight = false;
+  effect.knockout = false;
+  effect.blendMode = 'multiply';
+  effect.opacity = opacity;
+  return effect;
+}
+
+/** Uneven ink lay-down. `scale` sets blotch size and is what the inspector's texture slider edits. */
+function mottle(scale: number, blendMode: BlendMode, opacity: number): TextureOverlayEffect {
+  const effect = texture('mottle', opacity);
+  effect.scale = scale;
+  effect.blendMode = blendMode;
   return effect;
 }
 
@@ -317,6 +348,27 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('rusty-sign', 'Rusty Sign', 'texture', ['#8a4b1f', '#d9813a', '#3d1f08', '#c9a227'], [
     fill(ramp('mahogany')), texture('noise', 0.3), bevel(9, 'inner', 150), innerShadow('#2e1504', 6, 10, 0.6),
   ], warp('textDeflate', 0.4), ['rust', 'vintage']),
+
+  definePreset('riso-duotone', 'Riso Duotone', 'texture', ['#ff48b0', '#0f6fd0', '#3a1a6e', '#ffe9f4'], [
+    // Fluoro pink over blue is the canonical riso pairing. The face is held just under full
+    // opacity so the blue plate reads through it as a cast rather than being covered outright --
+    // ink is not paint, it does not hide what is under it.
+    inkPlate('#0f6fd0', 7, 205), fill(solid('#ff48b0', 0.86)), mottle(1, 'screen', 0.42),
+    texture('grain', 0.16),
+  ], none(), ['riso', 'duotone', 'print', 'zine']),
+  definePreset('overprint', 'Overprint', 'texture', ['#ffd400', '#ff48b0', '#0f6fd0', '#2a1240'], [
+    // Three drums, three registrations, one word. Every pair of plates multiplies into a fourth
+    // and fifth colour that appears nowhere in the palette -- which is the trick riso printers
+    // use to get six colours out of three inks.
+    inkPlate('#0f6fd0', 8, 195), inkPlate('#ffd400', 8, 15), fill(solid('#ff48b0', 0.72)),
+    mottle(0.8, 'screen', 0.36), texture('grain', 0.18),
+  ], none(), ['riso', 'overprint', 'print', 'cmyk']),
+  definePreset('wash-ink', 'Wash Ink', 'texture', ['#f2f7ff', '#4a86c8', '#123a63', '#04101f'], [
+    // Same mottle turned up and pushed toward the edges: pigment pooling at the rim of a brush
+    // stroke while the middle dries thin.
+    shadow('#03101d', 8, 12, 0.5), fill(gradient(['#eaf4ff', '#5f9ad6', '#123a63'], 168)),
+    mottle(1.7, 'overlay', 0.9), innerGlow('#0b2a4a', 16, 0.45), texture('grain', 0.12),
+  ], none(), ['ink', 'watercolour', 'wash', 'organic']),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {

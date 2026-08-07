@@ -338,16 +338,22 @@ function renderTexture(
 ): CanvasSurface {
   const pixels = new Uint8ClampedArray(width * height * 4);
   const pattern = effect.source.type === 'procedural' ? effect.source.pattern : 'noise';
+  const seed = hashString(effect.id);
+  // Blotch size is a property of the ink, not of the screen it is displayed on, so it tracks the
+  // render scale the way a bevel size does. The grid-locked patterns above deliberately do not:
+  // `noise` and `grain` are film artefacts and belong in device pixels.
+  const mottleCell = Math.max(2, MOTTLE_CELL * effect.scale * options.scale);
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const index = y * width + x;
       const coverage = effect.clipToShape ? faceAlpha[index]! / 255 : 1;
       const globalX = x + options.originX;
       const globalY = y + options.originY;
-      let value = hashNoise(globalX, globalY, hashString(effect.id));
+      let value = hashNoise(globalX, globalY, seed);
       if (pattern === 'weave') value = ((Math.floor(globalX / 3) + Math.floor(globalY / 3)) & 1) === 0 ? 0.8 : 0.25;
       if (pattern === 'halftone') value = (modulo(globalX, 8) - 4) ** 2 + (modulo(globalY, 8) - 4) ** 2 < 8 ? 0.9 : 0.1;
       if (pattern === 'grain') value = 0.35 + value * 0.3;
+      if (pattern === 'mottle') value = mottleValue(globalX, globalY, seed, mottleCell);
       const offset = index * 4;
       const channel = Math.round(value * 255);
       pixels[offset] = channel;
@@ -357,6 +363,60 @@ function renderTexture(
     }
   }
   return imageSurface(pixels, width, height);
+}
+
+/** Width of the coarsest mottle cell, in logical pixels, before the effect's `scale` is applied. */
+const MOTTLE_CELL = 16;
+/** Octave weights. Front-loaded, so the shape reads as blotches with detail rather than as fog. */
+const MOTTLE_OCTAVES = [
+  { frequency: 1, weight: 0.55 },
+  { frequency: 2.3, weight: 0.29 },
+  { frequency: 5.7, weight: 0.16 },
+];
+/** Contrast applied about the midpoint, so patches resolve into ink and no-ink rather than a haze. */
+const MOTTLE_CONTRAST = 2.1;
+
+/**
+ * Smooth value noise on a lattice `cell` pixels wide, interpolated with a smoothstep.
+ *
+ * `hashNoise` is white noise: independent per pixel, so it can only ever look like film grain --
+ * which is exactly why the existing `noise` and `grain` patterns use it directly. Sampling it on a
+ * coarse lattice and interpolating between the corners instead produces features the size of the
+ * cell, which is what an uneven ink lay-down or a wash actually looks like.
+ */
+function latticeNoise(x: number, y: number, seed: number, cell: number): number {
+  const gridX = x / cell;
+  const gridY = y / cell;
+  const cellX = Math.floor(gridX);
+  const cellY = Math.floor(gridY);
+  const fractionX = gridX - cellX;
+  const fractionY = gridY - cellY;
+  const smoothX = fractionX * fractionX * (3 - 2 * fractionX);
+  const smoothY = fractionY * fractionY * (3 - 2 * fractionY);
+  const topLeft = hashNoise(cellX, cellY, seed);
+  const topRight = hashNoise(cellX + 1, cellY, seed);
+  const bottomLeft = hashNoise(cellX, cellY + 1, seed);
+  const bottomRight = hashNoise(cellX + 1, cellY + 1, seed);
+  const top = topLeft + (topRight - topLeft) * smoothX;
+  const bottom = bottomLeft + (bottomRight - bottomLeft) * smoothX;
+  return top + (bottom - top) * smoothY;
+}
+
+/**
+ * Fractal mottling: uneven ink coverage, in 0..1, centred on the midpoint.
+ *
+ * Three octaves of lattice noise give a large blotch shape with smaller variation inside it, and a
+ * contrast curve about the middle pushes the result toward "ink" and "no ink" rather than leaving
+ * an even haze. Centring on 0.5 means the symmetric blend modes -- `overlay`, `soft-light` -- leave
+ * the average tone alone and only redistribute it, so a mottled fill stays the colour it was.
+ */
+export function mottleValue(x: number, y: number, seed: number, cell: number): number {
+  let total = 0;
+  for (const octave of MOTTLE_OCTAVES) {
+    total += latticeNoise(x * octave.frequency, y * octave.frequency, seed + octave.frequency * 977, cell)
+      * octave.weight;
+  }
+  return clamp01((total - 0.5) * MOTTLE_CONTRAST + 0.5);
 }
 
 function drawReflection(output: CanvasSurface, offset: number, heightRatio: number, opacity: number): void {
