@@ -335,7 +335,13 @@ const TOPOGRAPHY_PERIOD = 4;
 const TOPOGRAPHY_LINE_WIDTH = 1;
 /** Every fifth contour is an index contour. This is the cartographic convention, not a free knob. */
 const TOPOGRAPHY_INDEX_INTERVAL = 5;
-/** Rings drawn outside the glyph before the pattern fades out, when `clipToShape` is off. */
+/**
+ * Distance the unclipped outer ring field reaches, counted in ring periods.
+ *
+ * The falloff is linear and hits zero exactly here, so the outermost ring that is actually visible
+ * is the one before it: six rings are drawn outside the glyph, and the seventh is the fade's
+ * endpoint rather than a ring anybody sees.
+ */
 const TOPOGRAPHY_OUTER_RINGS = 7;
 
 /**
@@ -377,10 +383,6 @@ function renderTexture(
       const coverage = effect.clipToShape ? faceAlpha[index]! / 255 : 1;
       const globalX = x + options.originX;
       const globalY = y + options.originY;
-      let value = hashNoise(globalX, globalY, hashString(effect.id));
-      if (pattern === 'weave') value = ((Math.floor(globalX / 3) + Math.floor(globalY / 3)) & 1) === 0 ? 0.8 : 0.25;
-      if (pattern === 'halftone') value = (modulo(globalX, 8) - 4) ** 2 + (modulo(globalY, 8) - 4) ** 2 < 8 ? 0.9 : 0.1;
-      if (pattern === 'grain') value = 0.35 + value * 0.3;
       const offset = index * 4;
       if (distance) {
         // The other patterns fill their whole rectangle with an opaque grey and rely on
@@ -397,6 +399,10 @@ function renderTexture(
         pixels[offset + 3] = Math.round(255 * coverage * line * effect.opacity);
         continue;
       }
+      let value = hashNoise(globalX, globalY, hashString(effect.id));
+      if (pattern === 'weave') value = ((Math.floor(globalX / 3) + Math.floor(globalY / 3)) & 1) === 0 ? 0.8 : 0.25;
+      if (pattern === 'halftone') value = (modulo(globalX, 8) - 4) ** 2 + (modulo(globalY, 8) - 4) ** 2 < 8 ? 0.9 : 0.1;
+      if (pattern === 'grain') value = 0.35 + value * 0.3;
       const channel = Math.round(value * 255);
       pixels[offset] = channel;
       pixels[offset + 1] = channel;
