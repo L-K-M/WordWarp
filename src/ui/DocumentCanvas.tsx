@@ -44,6 +44,9 @@ export function DocumentCanvas({
     let cancelled = false;
     void ensureFontsForDocument(deferredDocument).then((loadedSomething) => {
       if (!cancelled && loadedSomething) setFontsReady((count) => count + 1);
+    }, (fontError: unknown) => {
+      // A font that never arrives leaves the fallback face in place; the canvas renders either way.
+      if (!cancelled) console.warn('WordWarp font loading failed', fontError);
     });
     return () => {
       cancelled = true;

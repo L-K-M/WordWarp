@@ -33,17 +33,17 @@ export function getCachedPresetPreview(preset: Preset): string | undefined {
  * `renderPresetPreviewAsync`, which waits for bundled fonts first -- a direct call here could
  * cache a fallback-glyph thumbnail that the cache then serves forever.
  */
-function renderPresetPreview(preset: Preset): string | undefined {
-  const cached = cache.get(preset.id);
+function renderPresetPreview(doc: WordWarpDocument, presetId: string): string | undefined {
+  const cached = cache.get(presetId);
   if (cached) return cached;
   try {
     const canvas = document.createElement('canvas');
     canvas.width = PREVIEW_WIDTH;
     canvas.height = PREVIEW_HEIGHT;
     const context = get2dContext(canvas);
-    renderDocument2d(context, previewDocument(preset));
+    renderDocument2d(context, doc);
     const url = canvas.toDataURL('image/png');
-    cache.set(preset.id, url);
+    cache.set(presetId, url);
     return url;
   } catch {
     // A preview is decoration; if this environment cannot rasterise one, the card keeps its
@@ -53,13 +53,19 @@ function renderPresetPreview(preset: Preset): string | undefined {
 }
 
 /**
- * Font-aware variant of `renderPresetPreview`. A preset that sets a bundled font must not render
- * before the face is registered, or the cache would hold a fallback-glyph thumbnail forever.
+ * Font-aware thumbnail render: a preset that sets a bundled font must not render before the face
+ * is registered, or the cache would hold a fallback-glyph thumbnail forever. Never rejects --
+ * like the sync renderer it replaces, a failure just keeps the swatch placeholder.
  */
 export async function renderPresetPreviewAsync(preset: Preset): Promise<string | undefined> {
   if (cache.has(preset.id)) return cache.get(preset.id);
-  await ensureFontsForDocument(previewDocument(preset));
-  return renderPresetPreview(preset);
+  try {
+    const doc = previewDocument(preset);
+    await ensureFontsForDocument(doc);
+    return renderPresetPreview(doc, preset.id);
+  } catch {
+    return undefined;
+  }
 }
 
 function previewDocument(preset: Preset): WordWarpDocument {

@@ -119,6 +119,7 @@ async function loadBundledFont(entry: FontCatalogEntry): Promise<boolean> {
     const loaded = await face.load();
     set.add(loaded);
     ready.add(entry.family);
+    pending.delete(entry.family);
     return true;
   } catch (error) {
     // Drop the rejected promise so a transient failure (offline first visit, slow connection)

@@ -43,6 +43,8 @@ describe('font catalog', () => {
   it('offers a healthy spread of bundled display faces', () => {
     const bundled = DOCUMENT_FONTS.filter((entry) => entry.source === 'bundled');
     expect(bundled.length).toBeGreaterThanOrEqual(10);
+    // Current state: every bundled display face ships single-weight 400. Not a design rule --
+    // revisit when a variable display face joins the catalogue.
     expect(bundled.every((entry) => entry.weight === 400)).toBe(true);
   });
 });

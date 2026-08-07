@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 
 import {
   DOCUMENT_FONTS,
@@ -27,9 +27,12 @@ export function FontPicker({ value, onPick }: FontPickerProps) {
   const [facesReady, setFacesReady] = useState(0);
 
   const known = getFontCatalogEntry(value);
-  const options: FontCatalogEntry[] = known
-    ? [...DOCUMENT_FONTS]
-    : [{ family: value, source: 'local', weight: 400, tag: 'system' }, ...DOCUMENT_FONTS];
+  const options: FontCatalogEntry[] = useMemo(
+    () => known
+      ? [...DOCUMENT_FONTS]
+      : [{ family: value, source: 'local', weight: 400, tag: 'system' }, ...DOCUMENT_FONTS],
+    [known, value],
+  );
 
   useEffect(() => {
     if (!open) return;

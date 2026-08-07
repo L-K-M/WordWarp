@@ -1369,52 +1369,53 @@ button:disabled {
   padding: 13px 20px;
   border: 3px solid rgb(255 255 255 / 30%);
   border-radius: 999px;
-  color: #fff;
   font-size: 13px;
   font-weight: 800;
   text-align: left;
-  text-shadow: 0 1px 2px rgb(0 0 0 / 40%);
+  /* Every flavour pairs bright candy with deep text, like the dark-text orbs: white 13px text
+     on these gradients falls well under WCAG AA's 4.5:1. */
+  color: #053c46;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 35%);
   background:
     radial-gradient(circle at 18% 22%, rgb(255 255 255 / 70%) 0 4%, transparent 26%),
-    linear-gradient(160deg, #17b7bd, #0d8f96 60%, #0a5a62);
+    linear-gradient(160deg, #aef6ff, #4fdcf2 60%, #1fabc4);
   box-shadow:
     inset 0 -5px 9px rgb(0 0 0 / 25%),
-    0 4px 0 #04333a,
+    0 4px 0 #0b7285,
     0 14px 30px rgb(0 0 0 / 45%);
 }
 
 .toast-success {
+  color: #123006;
   background:
     radial-gradient(circle at 18% 22%, rgb(255 255 255 / 70%) 0 4%, transparent 26%),
-    linear-gradient(160deg, #8fe34f, #54b729 60%, #2f7a10);
+    linear-gradient(160deg, #d6ffa3, #8fe34f 60%, #54b729);
   box-shadow:
     inset 0 -5px 9px rgb(0 0 0 / 25%),
     0 4px 0 #1d5c0b,
     0 14px 30px rgb(0 0 0 / 45%);
-  color: #123006;
-  text-shadow: 0 1px 0 rgb(255 255 255 / 35%);
 }
 
 .toast-error {
+  color: #4a0808;
   background:
     radial-gradient(circle at 18% 22%, rgb(255 255 255 / 70%) 0 4%, transparent 26%),
-    linear-gradient(160deg, #ff5252, #d92b3a 60%, #8f1626);
+    linear-gradient(160deg, #ffb1b1, #ff6b6b 60%, #e04545);
   box-shadow:
     inset 0 -5px 9px rgb(0 0 0 / 25%),
-    0 4px 0 #5c0d18,
+    0 4px 0 #8f1626,
     0 14px 30px rgb(0 0 0 / 45%);
 }
 
 .toast-warning {
+  color: #4a2c00;
   background:
     radial-gradient(circle at 18% 22%, rgb(255 255 255 / 70%) 0 4%, transparent 26%),
-    linear-gradient(160deg, #ffd23f, #f79c1d 60%, #b96a08);
+    linear-gradient(160deg, #fff3a0, #ffd23f 60%, #f79c1d);
   box-shadow:
     inset 0 -5px 9px rgb(0 0 0 / 25%),
-    0 4px 0 #7c4a05,
+    0 4px 0 #b96a08,
     0 14px 30px rgb(0 0 0 / 45%);
-  color: #4a2c00;
-  text-shadow: 0 1px 0 rgb(255 255 255 / 35%);
 }
 
 .update-banner {
