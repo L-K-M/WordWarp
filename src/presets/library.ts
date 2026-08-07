@@ -280,7 +280,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('inflated-balloon', 'Inflated Balloon', 'dimensional', ['#ff4d6d', '#ffffff', '#a91039', '#ffb1c0'], [
     shadow('#8a0f31', 10, 16, 0.5), fill(gradient(['#ffffff', '#ff9aad', '#ff4d6d', '#a91039'])), bevel(30, 'pillow', 220), innerGlow('#ffffff', 14, 0.7),
   ], warp('textInflate', 0.94, 0.8), ['balloon', 'pillow']),
-  definePreset('topographic-taffy', 'Topographic Taffy', 'dimensional', ['#fff4cf', '#d9ed92', '#2d8b8c', '#e85d4f'], [
+  definePreset('topographic-taffy', 'Topographic Taffy', 'dimensional', ['#fff4cf', '#d9ed92', '#65c6a6', '#2d8b8c', '#f2b84b', '#e85d4f'], [
     shadow('#0e1d2d', 10, 8, 0.52),
     extrude(18, '#173d4a', 48),
     fill(solid('#fff4cf')),

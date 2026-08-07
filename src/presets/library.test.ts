@@ -7,7 +7,7 @@ import { OFFICE_RAMPS } from './office-ramps';
 
 describe('preset library', () => {
   it('ships every named style from the six core categories', () => {
-    expect(BUILT_IN_PRESETS.length).toBeGreaterThanOrEqual(41);
+    expect(BUILT_IN_PRESETS).toHaveLength(42);
     expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(BUILT_IN_PRESETS.length);
     expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.category))).toEqual(
       new Set(['metallic', 'synthwave', 'y2k', 'nineties', 'dimensional', 'texture']),
@@ -18,6 +18,7 @@ describe('preset library', () => {
     const preset = BUILT_IN_PRESETS.find((candidate) => candidate.id === 'topographic-taffy');
 
     expect(preset?.apply.warp).toMatchObject({ kind: 'preset', preset: 'textCanUp' });
+    expect(preset?.preview).toEqual(['#fff4cf', '#d9ed92', '#65c6a6', '#2d8b8c', '#f2b84b', '#e85d4f']);
     expect(preset?.tags).toEqual(expect.arrayContaining(['topographic', 'contour', 'strata', 'cartography']));
     const strokes = preset?.apply.effects.filter((effect) => effect.kind === 'stroke') ?? [];
     expect(strokes.map((effect) => [effect.width, effect.position])).toEqual([
