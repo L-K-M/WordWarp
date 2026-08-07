@@ -64,4 +64,16 @@ describe('texture overlay reach', () => {
     const wide = textureOverlayReach(overlay('topography', false, 3));
     expect(wide).toBeCloseTo(narrow * 3, 6);
   });
+
+  it('still covers the paint once the spacing floor takes over', () => {
+    // Below a texture scale of 0.5 the ring spacing is floored so the rings cannot merge into a
+    // solid. The reach has to be floored on the same terms: computed from the unfloored spacing it
+    // would come out under half what actually gets painted, and the outer rings would be sliced
+    // off at the layer edge -- the exact failure this function exists to prevent. 0.2 is the
+    // inspector's minimum texture scale, so it is reachable by dragging one slider.
+    const floored = textureOverlayReach(overlay('topography', false, 0.2));
+    const unfloored = textureOverlayReach(overlay('topography', false, 0.5));
+    expect(floored).toBe(unfloored);
+    expect(floored).toBeGreaterThan(0);
+  });
 });

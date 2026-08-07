@@ -329,6 +329,28 @@ function renderBevel(
   ];
 }
 
+/** Spacing between contour rings, in logical pixels, before the effect's own `scale` is applied. */
+const TOPOGRAPHY_PERIOD = 4;
+/** Weight of an ordinary contour, in logical pixels. Index contours are drawn at twice this. */
+const TOPOGRAPHY_LINE_WIDTH = 1;
+/** Every fifth contour is an index contour. This is the cartographic convention, not a free knob. */
+const TOPOGRAPHY_INDEX_INTERVAL = 5;
+/** Rings drawn outside the glyph before the pattern fades out, when `clipToShape` is off. */
+const TOPOGRAPHY_OUTER_RINGS = 7;
+
+/**
+ * Ring spacing in logical pixels, floored so the rings can never merge into a solid.
+ *
+ * The floor has to live in logical space, not render space. `textureOverlayReach` grows the render
+ * bounds from the logical spacing while `renderTexture` paints from the render-space spacing, and
+ * a floor applied only to the latter would let the paint run past the room reserved for it -- at
+ * the inspector's minimum texture scale of 0.2 the rings would reach two and a half times as far
+ * as the bounds allowed and get sliced off at the layer edge.
+ */
+function topographyPeriod(effectScale: number): number {
+  return Math.max(2, TOPOGRAPHY_PERIOD * effectScale);
+}
+
 function renderTexture(
   effect: TextureOverlayEffect,
   faceAlpha: Uint8Array,
@@ -346,7 +368,7 @@ function renderTexture(
   // Contour spacing and line weight both follow the render scale, because they describe the
   // artwork rather than the display: an export has to put the same number of rings inside the same
   // letter. `scale` is the effect's own multiplier and is what the inspector slider already edits.
-  const period = Math.max(2, TOPOGRAPHY_PERIOD * effect.scale * options.scale);
+  const period = topographyPeriod(effect.scale) * options.scale;
   const lineWidth = Math.max(1, TOPOGRAPHY_LINE_WIDTH * options.scale);
   const outerReach = period * TOPOGRAPHY_OUTER_RINGS;
   for (let y = 0; y < height; y += 1) {
@@ -385,15 +407,6 @@ function renderTexture(
   return imageSurface(pixels, width, height);
 }
 
-/** Spacing between contour rings, in logical pixels, before the effect's own `scale` is applied. */
-const TOPOGRAPHY_PERIOD = 4;
-/** Weight of an ordinary contour, in logical pixels. Index contours are drawn at twice this. */
-const TOPOGRAPHY_LINE_WIDTH = 1;
-/** Every fifth contour is an index contour. This is the cartographic convention, not a free knob. */
-const TOPOGRAPHY_INDEX_INTERVAL = 5;
-/** Rings drawn outside the glyph before the pattern fades out, when `clipToShape` is off. */
-const TOPOGRAPHY_OUTER_RINGS = 7;
-
 /**
  * How far outside the glyph a topography overlay paints, in logical pixels.
  *
@@ -401,11 +414,15 @@ const TOPOGRAPHY_OUTER_RINGS = 7;
  * word into an island on a map -- so the render bounds have to be grown to hold them or the last
  * rings are sliced off by the layer edge. Every other procedural pattern is clipped to the shape
  * and needs no reach at all.
+ *
+ * This must stay the same expression `renderTexture` paints from, scaled: both go through
+ * `topographyPeriod`, so the floor applies identically on each side and the bounds can never come
+ * out smaller than the paint.
  */
 export function textureOverlayReach(effect: TextureOverlayEffect): number {
   if (effect.clipToShape) return 0;
   if (effect.source.type !== 'procedural' || effect.source.pattern !== 'topography') return 0;
-  return TOPOGRAPHY_PERIOD * effect.scale * TOPOGRAPHY_OUTER_RINGS;
+  return topographyPeriod(effect.scale) * TOPOGRAPHY_OUTER_RINGS;
 }
 
 /**

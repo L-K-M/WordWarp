@@ -147,6 +147,9 @@ function texture(
  * ring spacing and is what the inspector's texture slider already edits. Unclipping lets the rings
  * carry on outside the letterform, which is the difference between a hatched glyph and a contour
  * map of a word.
+ *
+ * `rotation` is left alone deliberately and has no effect here: contours follow the glyph's own
+ * distance field, so there is no grid for an angle to turn.
  */
 function topography(
   scale: number,
