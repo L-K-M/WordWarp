@@ -56,6 +56,14 @@ export function FontPicker({ value, onPick }: FontPickerProps) {
     return () => window.removeEventListener('pointerdown', closeOnOutsidePress);
   }, [open]);
 
+  // Keyboard navigation moves activeFamily through a list taller than the popover; keep the
+  // active option scrolled into view or arrow-key users lose track of where they are.
+  useEffect(() => {
+    if (!open) return;
+    const active = listRef.current?.querySelector(`#${CSS.escape(`${baseId}-option-${slugify(activeFamily)}`)}`);
+    active?.scrollIntoView({ block: 'nearest' });
+  }, [open, activeFamily, baseId]);
+
   const openMenu = (startAt?: string) => {
     setActiveFamily(startAt ?? value);
     setOpen(true);
@@ -125,6 +133,7 @@ export function FontPicker({ value, onPick }: FontPickerProps) {
         className="font-picker-button jelly-field"
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-owns={open ? `${baseId}-list` : undefined}
         aria-labelledby={`${baseId}-label ${baseId}-value`}
         aria-activedescendant={open ? `${baseId}-option-${slugify(activeFamily)}` : undefined}
         onClick={() => (open ? setOpen(false) : openMenu())}
@@ -141,6 +150,7 @@ export function FontPicker({ value, onPick }: FontPickerProps) {
       </button>
       {open && (
         <ul
+          id={`${baseId}-list`}
           ref={listRef}
           className="font-picker-list"
           role="listbox"

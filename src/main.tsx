@@ -7,7 +7,9 @@ import { announceServiceWorkerUpdate } from './service-worker-update';
 import { ensureUiFonts } from './text/fonts';
 import './styles.css';
 
-ensureUiFonts();
+// Fire-and-forget: the interface face swaps in when it lands and falls back to the system
+// stack if it never does; font loads resolve rather than reject, so there is nothing to catch.
+void ensureUiFonts();
 
 const updateServiceWorker: (reloadPage?: boolean) => Promise<void> = registerSW({
   immediate: true,

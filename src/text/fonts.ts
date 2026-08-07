@@ -99,10 +99,10 @@ export async function ensureFontsForDocument(document: WordWarpDocument): Promis
 }
 
 /** Kick the interface chrome font off at boot; it renders with fallbacks until it lands. */
-export function ensureUiFonts(): void {
-  for (const entry of FONT_CATALOG) {
-    if (entry.ui) void ensureFontLoaded(entry.family);
-  }
+export async function ensureUiFonts(): Promise<void> {
+  await Promise.all(
+    FONT_CATALOG.filter((entry) => entry.ui).map((entry) => ensureFontLoaded(entry.family)),
+  );
 }
 
 async function loadBundledFont(entry: FontCatalogEntry): Promise<boolean> {

@@ -62,7 +62,7 @@ body {
 
 @keyframes goo-pulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.72; }
+  50% { opacity: 0.85; }
 }
 
 /* Redundant with the global reduced-motion block at the end of this file, kept local so the
@@ -225,9 +225,15 @@ button:disabled {
   transition: transform 90ms ease, filter 90ms ease;
 }
 
-.bean:hover {
+.bean:hover:not(:disabled) {
   filter: brightness(1.1);
   transform: translateY(-1px) rotate(-1deg);
+}
+
+.bean:disabled {
+  filter: saturate(0.25) brightness(0.7);
+  opacity: 0.55;
+  transform: none;
 }
 
 .bean.active {
