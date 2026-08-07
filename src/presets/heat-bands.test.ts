@@ -54,9 +54,24 @@ describe('depth-mapped colour bands', () => {
     }
   });
 
-  it.each(BANDED)('%s keeps every band narrow enough to reach the middle of ordinary text', (id, count) => {
-    // Depth inside a glyph is bounded by half the stem width. A band wider than this never
-    // reaches the core of normal-weight text, and the style collapses to its outermost colour.
-    for (const band of bands(id, count)) expect(band.size, `${id} band`).toBeLessThanOrEqual(20);
+  it.each(BANDED)('%s keeps its rim band inside half a stem', (id, count) => {
+    // The narrowest band is the one drawn last, so it is what makes the rim a rim. Half a stem is
+    // five to ten pixels for normal-weight text at a typical size; a rim band approaching that
+    // stops being an edge and starts being the whole letter.
+    //
+    // Deliberately a bound on the *narrowest* band, not the widest. The widest is meant to exceed
+    // half a stem -- a shallow falloff still reaching the centre is what keeps the ramp
+    // continuous -- so a ceiling on it would be a number reverse-engineered from today's values
+    // rather than one derived from anything.
+    const sizes = bands(id, count).map((band) => band.size);
+    expect(Math.min(...sizes), `${id} rim band`).toBeLessThanOrEqual(6);
+  });
+
+  it.each(BANDED)('%s spreads its bands over a range rather than bunching them', (id, count) => {
+    // The real failure mode: bands all of a similar width overlap at similar strengths everywhere,
+    // and the ramp collapses into one blend with no zones in it. Requiring the widest to be
+    // several times the narrowest is what keeps them reading as separate depths.
+    const sizes = bands(id, count).map((band) => band.size);
+    expect(Math.max(...sizes) / Math.min(...sizes), `${id} band spread`).toBeGreaterThanOrEqual(2);
   });
 });

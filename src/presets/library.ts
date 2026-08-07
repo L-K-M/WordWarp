@@ -169,8 +169,20 @@ function post(type: PostEffect['type'], params: PostEffect['params'], opacity = 
  * the letterform rather than a gradient axis, so a thin stem reads cool all the way through and a
  * thick one lights up in the middle, which is what an instrument actually shows.
  *
- * The sizes are small on purpose. Depth inside a letter is bounded by half its stem width, so a
- * band any wider than a few pixels never reaches the middle of ordinary text.
+ * ## Choosing the sizes
+ *
+ * Depth inside a letter is bounded by half its stem width -- five to ten pixels for normal-weight
+ * text at a typical size -- and that is the whole range the ramp has to fit into.
+ *
+ * What matters is the *narrowest* band. It has to sit comfortably inside half a stem, because it
+ * is the one drawn last and it is what makes the rim a rim rather than the whole letter. The
+ * widest band is deliberately larger than half a stem: its falloff is correspondingly shallow, so
+ * it is still contributing at the stem's centre, which is what keeps the ramp continuous instead
+ * of stopping partway in.
+ *
+ * The failure mode is not a band failing to reach the middle. It is every band being wide relative
+ * to the stem, at which point they all overlap at similar strengths everywhere and the ramp
+ * collapses into one muddy blend with no zones in it.
  */
 function heatBand(color: string, size: number, opacity = 1): InnerGlowEffect {
   const effect = innerGlow(color, size, opacity);
