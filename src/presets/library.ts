@@ -162,12 +162,15 @@ function post(type: PostEffect['type'], params: PostEffect['params'], opacity = 
 /**
  * Ordered-dither post pass.
  *
- * `levels` is the palette depth per channel, `matrix` the Bayer tile size, and `hardEdge` decides
- * whether coverage is thresholded with the same matrix -- which is what removes the anti-aliased
- * fringe a genuine one-bit image never had. Opacity stays at 1: blending a dithered layer back
- * over the smooth one it came from would just reintroduce the tones it exists to remove.
+ * `levels` is the palette depth per channel, `matrix` the Bayer tile size, `dot` the pitch of one
+ * matrix cell in logical pixels, and `hardEdge` decides whether coverage is thresholded with the
+ * same matrix -- which is what removes the anti-aliased fringe a genuine one-bit image never had.
+ * `dot` has no default here on purpose: the renderer already defines one, and a second default
+ * that disagreed with it would silently give a preset author a different pattern than the same
+ * parameters produce anywhere else. Opacity stays at 1: blending a dithered layer back over the
+ * smooth one it came from would just reintroduce the tones it exists to remove.
  */
-function dither(levels: number, matrix: number, dot = 2, hardEdge = true): PostEffect {
+function dither(levels: number, matrix: number, dot: number, hardEdge = true): PostEffect {
   return post('dither', { levels, matrix, dot, hardEdge }, 1);
 }
 
@@ -342,11 +345,11 @@ export const BUILT_IN_PRESETS: Preset[] = [
     // dither then has to fake all of it out of two levels, which is where the pattern lives. The
     // hard black keyline is what keeps the letterform readable once the interior turns to stipple.
     shadow('#000000', 10, 16, 0.95), fill(gradient(['#ffffff', '#a4aab4', '#1b1f27'], 168)),
-    chiselBevel(15, 320), stroke(3, '#05070b'), dither(2, 8),
+    chiselBevel(15, 320), stroke(3, '#05070b'), dither(2, 8, 2),
   ], none(), ['dither', 'one-bit', 'bitmap', 'mono']),
   definePreset('ditherpunk', 'Ditherpunk', 'texture', ['#08f7fe', '#ff2fd0', '#2b1a6b', '#05010f'], [
     glow('#00e5ff', 26, 0.85), fill(gradient(['#ffffff', '#ff2fd0', '#5b1e9e'], 160)),
-    bevel(16, 'pillow', 200), stroke(2.5, '#06121f'), dither(2, 4),
+    bevel(16, 'pillow', 200), stroke(2.5, '#06121f'), dither(2, 4, 2),
   ], warp('textSlantUp', 0.3), ['dither', 'one-bit', 'cyberpunk', 'duotone']),
   definePreset('dot-matrix', 'Dot Matrix', 'texture', ['#cfe36b', '#9bbc0f', '#306230', '#0f380f'], [
     fill(gradient(['#cfe36b', '#9bbc0f', '#306230'], 172)), bevel(12, 'inner', 170),
