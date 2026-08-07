@@ -317,6 +317,12 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('rusty-sign', 'Rusty Sign', 'texture', ['#8a4b1f', '#d9813a', '#3d1f08', '#c9a227'], [
     fill(ramp('mahogany')), texture('noise', 0.3), bevel(9, 'inner', 150), innerShadow('#2e1504', 6, 10, 0.6),
   ], warp('textDeflate', 0.4), ['rust', 'vintage']),
+
+  definePreset('night-market', 'Night Market', 'synthwave', ['#ff2d55', '#ff9f1c', '#ffe8c8', '#3d0b12'], [
+    glow('#ff9f1c', 30, 0.5), glow('#ff2d55', 14, 1), fill(solid('#ffd9a8', 0.55)), stroke(4.5, '#ff5a36'),
+  ], none(), ['neon', 'sign', 'flicker', 'animated'], [
+    { id: 'night-market-flicker', kind: 'neonFlicker', enabled: true, duration: 2.4, params: {}, seed: 12 },
+  ]),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {
