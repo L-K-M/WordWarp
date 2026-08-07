@@ -7,6 +7,7 @@ import type { EncodeAnimationResponse } from '../workers/encode-protocol';
 import { encodeApng, encodeGif } from './animation-codec';
 import { getExportBounds, validateExportSize } from './bounds';
 import { renderRgbaOnSurface } from './render-png';
+import { ensureFontsForDocument } from '../text/fonts';
 
 const MAX_RAW_FRAME_BYTES = 64 * 1024 * 1024;
 
@@ -37,6 +38,9 @@ export async function exportAnimation(
   const duration = documentAnimationDuration(document);
   if (duration > 30) throw new Error('Animation loops longer than 30 seconds cannot be exported yet');
   const frameCount = Math.max(2, Math.round(duration * fps));
+  // Frames render on the main thread, so the window's font set needs every bundled family before
+  // the first measurement.
+  await ensureFontsForDocument(document);
   const bounds = measureAnimationBounds(document, frameCount);
   const { width, height } = validateExportSize(bounds, scale);
   const frameBytes = width * height * 4;

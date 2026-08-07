@@ -4,6 +4,27 @@ import { expect, test } from '@playwright/test';
 import { decode } from 'fast-png';
 import { deflateSync, strToU8 } from 'fflate';
 
+test('picks a bundled display font and still exports a PNG', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  await page.goto('./');
+
+  const picker = page.getByRole('button', { name: /Font family/ });
+  await expect(picker).toContainText('Arial Black');
+  await picker.click();
+
+  const bungee = page.getByRole('option', { name: 'Bungee' });
+  await expect(bungee).toBeVisible();
+  await bungee.click();
+  await expect(picker).toContainText('Bungee');
+  await expect(page.locator('.render-error')).toHaveCount(0);
+
+  // The worker export path registers the same bundled face in its own font set.
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: /Export PNG/ }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/\.png$/);
+});
+
 test('edits text, applies a preset, and exports transparent PNG', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium');
   await page.goto('./');

@@ -2,6 +2,7 @@ import { createDefaultDocument } from '../model/defaults';
 import type { WordWarpDocument } from '../model/types';
 import { renderDocument2d } from '../render/fallback2d/renderer';
 import { get2dContext } from '../render/surface';
+import { ensureFontsForDocument } from '../text/fonts';
 import { applyPresetToElement } from './library';
 import type { Preset } from './types';
 
@@ -44,6 +45,16 @@ export function renderPresetPreview(preset: Preset): string | undefined {
     // swatch placeholder rather than taking the panel down with it.
     return undefined;
   }
+}
+
+/**
+ * Font-aware variant of `renderPresetPreview`. A preset that sets a bundled font must not render
+ * before the face is registered, or the cache would hold a fallback-glyph thumbnail forever.
+ */
+export async function renderPresetPreviewAsync(preset: Preset): Promise<string | undefined> {
+  if (cache.has(preset.id)) return cache.get(preset.id);
+  await ensureFontsForDocument(previewDocument(preset));
+  return renderPresetPreview(preset);
 }
 
 function previewDocument(preset: Preset): WordWarpDocument {

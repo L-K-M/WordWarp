@@ -17,7 +17,9 @@ import { subscribeToServiceWorkerUpdate, type ServiceWorkerUpdate } from '../ser
 import { documentStore, useDocumentStore } from '../state/document-store';
 import { useEditorStore } from '../state/editor-store';
 import { holdToast, resumeToast, useUiStore } from '../state/ui-store';
+import { type FontCatalogEntry } from '../text/fonts';
 import { DocumentCanvas } from '../ui/DocumentCanvas';
+import { FontPicker } from '../ui/FontPicker';
 import { PresetPreview } from '../ui/PresetPreview';
 import { warpDisplayName } from '../warp';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
@@ -483,8 +485,8 @@ export function App() {
         <strong>Could not restore your saved document</strong>
         <p>{restoreError}</p>
         <div>
-          <button type="button" onClick={() => window.location.reload()}>Retry</button>
-          <button type="button" onClick={() => {
+          <button className="orb orb-sm orb-aqua" type="button" onClick={() => window.location.reload()}>Retry</button>
+          <button className="orb orb-sm orb-lime" type="button" onClick={() => {
             const freshDocument = createDefaultDocument();
             replaceDocument(freshDocument);
             selectElement(freshDocument.elements[0]?.id ?? null);
@@ -499,7 +501,7 @@ export function App() {
   }
 
   if (!isHydrated) {
-    return <div className="loading-screen" role="status">Restoring studio...</div>;
+    return <div className="loading-screen" role="status">Warming up the goo…</div>;
   }
 
   return (
@@ -509,42 +511,43 @@ export function App() {
           className="brand"
           type="button"
           aria-label="WORDWARP TYPE EFFECTS LAB"
-          onClick={() => pushToast('WordWarp renderer online')}
+          onClick={() => pushToast('WordWarp goo is fresh and wobbly')}
         >
           <span className="brand-mark" aria-hidden="true">W</span>
-          <span>
-            <strong>WORDWARP</strong>
-            <small>TYPE EFFECTS LAB</small>
+          <span className="brand-word">
+            <strong>WordWarp</strong>
+            <small>GOO TYPE LAB</small>
           </span>
+          <span className="beads" aria-hidden="true" />
         </button>
 
         <div className="history-actions" aria-label="History controls">
-          <button type="button" onClick={undo} disabled={pastCount === 0} title="Undo (Ctrl+Z)">
+          <button className="orb orb-sm orb-grape" type="button" onClick={undo} disabled={pastCount === 0} title="Undo (Ctrl+Z)">
             Undo
           </button>
-          <button type="button" onClick={redo} disabled={futureCount === 0} title="Redo (Ctrl+Shift+Z)">
+          <button className="orb orb-sm orb-lime" type="button" onClick={redo} disabled={futureCount === 0} title="Redo (Ctrl+Shift+Z)">
             Redo
           </button>
         </div>
 
         <div className="topbar-actions">
           <button
-            className="panel-toggle"
+            className="panel-toggle orb orb-sm orb-berry"
             type="button"
             onClick={toggleLeftPanel}
             aria-expanded={leftPanelOpen}
             aria-controls="preset-panel"
           >Presets</button>
           <button
-            className="panel-toggle"
+            className="panel-toggle orb orb-sm orb-tangerine"
             type="button"
             onClick={toggleRightPanel}
             aria-expanded={rightPanelOpen}
             aria-controls="inspector-panel"
           >Inspect</button>
-          <button type="button" onClick={() => void handleShare()}>Share</button>
+          <button className="orb orb-sm orb-aqua" type="button" onClick={() => void handleShare()}>Share</button>
           <select
-            className="export-format"
+            className="export-format jelly-select"
             aria-label="Export format"
             value={exportFormat}
             onChange={(event) => setExportFormat(event.target.value as ExportFormat)}
@@ -554,7 +557,7 @@ export function App() {
             <option value="gif">GIF</option>
           </select>
           <select
-            className="export-format"
+            className="export-format jelly-select"
             aria-label="Export resolution"
             value={exportScale}
             onChange={(event) => setExportScale(Number(event.target.value))}
@@ -564,8 +567,8 @@ export function App() {
             <option value={3}>3x</option>
             <option value={4}>4x</option>
           </select>
-          <button className="export-button" type="button" onClick={() => void handleExport()} disabled={isExporting}>
-            {isExporting ? `${Math.round(exportProgress * 100)}%` : `Export ${exportFormat.toUpperCase()}`} <span aria-hidden="true">+</span>
+          <button className="export-button orb orb-lg orb-sun" type="button" onClick={() => void handleExport()} disabled={isExporting}>
+            {isExporting ? `${Math.round(exportProgress * 100)}%` : `Export ${exportFormat.toUpperCase()}`} <span aria-hidden="true">✦</span>
           </button>
         </div>
       </header>
@@ -573,10 +576,10 @@ export function App() {
       <div className={`workspace ${leftPanelOpen ? '' : 'left-closed'} ${rightPanelOpen ? '' : 'right-closed'}`}>
         <aside id="preset-panel" className="preset-panel" aria-label="Preset library">
           <div className="panel-heading">
-            <span>STYLE LIBRARY</span>
+            <span>STYLE RACK</span>
             <span className="count">{String(visiblePresets.length).padStart(2, '0')}</span>
           </div>
-          <label className="search-field">
+          <label className="search-field jelly-field-wrap">
             <span className="sr-only">Search presets</span>
             <input
               id="preset-search"
@@ -588,11 +591,11 @@ export function App() {
             <kbd>/</kbd>
           </label>
           <div className="preset-categories" aria-label="Preset categories">
-            {presetCategories.map((category) => (
+            {presetCategories.map((category, index) => (
               <button
                 key={category.id}
                 type="button"
-                className={presetCategory === category.id ? 'active' : ''}
+                className={`bean bean-${index % 7} ${presetCategory === category.id ? 'active' : ''}`}
                 onClick={() => setPresetCategory(category.id)}
               >
                 {category.label}
@@ -621,12 +624,12 @@ export function App() {
         <main className="canvas-panel">
           <div className="canvas-toolbar">
             <div className="tool-group" aria-label="Canvas tools">
-              <button className="active" type="button">Select</button>
-              <button type="button" onClick={addText}>Text</button>
-              <button type="button" disabled>Warp</button>
+              <button className="orb orb-xs orb-aqua active" type="button">Select</button>
+              <button className="orb orb-xs orb-lime" type="button" onClick={addText}>Text</button>
+              <button className="orb orb-xs orb-berry" type="button" disabled>Warp</button>
             </div>
             <span className="canvas-status">
-              {document.canvas.width} x {document.canvas.height} / TRANSPARENT
+              {document.canvas.width} × {document.canvas.height} · TRANSPARENT GOO
             </span>
           </div>
 
@@ -658,14 +661,14 @@ export function App() {
           </div>
 
           <div className="zoom-strip">
-            <button type="button" onClick={fitZoomToViewport}>Fit</button>
-            <button type="button" onClick={() => setZoom(1)}>100%</button>
-            <button type="button" onClick={() => setZoom(zoom - 0.1)} aria-label="Zoom out">-</button>
-            <output>{Math.round(zoom * 100)}%</output>
-            <button type="button" onClick={() => setZoom(zoom + 0.1)} aria-label="Zoom in">+</button>
+            <button className="orb orb-xs orb-aqua" type="button" onClick={fitZoomToViewport}>Fit</button>
+            <button className="orb orb-xs orb-grape" type="button" onClick={() => setZoom(1)}>100%</button>
+            <button className="orb orb-xs orb-berry" type="button" onClick={() => setZoom(zoom - 0.1)} aria-label="Zoom out">−</button>
+            <output className="jelly-pill">{Math.round(zoom * 100)}%</output>
+            <button className="orb orb-xs orb-berry" type="button" onClick={() => setZoom(zoom + 0.1)} aria-label="Zoom in">+</button>
             <button
               type="button"
-              className={isPlaying ? 'playing' : ''}
+              className={`orb orb-xs orb-lime ${isPlaying ? 'playing' : ''}`}
               disabled={!hasAnimations}
               title={hasAnimations ? undefined : 'Add an animated preset to preview motion'}
               onClick={() => setPlayRequested((playing) => !playing)}
@@ -678,7 +681,7 @@ export function App() {
 
         <aside id="inspector-panel" className="inspector-panel" aria-label="Inspector">
           <div className="panel-heading">
-            <span>INSPECTOR</span>
+            <span>GOO CONTROLS</span>
             <span className="selection-dot" aria-hidden="true" />
           </div>
           {selectedText ? (
@@ -688,38 +691,32 @@ export function App() {
                 <label>
                   <span>Content</span>
                   <textarea
+                    className="jelly-field"
                     value={selectedText.text}
                     onChange={(event) => updateText(event.target.value)}
                     rows={3}
                   />
                 </label>
-                <label className="font-family-field">
-                  <span>Font family</span>
-                  <input
-                    list="font-families"
+                <div className="font-family-field">
+                  <FontPicker
                     value={selectedText.font.family}
-                    onChange={(event) => {
-                      const family = event.target.value;
+                    onPick={(entry: FontCatalogEntry) => {
                       updateDocument('Change font family', (draft) => {
                         const element = draft.elements.find((item) => item.id === selectedText.id);
-                        if (element?.type === 'text') element.font.family = family || 'sans-serif';
-                      }, `font:${selectedText.id}`);
+                        if (element?.type !== 'text') return;
+                        element.font.family = entry.family;
+                        element.font.source = entry.source;
+                        element.font.weight = entry.weight;
+                        element.font.italic = false;
+                      });
                     }}
                   />
-                  <datalist id="font-families">
-                    <option value="Arial Black" />
-                    <option value="Arial" />
-                    <option value="Georgia" />
-                    <option value="Impact" />
-                    <option value="Trebuchet MS" />
-                    <option value="Verdana" />
-                    <option value="sans-serif" />
-                  </datalist>
-                </label>
+                </div>
                 <div className="field-row">
                   <label>
                     <span>Size</span>
                     <input
+                      className="jelly-field"
                       type="number"
                       min="8"
                       max="600"
@@ -736,6 +733,7 @@ export function App() {
                   <label>
                     <span>Weight</span>
                     <select
+                      className="jelly-select"
                       value={selectedText.font.weight}
                       onChange={(event) => {
                         const weight = Number(event.target.value);
@@ -759,6 +757,7 @@ export function App() {
                 <label>
                   <span>Envelope</span>
                   <select
+                    className="jelly-select"
                     value={selectedText.warp.kind === 'preset' ? selectedText.warp.preset : 'none'}
                     onChange={(event) => {
                       const preset = event.target.value;
@@ -788,6 +787,7 @@ export function App() {
                     <label className="range-field">
                       <span>Bend <output>{selectedText.warp.bend.toFixed(2)}</output></span>
                       <input
+                        className="goo-range"
                         type="range"
                         min="-2"
                         max="2"
@@ -805,6 +805,7 @@ export function App() {
                     <label className="range-field">
                       <span>Shape <output>{selectedText.warp.adj[0].toFixed(2)}</output></span>
                       <input
+                        className="goo-range"
                         type="range"
                         min="0"
                         max="2"
@@ -838,8 +839,8 @@ export function App() {
                         <small>{effect.slot.toUpperCase()} / {index + 1}</small>
                       </span>
                       <span className="effect-actions">
-                        <button type="button" onClick={() => moveEffect(effect.id, -1)} aria-label="Move effect up">UP</button>
-                        <button type="button" onClick={() => moveEffect(effect.id, 1)} aria-label="Move effect down">DN</button>
+                        <button type="button" onClick={() => moveEffect(effect.id, -1)} aria-label="Move effect up">▲</button>
+                        <button type="button" onClick={() => moveEffect(effect.id, 1)} aria-label="Move effect down">▼</button>
                         <button
                           className={effect.enabled ? 'enabled' : ''}
                           type="button"
@@ -849,7 +850,7 @@ export function App() {
                         >
                           {effect.enabled ? 'ON' : 'OFF'}
                         </button>
-                        <button type="button" onClick={() => removeEffect(effect.id)} aria-label={`Remove ${effectLabel(effect.kind)}`}>X</button>
+                        <button type="button" onClick={() => removeEffect(effect.id)} aria-label={`Remove ${effectLabel(effect.kind)}`}>✕</button>
                       </span>
                       <EffectQuickControl effect={effect} onChange={(value) => updateEffectPrimary(effect.id, value)} />
                       <EffectColorControls effect={effect} onChange={(target, hex) => updateEffectColor(effect.id, target, hex)} />
@@ -857,10 +858,10 @@ export function App() {
                   ))}
                 </ol>
                 <div className="effect-adder">
-                  <select value={newEffectKind} onChange={(event) => setNewEffectKind(event.target.value as EffectKind)}>
+                  <select className="jelly-select" value={newEffectKind} onChange={(event) => setNewEffectKind(event.target.value as EffectKind)}>
                     {EFFECT_KINDS.map((kind) => <option key={kind} value={kind}>{effectLabel(kind)}</option>)}
                   </select>
-                  <button className="add-effect" type="button" onClick={addEffect}>+ Add</button>
+                  <button className="add-effect orb orb-xs orb-lime" type="button" onClick={addEffect}>+ Add</button>
                 </div>
               </section>
 
@@ -869,6 +870,7 @@ export function App() {
                 <label className="range-field">
                   <span>Angle <output>{Math.round(document.globalLight.angle)}</output></span>
                   <input
+                    className="goo-range"
                     type="range"
                     min="0"
                     max="360"
@@ -882,6 +884,7 @@ export function App() {
                 <label className="range-field">
                   <span>Altitude <output>{Math.round(document.globalLight.altitude)}</output></span>
                   <input
+                    className="goo-range"
                     type="range"
                     min="0"
                     max="90"
@@ -896,8 +899,8 @@ export function App() {
             </>
           ) : (
             <div className="no-selection">
-              <span>NO SELECTION</span>
-              <p>Select a text layer to inspect it.</p>
+              <span>NO GOO SELECTED</span>
+              <p>Pick a text blob on the canvas or in the layer strip to start squishing it.</p>
             </div>
           )}
         </aside>
@@ -905,7 +908,7 @@ export function App() {
 
       <footer className="layers-strip">
         <div className="layers-title">
-          <span>LAYERS</span>
+          <span>FILM</span>
           <strong>{String(document.elements.length).padStart(2, '0')}</strong>
         </div>
         <div className="layer-list">
@@ -941,11 +944,11 @@ export function App() {
           ))}
         </div>
         <div className="layer-actions">
-          <button type="button" onClick={() => moveSelectedLayer(-1)} disabled={!selectedElementId} aria-label="Move layer backward">BACK</button>
-          <button type="button" onClick={() => moveSelectedLayer(1)} disabled={!selectedElementId} aria-label="Move layer forward">FWD</button>
-          <button type="button" onClick={duplicateSelected} disabled={!selectedElementId} aria-label="Duplicate selected layer" title="Duplicate (Ctrl+D)">DUP</button>
-          <button type="button" onClick={addText} aria-label="Add text layer">+</button>
-          <button type="button" onClick={removeSelected} disabled={!selectedElementId} aria-label="Delete selected layer">DEL</button>
+          <button className="orb orb-xs orb-grape" type="button" onClick={() => moveSelectedLayer(-1)} disabled={!selectedElementId} aria-label="Move layer backward">BACK</button>
+          <button className="orb orb-xs orb-grape" type="button" onClick={() => moveSelectedLayer(1)} disabled={!selectedElementId} aria-label="Move layer forward">FWD</button>
+          <button className="orb orb-xs orb-aqua" type="button" onClick={duplicateSelected} disabled={!selectedElementId} aria-label="Duplicate selected layer" title="Duplicate (Ctrl+D)">DUP</button>
+          <button className="orb orb-xs orb-lime" type="button" onClick={addText} aria-label="Add text layer">+</button>
+          <button className="orb orb-xs orb-cherry" type="button" onClick={removeSelected} disabled={!selectedElementId} aria-label="Delete selected layer">DEL</button>
         </div>
       </footer>
 
@@ -968,7 +971,7 @@ export function App() {
       {serviceWorkerUpdate && (
         <div className="update-banner" role="status">
           <span>An update is ready.</span>
-          <button type="button" disabled={isUpdating} onClick={() => void applyServiceWorkerUpdate()}>
+          <button className="orb orb-sm orb-sun" type="button" disabled={isUpdating} onClick={() => void applyServiceWorkerUpdate()}>
             {isUpdating ? 'Saving...' : 'Save and reload'}
           </button>
         </div>
@@ -987,6 +990,7 @@ function EffectQuickControl({ effect, onChange }: { effect: Effect; onChange: (v
     <label className="effect-quick-control">
       <span>{control.label}</span>
       <input
+        className="goo-range"
         type="range"
         min={control.min}
         max={control.max}

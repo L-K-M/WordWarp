@@ -4,7 +4,10 @@ import { registerSW } from 'virtual:pwa-register';
 
 import { App } from './app/App';
 import { announceServiceWorkerUpdate } from './service-worker-update';
+import { ensureUiFonts } from './text/fonts';
 import './styles.css';
+
+ensureUiFonts();
 
 const updateServiceWorker: (reloadPage?: boolean) => Promise<void> = registerSW({
   immediate: true,
