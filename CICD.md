@@ -26,6 +26,9 @@ docker compose up --build --detach --wait
 docker compose down --volumes
 ```
 
+Deployment hosts use `./update.sh [branch]` to fast-forward source, rebuild before replacement, wait
+for the production health check, prune dangling images, and print final Compose status.
+
 ### `pages.yml`
 
 - Runs after a successful `CI` workflow for a `main` push.

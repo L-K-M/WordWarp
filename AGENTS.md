@@ -35,6 +35,8 @@ WordWarp is a client-only React/Vite PWA for building and exporting warped text 
 - Service workers require HTTPS or localhost. Do not claim PWA support for `file://` archives.
 - Do not put secrets in `VITE_*` variables; Vite exposes them to the client bundle.
 - Keep `nginx.conf` navigation fallback and no-cache rules for `sw.js`, the manifest, and HTML.
+- `./update.sh [branch]` is the deployment-host path: it requires a clean tracked tree, fast-forwards
+  from `origin`, rebuilds with refreshed base images, recreates the service, and waits for health.
 
 ## CI/CD
 

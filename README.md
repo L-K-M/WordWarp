@@ -60,6 +60,16 @@ WORDWARP_PORT=3000 docker compose up --build
 The service binds to `127.0.0.1` by default. Set `WORDWARP_HOST=0.0.0.0` to expose it on the network,
 and put it behind HTTPS anywhere other than localhost. Stop it with `docker compose down`.
 
+On a deployment host, update the current branch and rebuild the service in one step:
+
+```bash
+./update.sh
+./update.sh main # explicitly select a branch
+```
+
+The updater refuses tracked local edits, fast-forwards from `origin`, refreshes base images, builds
+before replacing the running container, and waits for the Compose health check.
+
 Tagged releases publish the immutable `ghcr.io/l-k-m/wordwarp:<version>` tag for `linux/amd64` and `linux/arm64`.
 The first GHCR package may be private until its package visibility is changed.
 
