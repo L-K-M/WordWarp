@@ -53,6 +53,11 @@ describe('mottle value noise', () => {
     // between neighbours, so a one-pixel step would swing about as far as a whole-cell step. Ink
     // blotches are the opposite: adjacent pixels are nearly the same, and the pattern only
     // resolves over the cell.
+    //
+    // The ratio is what is being asserted, not the number: white noise sits at about 1, and
+    // interpolated noise is far below it. A quarter is a loose bound chosen to stay clear of the
+    // octave weights and the contrast curve -- if retuning those ever pushes it over, the pattern
+    // really has stopped being smooth and the test is right to say so.
     expect(roughness(1, CELL)).toBeLessThan(roughness(CELL, CELL) / 4);
   });
 
