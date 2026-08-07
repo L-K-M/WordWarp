@@ -43,7 +43,7 @@ export const FONT_CATALOG: readonly FontCatalogEntry[] = [
   { family: 'sans-serif', source: 'local', weight: 400, tag: 'system' },
   { family: 'serif', source: 'local', weight: 400, tag: 'system' },
   { family: 'monospace', source: 'local', weight: 400, tag: 'system' },
-  { family: 'Baloo 2', source: 'bundled', weight: 700, file: 'baloo-2-var.woff2', weightRange: '400 800', tag: 'system', ui: true },
+  { family: 'Baloo 2', source: 'bundled', weight: 700, file: 'baloo-2-var.woff2', weightRange: '400 800', tag: 'chunky', ui: true },
 ];
 
 export const DOCUMENT_FONTS: readonly FontCatalogEntry[] = FONT_CATALOG.filter((entry) => !entry.ui);
@@ -121,6 +121,9 @@ async function loadBundledFont(entry: FontCatalogEntry): Promise<boolean> {
     ready.add(entry.family);
     return true;
   } catch (error) {
+    // Drop the rejected promise so a transient failure (offline first visit, slow connection)
+    // is retried on the next call instead of bricking the family for the whole session.
+    pending.delete(entry.family);
     console.warn(`WordWarp could not load the bundled font "${entry.family}"`, error);
     return false;
   }

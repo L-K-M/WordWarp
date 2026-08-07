@@ -61,7 +61,7 @@ test.describe('render quality', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium');
     await page.goto('/');
-    await expect(page.getByRole('button', { name: 'WORDWARP TYPE EFFECTS LAB' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'WordWarp GOO TYPE LAB' })).toBeVisible();
   });
 
   test('exporting at a higher scale adds resolution instead of upscaling', async ({ page }) => {

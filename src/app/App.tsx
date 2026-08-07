@@ -510,7 +510,7 @@ export function App() {
         <button
           className="brand"
           type="button"
-          aria-label="WORDWARP TYPE EFFECTS LAB"
+          aria-label="WordWarp GOO TYPE LAB"
           onClick={() => pushToast('WordWarp goo is fresh and wobbly')}
         >
           <span className="brand-mark" aria-hidden="true">W</span>

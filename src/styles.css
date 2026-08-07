@@ -65,6 +65,14 @@ body {
   50% { opacity: 0.72; }
 }
 
+/* Redundant with the global reduced-motion block at the end of this file, kept local so the
+   loading pulse's intent is obvious where it is declared. */
+@media (prefers-reduced-motion: reduce) {
+  .loading-screen {
+    animation: none;
+  }
+}
+
 .recovery-screen {
   align-content: center;
   gap: 14px;
@@ -1605,6 +1613,10 @@ button:disabled {
        left edge (which `justify-content: flex-end` caused by overflowing backwards). */
     overflow-x: auto;
     scrollbar-width: none;
+  }
+
+  .topbar-actions::-webkit-scrollbar {
+    display: none;
   }
 
   .export-format {
