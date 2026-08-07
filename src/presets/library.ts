@@ -34,7 +34,11 @@ const warp = (preset: NonNullable<WarpSpec['preset']>, bend = 0.78, adjustment =
 const solid = (hex: string, alpha = 1): Paint => ({ kind: 'solid', color: hexColor(hex, alpha) });
 const ramp = (rampId: string): Paint => ({ kind: 'ramp', rampId, angle: 90, variant: 1 });
 const matcap = (matcapId: string): Paint => ({ kind: 'matcap', matcapId, rotation: 0, intensity: 1 });
-const gradient = (colors: string[], angle = 90, type: 'linear' | 'angular' = 'linear'): Paint => ({
+const gradient = (
+  colors: string[],
+  angle = 90,
+  type: 'linear' | 'radial' | 'angular' | 'reflected' | 'diamond' = 'linear',
+): Paint => ({
   kind: 'gradient',
   gradient: {
     type,
@@ -46,6 +50,36 @@ const gradient = (colors: string[], angle = 90, type: 'linear' | 'angular' = 'li
     interpolation: 'oklab',
   },
 });
+
+/**
+ * A hard-edged repeating stripe fill.
+ *
+ * Gradient stops alone cannot produce crisp bands: the Canvas2D paint resamples the gradient onto
+ * an evenly spaced colour-stop grid, so any transition between two neighbouring stops is smoothed
+ * across a cell of that grid. The trick is to place several identical stops per band (each landing
+ * on the resampling grid) so a colour holds flat for most of its band and only ramps across the
+ * single cell at the boundary. With `samplesPerBand` of 4, a band is three-quarters solid and the
+ * transition is a quarter of a band wide, which reads as a clean stripe rather than a wash.
+ */
+function stripes(
+  colors: [string, string],
+  angle: number,
+  bands: number,
+  samplesPerBand = 4,
+  type: 'linear' | 'angular' = 'linear',
+): Paint {
+  const cells = bands * samplesPerBand;
+  const first = colors[0];
+  const second = colors[1];
+  const stops = Array.from({ length: cells + 1 }, (_, cell) => {
+    const band = Math.floor(cell / samplesPerBand) % 2;
+    return { offset: cell / cells, color: hexColor(band === 0 ? first : second) };
+  });
+  return {
+    kind: 'gradient',
+    gradient: { type, stops, angle, center: [0.5, 0.5], scale: 1, dither: true, interpolation: 'srgb' },
+  };
+}
 
 function fill(paint: Paint): FillEffect {
   const effect = createEffect('fill');
@@ -66,6 +100,12 @@ function bevel(size: number, style: BevelEffect['style'] = 'inner', depth = 130)
   effect.size = size;
   effect.style = style;
   effect.depth = depth;
+  return effect;
+}
+
+function chiselBevel(size: number, depth = 130, style: BevelEffect['style'] = 'inner'): BevelEffect {
+  const effect = bevel(size, style, depth);
+  effect.technique = 'chiselHard';
   return effect;
 }
 
@@ -317,6 +357,43 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('rusty-sign', 'Rusty Sign', 'texture', ['#8a4b1f', '#d9813a', '#3d1f08', '#c9a227'], [
     fill(ramp('mahogany')), texture('noise', 0.3), bevel(9, 'inner', 150), innerShadow('#2e1504', 6, 10, 0.6),
   ], warp('textDeflate', 0.4), ['rust', 'vintage']),
+
+  definePreset('candy-cane', 'Candy Cane', 'sweets', ['#ff2e4d', '#ffffff', '#ff9db0', '#b31236'], [
+    shadow('#7a1028', 8, 7, 0.45), fill(stripes(['#ff2e4d', '#ffffff'], 45, 9)), bevel(7, 'inner', 150),
+    innerGlow('#ffffff', 9, 0.55),
+  ], warp('textArchUp', 0.38), ['candy', 'stripes', 'christmas']),
+  definePreset('cotton-candy', 'Cotton Candy', 'sweets', ['#ffd1ec', '#ff9ec7', '#b8a8ff', '#ffffff'], [
+    glow('#ff9ec7', 18, 0.4), shadow('#d98ab5', 8, 10, 0.35), fill(gradient(['#ffd1ec', '#ff9ec7', '#b8a8ff'])),
+    texture('grain', 0.42), innerGlow('#ffffff', 10, 0.5),
+  ], warp('textInflate', 0.6, 0.7), ['candy', 'pastel', 'fluffy']),
+  definePreset('gumdrop', 'Gumdrop', 'sweets', ['#ff5fa2', '#c2185b', '#ffffff', '#ff9ec7'], [
+    shadow('#8f174c', 8, 10, 0.45), fill(gradient(['#ffffff', '#ff9ec7', '#d61f69'], 0, 'radial')),
+    bevel(20, 'pillow', 210), innerGlow('#ffffff', 13, 0.75), satin('#ffffff', 0.3),
+  ], warp('textInflate', 0.72, 0.7), ['candy', 'jelly', 'gloss']),
+  definePreset('bubblegum-blow', 'Bubblegum Blow', 'sweets', ['#ff4fa0', '#ff9ec7', '#ffffff', '#c2185b'], [
+    shadow('#8f174c', 6, 8, 0.4), fill(gradient(['#ffffff', '#ff8fc0', '#ff2e88'])), bevel(22, 'pillow', 220),
+    innerGlow('#ffffff', 16, 0.85), texture('halftone', 0.18),
+  ], warp('textInflate', 0.9, 0.75), ['candy', 'bubble', 'animated'], [
+    { id: 'bubblegum-pulse', kind: 'pulse', enabled: true, duration: 1.6, params: { amount: 0.07 }, seed: 11 },
+  ]),
+  definePreset('lollipop', 'Lollipop', 'sweets', ['#ff2e63', '#ffe600', '#39ff14', '#00e5ff'], [
+    shadow('#5c0f2e', 7, 8, 0.45), fill(gradient(['#ff2e63', '#ff9f1c', '#ffe600', '#39ff14', '#00e5ff', '#a84dff'], 0, 'angular')),
+    bevel(8, 'inner', 170), innerGlow('#ffffff', 9, 0.65), stroke(2, '#ffffff'),
+  ], warp('textCircle', 1.1, 0.6), ['candy', 'rainbow', 'swirl', 'animated'], [
+    { id: 'lollipop-hue', kind: 'hueCycle', enabled: true, duration: 4, params: {}, seed: 77 },
+  ]),
+  definePreset('licorice', 'Licorice Twist', 'sweets', ['#1a1a1c', '#000000', '#8a1538', '#3a0d14'], [
+    shadow('#000000', 6, 5, 0.5), fill(gradient(['#2a2a2e', '#000000'])), chiselBevel(8, 160),
+    satin('#8a1538', 0.45), stroke(1, '#3a3a40'),
+  ], warp('textWave4', 0.5, 0.55), ['candy', 'black', 'twist']),
+  definePreset('chocolate-bar', 'Chocolate Bar', 'sweets', ['#7a4a22', '#4a2410', '#c78b4a', '#241004'], [
+    shadow('#180a03', 10, 8, 0.55), fill(gradient(['#b06b2e', '#6b3a16', '#3a1d08'])), texture('weave', 0.4),
+    bevel(7, 'inner', 180), innerShadow('#241004', 4, 6, 0.5), satin('#ffd9a0', 0.22),
+  ], warp('textDeflate', 0.3), ['chocolate', 'dessert', 'squares']),
+  definePreset('peppermint', 'Peppermint', 'sweets', ['#ffffff', '#ff2e4d', '#ffb3c0', '#b31236'], [
+    shadow('#7a1028', 7, 7, 0.4), fill(stripes(['#ffffff', '#ff2e4d'], 0, 10, 4, 'angular')), bevel(7, 'inner', 150),
+    innerGlow('#ffffff', 8, 0.5),
+  ], none(), ['candy', 'mint', 'holiday']),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {
