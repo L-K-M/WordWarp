@@ -4,6 +4,8 @@ import { expect, test } from '@playwright/test';
 import { decode } from 'fast-png';
 import { deflateSync, strToU8 } from 'fflate';
 
+import { STAMP_IDS } from '../src/model/types';
+
 test('picks a bundled display font and still exports a PNG', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium');
   await page.goto('./');
@@ -133,7 +135,7 @@ test.describe('expanded stamp picker', () => {
       const trigger = page.getByRole('button', { name: 'Stamp', exact: true });
       await trigger.click();
       const menu = page.getByRole('group', { name: 'Place a stamp' });
-      await expect(menu.locator('.stamp-choice')).toHaveCount(52);
+      await expect(menu.locator('.stamp-choice')).toHaveCount(STAMP_IDS.length);
       const butterfly = menu.locator('.stamp-choice', { hasText: /^Butterfly$/ });
       await butterfly.scrollIntoViewIfNeeded();
       expect(await menu.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
@@ -163,7 +165,7 @@ test.describe('expanded stamp picker', () => {
       await trigger.click();
       const menu = page.getByRole('group', { name: 'Place a stamp' });
       const butterfly = menu.locator('.stamp-choice', { hasText: /^Butterfly$/ });
-      await expect(menu.locator('.stamp-choice')).toHaveCount(52);
+      await expect(menu.locator('.stamp-choice')).toHaveCount(STAMP_IDS.length);
       await page.getByRole('button', { name: 'Inspect' }).click();
       await expect(page.getByLabel('Inspector')).toBeVisible();
       await butterfly.scrollIntoViewIfNeeded();
