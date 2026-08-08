@@ -122,10 +122,14 @@ describe('stamp outlines', () => {
     // Neither shows up in bounds, command counts or contour counts; only the winding says so. A
     // count above one is fine and common -- that is two filled shapes unioning, which is how most
     // of these figures are built.
+    //
+    // The grid is the expensive part of this test -- a full winding sample of every stamp on a
+    // fine mesh -- and the catalogue has grown since it was written, so it gets a budget of its own
+    // rather than the file's default.
     for (const shape of STAMP_IDS) {
       expect(Math.min(...sampleWindings(shape)), shape).toBeGreaterThanOrEqual(0);
     }
-  });
+  }, 30_000);
 
   it('draws the figures that are meant to be pierced with their holes showing', () => {
     // The complement of the test above. A hole can also fail by being drawn the same way round as
@@ -134,6 +138,7 @@ describe('stamp outlines', () => {
     const pierced = [
       'smiley', 'shades', 'cassette', 'floppy', 'boombox', 'pizza', 'daisy', 'peace', 'disc',
       'pumpkin', 'ghost', 'skull', 'tombstone', 'rocket', 'saucer', 'donut', 'lolly', 'sun', 'gem',
+      'diamond', 'gear', 'crosshair', 'orbit',
     ] as const;
 
     for (const shape of pierced) {

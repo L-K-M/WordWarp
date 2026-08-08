@@ -689,6 +689,260 @@ function gem(): PathData {
   );
 }
 
+/** A card-suit diamond: the rhombus of the deck, with a facet cross cut through the middle. */
+function diamond(): PathData {
+  // The facet is one plus-shaped contour, not a horizontal bar over a vertical one. Two crossing
+  // holes wind to -2 where they meet, which is no closer to zero than -1 is, so they would come
+  // back solid exactly at the join the stone reads by.
+  const facet = polygon([
+    [0.47, 0.30], [0.47, 0.47], [0.34, 0.47], [0.34, 0.53], [0.47, 0.53],
+    [0.47, 0.70], [0.53, 0.70], [0.53, 0.53], [0.66, 0.53], [0.66, 0.47],
+    [0.53, 0.47], [0.53, 0.30],
+  ]);
+  return withHoles(polygon([[MID, 0.04], [0.94, MID], [MID, 0.96], [0.06, MID]]), facet);
+}
+
+/**
+ * A gear: ten square teeth around a solid disc, with a hub hole.
+ *
+ * Teeth are flat-topped trapezoids rather than points -- a pointed tooth reads as a starburst, and
+ * the silhouette of the tooth *top* is what separates a cog from a burst. The teeth are listed
+ * with their valley corners first, so the polygon's edge runs along the disc between them and the
+ * body stays solid rather than sprouting spikes into itself.
+ */
+function gear(): PathData {
+  const teeth = 10;
+  const half = (Math.PI / teeth) * 0.38;
+  const at = (angle: number, radius: number): Point => [MID + Math.cos(angle) * radius, MID + Math.sin(angle) * radius];
+  const points: Point[] = [];
+  for (let index = 0; index < teeth; index += 1) {
+    const angle = (index / teeth) * Math.PI * 2;
+    points.push(at(angle - half, 0.33), at(angle - half, 0.45), at(angle + half, 0.45), at(angle + half, 0.33));
+  }
+  return withHoles(polygon(points), circleAt(MID, MID, 0.10));
+}
+
+/** A heater shield: a straight top coming down through curved sides to a point. */
+function shield(): PathData {
+  const path = pathBuilder();
+  path.move(0.30, 0.05);
+  path.line(0.70, 0.05);
+  path.cubic(0.82, 0.22, 0.80, 0.40, 0.64, 0.56);
+  path.cubic(0.58, 0.66, 0.53, 0.82, 0.50, 0.95);
+  path.cubic(0.47, 0.82, 0.42, 0.66, 0.36, 0.56);
+  path.cubic(0.20, 0.40, 0.18, 0.22, 0.30, 0.05);
+  path.close();
+  return path.build();
+}
+
+/**
+ * A targeting reticle: an outer ring over a thin cross.
+ *
+ * The cross is part of the filled shape, not a pair of holes -- a reticle's hairlines are drawn
+ * on, and the gap they enclose stays transparent. The centre of the cross is solid because the
+ * two bars cross there, which is exactly how a reticle reads.
+ */
+function crosshair(): PathData {
+  return withHoles(
+    union(circleAt(MID, MID, 0.40), rect(0.17, 0.48, 0.83, 0.52), rect(0.48, 0.17, 0.52, 0.83)),
+    circleAt(MID, MID, 0.30),
+  );
+}
+
+/* --------------------------------------------------------------------- nineties */
+
+/**
+ * A single beamed eighth note, the sticker of every mixtape label.
+ *
+ * The three pieces are separate contours that happen to touch: a filled head, a filled stem and a
+ * flag. Under nonzero fill they union into one note, and the flag's curve -- swept out and back to
+ * the stem, its width dying toward the tip -- is what keeps it a flag rather than a comma.
+ */
+function musicNote(): PathData {
+  const flag = pathBuilder();
+  flag.move(0.52, 0.06);
+  flag.cubic(0.76, 0.05, 0.92, 0.18, 0.84, 0.38);
+  flag.cubic(0.80, 0.50, 0.66, 0.46, 0.58, 0.12);
+  flag.close();
+  return union(ellipseAt(0.36, 0.74, 0.17, 0.19), rect(0.46, 0.08, 0.54, 0.60), flag.build());
+}
+
+/* -------------------------------------------------------------------- spooky */
+
+/**
+ * A dorsal-view spider: two body ovals under eight thin, curved legs.
+ *
+ * The legs are ribbons that start *under* the body so their blunt inner ends are buried and only
+ * the taper shows. A leg meeting the body rim instead would leave a visible chord across it, and
+ * eight chords would read as a starburst wearing a disc.
+ */
+function spider(): PathData {
+  const leg = (angle: number, bend: number): PathData => {
+    const points: Point[] = [];
+    for (let index = 0; index <= 10; index += 1) {
+      const t = index / 10;
+      const radius = 0.14 + 0.31 * t;
+      const a = deg(angle) + bend * t;
+      points.push([MID + Math.cos(a) * radius, 0.42 + Math.sin(a) * radius]);
+    }
+    return strokeRibbon(points, 0.032);
+  };
+  return union(
+    ellipseAt(MID, 0.64, 0.21, 0.23),
+    ellipseAt(MID, 0.36, 0.11, 0.13),
+    leg(120, -0.25), leg(150, -0.15), leg(180, 0), leg(210, 0.15),
+    leg(60, 0.25), leg(30, 0.15), leg(0, 0), leg(-30, -0.15),
+  );
+}
+
+/**
+ * A witch's hat: a wide curved brim under a tall crown with a bent tip.
+ *
+ * The crown's tip curls to the right instead of standing straight, which is the difference between
+ * a witch and a wizard -- and between a wizard and a traffic cone.
+ */
+function witchHat(): PathData {
+  const crown = pathBuilder();
+  crown.move(0.28, 0.86);
+  crown.cubic(0.34, 0.50, 0.42, 0.30, 0.46, 0.14);
+  crown.cubic(0.47, 0.08, 0.53, 0.06, 0.57, 0.05);
+  crown.cubic(0.55, 0.20, 0.61, 0.42, 0.72, 0.86);
+  crown.close();
+  return union(ellipseAt(MID, 0.86, 0.47, 0.07), crown.build());
+}
+
+/* -------------------------------------------------------------------- cosmic */
+
+/**
+ * An orbit: a tilted ring with a small body riding on it.
+ *
+ * The body sits on the ring's own curve rather than beside it -- picked from the ellipse parameter
+ * so it stays on the band for any box aspect -- and the pair rotate together, which is what keeps
+ * an orbit an orbit and not a lens over a dot.
+ */
+function orbit(): PathData {
+  const phi = deg(35);
+  const band = {
+    cx: MID, cy: MID, rotation: deg(10),
+    outerRx: 0.46, outerRy: 0.19, innerRx: 0.34, innerRy: 0.12,
+  };
+  const body = circleAt(MID + 0.46 * Math.cos(phi), MID + 0.19 * Math.sin(phi), 0.06);
+  return union(arcBand({ ...band, from: 0, to: TAU }), body);
+}
+
+/* -------------------------------------------------------------------- sweets */
+
+/**
+ * A cupcake: fluted wrapper, a swirl of frosting and a cherry on top.
+ *
+ * The frosting's bottom edge dips over the wrapper's top rim rather than meeting it, so the two
+ * read as one object instead of a blob balanced on a tray.
+ */
+function cupcake(): PathData {
+  const topY = 0.66;
+  const bottomY = 0.98;
+  const topL = 0.36;
+  const topR = 0.64;
+  const flare = 0.05;
+  const wrapper = pathBuilder();
+  wrapper.move(topL, topY);
+  wrapper.line(topR, topY);
+  wrapper.line(topR + flare, bottomY);
+  const pleats = 6;
+  const span = topR + flare - (topL - flare);
+  for (let index = 0; index < pleats; index += 1) {
+    const x1 = topR + flare - (span / pleats) * index;
+    const x2 = topR + flare - (span / pleats) * (index + 1);
+    wrapper.line(x1 - (span / pleats) * 0.5, bottomY - 0.025);
+    wrapper.line(x2, bottomY);
+  }
+  wrapper.line(topL - flare, bottomY);
+  wrapper.close();
+  const frosting = pathBuilder();
+  frosting.move(0.30, 0.70);
+  frosting.cubic(0.25, 0.44, 0.35, 0.28, 0.50, 0.14);
+  frosting.cubic(0.58, 0.05, 0.65, 0.10, 0.60, 0.19);
+  frosting.cubic(0.67, 0.28, 0.75, 0.46, 0.70, 0.70);
+  frosting.cubic(0.57, 0.77, 0.43, 0.77, 0.30, 0.70);
+  frosting.close();
+  return union(wrapper.build(), frosting.build(), circleAt(MID, 0.10, 0.045));
+}
+
+/**
+ * A candy cane: a chunky ribbon bent into the classic hook.
+ *
+ * The centreline is the stem up the right edge and a half-turn over the top; the ribbon offset is
+ * a true normal offset, which is why the hook's inner corner stays full where a hand-traced
+ * outline would pinch it.
+ */
+function candyCane(): PathData {
+  const centres: Point[] = [];
+  for (let index = 0; index <= 8; index += 1) {
+    const t = index / 8;
+    centres.push([0.78, 0.96 - 0.54 * t]);
+  }
+  const samples = 22;
+  for (let index = 1; index <= samples; index += 1) {
+    const angle = (index / samples) * Math.PI;
+    centres.push([0.52 + Math.cos(angle) * 0.26, 0.42 - Math.sin(angle) * 0.26]);
+  }
+  return strokeRibbon(centres, 0.13);
+}
+
+/**
+ * Two cherries on a Y stem, with a leaf at the knot.
+ *
+ * The stem is two straight ribbons meeting at the top; the leaf is drawn flat on one side so the
+ * pair reads as hanging from a point rather than wearing a bow.
+ */
+function cherry(): PathData {
+  const branch = (x1: number, y1: number, x2: number, y2: number): PathData => {
+    const points: Point[] = [];
+    for (let index = 0; index <= 6; index += 1) {
+      const t = index / 6;
+      points.push([x1 + (x2 - x1) * t, y1 + (y2 - y1) * t]);
+    }
+    return strokeRibbon(points, 0.028);
+  };
+  return union(
+    circleAt(0.36, 0.75, 0.15),
+    circleAt(0.64, 0.75, 0.15),
+    branch(0.50, 0.18, 0.36, 0.62),
+    branch(0.50, 0.18, 0.64, 0.62),
+    ellipseAt(0.57, 0.28, 0.05, 0.10),
+  );
+}
+
+/* --------------------------------------------------------------------- scene */
+
+/**
+ * A butterfly in dorsal view: two wing pairs, a slim body and swept antennae.
+ *
+ * The upper wings carry most of the mass and sit above the body's shoulder; the lower pair tucks
+ * under. The antennae are ribbons swept out from the head, thin enough that their taper is the
+ * point rather than the tip of a spike.
+ */
+function butterfly(): PathData {
+  const wing = (points: readonly Point[]): PathData => smoothClosedPath(points);
+  const antenna = (side: number): PathData => {
+    const centres: Point[] = [];
+    for (let index = 0; index <= 8; index += 1) {
+      const t = index / 8;
+      centres.push([MID + side * t * 0.16, 0.30 - 0.16 * t]);
+    }
+    return strokeRibbon(centres, 0.036);
+  };
+  return union(
+    ellipseAt(MID, MID, 0.055, 0.21),
+    wing([[0.56, 0.36], [0.70, 0.16], [0.90, 0.24], [0.92, 0.40], [0.74, 0.50], [0.58, 0.46]]),
+    wing([[0.44, 0.36], [0.30, 0.16], [0.10, 0.24], [0.08, 0.40], [0.26, 0.50], [0.42, 0.46]]),
+    wing([[0.56, 0.52], [0.72, 0.58], [0.76, 0.72], [0.64, 0.82], [0.56, 0.72]]),
+    wing([[0.44, 0.52], [0.28, 0.58], [0.24, 0.72], [0.36, 0.82], [0.44, 0.72]]),
+    antenna(-1),
+    antenna(1),
+  );
+}
+
 /** Every pictorial figure, in the unit box. */
 export const STAMP_FIGURES = {
   smiley, shades, bottle, cassette, floppy, boombox, pizza, daisy, peace, disc,
@@ -696,6 +950,12 @@ export const STAMP_FIGURES = {
   rocket, planet, moon, comet, saucer, sparkle,
   cone, donut, lolly,
   sun, palm, flame, cloud, speech, banner, gem,
+  diamond, gear, shield, crosshair,
+  'music-note': musicNote,
+  spider, 'witch-hat': witchHat,
+  orbit,
+  cupcake, 'candy-cane': candyCane, cherry,
+  butterfly,
 } satisfies Record<string, () => PathData>;
 
 export type StampFigureId = keyof typeof STAMP_FIGURES;

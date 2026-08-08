@@ -313,7 +313,7 @@ time rather than geometry being stored. Resizing rebuilds the outline at the new
 scaling a rounded copy of the old one, and improving a generator improves every document that used
 it.
 
-The catalogue is 45 stamps in seven themed sections, and the sections are the menu's order. Themes
+The catalogue is 57 stamps in seven themed sections, and the sections are the menu's order. Themes
 follow the style rack, because a scene assembled from the Spooky styles wants the Spooky
 decorations, without being bound to it -- a cloud belongs beside a speech bubble whatever style
 lands on it.
@@ -321,12 +321,12 @@ lands on it.
 | Section | Stamps |
 |---|---|
 | Basics | `rectangle` `ellipse` `triangle` `arch` `chevron` `heart` `speech` `banner` |
-| Marks | `star` `starburst` `sparkle` `splat` `zigzag` `squiggle` `bolt` `crown` `gem` |
-| 90s | `smiley` `shades` `bottle` `cassette` `floppy` `boombox` `pizza` `daisy` `peace` `disc` |
-| Spooky | `pumpkin` `ghost` `bat` `skull` `tombstone` `web` |
-| Cosmic | `rocket` `planet` `moon` `comet` `saucer` |
-| Sweets | `cone` `donut` `lolly` |
-| Scene | `sun` `palm` `cloud` `flame` |
+| Marks | `star` `starburst` `sparkle` `splat` `zigzag` `squiggle` `bolt` `crown` `gem` `diamond` `gear` `shield` `crosshair` |
+| 90s | `smiley` `shades` `bottle` `cassette` `floppy` `boombox` `pizza` `daisy` `peace` `disc` `music-note` |
+| Spooky | `pumpkin` `ghost` `bat` `skull` `tombstone` `web` `spider` `witch-hat` |
+| Cosmic | `rocket` `planet` `moon` `comet` `saucer` `orbit` |
+| Sweets | `cone` `donut` `lolly` `cupcake` `candy-cane` `cherry` |
+| Scene | `sun` `palm` `cloud` `flame` `butterfly` |
 
 The catalogue splits in two by how a shape is defined. The **abstract marks** are parametric -- a
 star is however many points at whatever radii, and reads as itself at any proportion. The
