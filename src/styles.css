@@ -3,7 +3,7 @@
 :root {
   color-scheme: dark;
   font-family: "Baloo 2", ui-rounded, "Comic Sans MS", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 14px;
+  font-size: 16px;
   color: #e8fbf4;
   background: #03262c;
   font-synthesis: none;
@@ -48,7 +48,7 @@ body {
   min-height: 100vh;
   place-items: center;
   color: var(--cream);
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-shadow: 0 3px 0 rgb(0 0 0 / 25%);
@@ -73,22 +73,22 @@ body {
 
 .recovery-screen {
   align-content: center;
-  gap: 14px;
-  padding: 24px;
+  gap: 18px;
+  padding: 28px;
   text-align: center;
 }
 
 .recovery-screen p {
-  max-width: 560px;
+  max-width: 600px;
   margin: 0;
   color: var(--mint);
-  font-size: 15px;
+  font-size: 17px;
   line-height: 1.6;
 }
 
 .recovery-screen button {
-  min-height: 44px;
-  margin: 0 6px;
+  min-height: 52px;
+  margin: 0 8px;
 }
 
 button,
@@ -178,9 +178,9 @@ select:focus-visible,
     0 6px 12px rgb(0 0 0 / 38%);
 }
 
-.orb-xs { min-height: 32px; padding: 0 15px; font-size: 12px; }
-.orb-sm { min-height: 40px; padding: 0 18px; font-size: 13px; }
-.orb-lg { min-height: 50px; padding: 0 26px; font-size: 16px; }
+.orb-xs { min-height: 40px; padding: 0 18px; font-size: 13px; }
+.orb-sm { min-height: 48px; padding: 0 22px; font-size: 15px; }
+.orb-lg { min-height: 58px; padding: 0 28px; font-size: 17px; }
 
 .orb-grape     { --orb-hi: #d9baff; --orb: #a06bff; --orb-lo: #7440d6; --orb-edge: #4a21a0; }
 .orb-berry     { --orb-hi: #ffb3de; --orb: #ff5fb0; --orb-lo: #d92f8f; --orb-edge: #8f1660; }
@@ -210,11 +210,11 @@ button:disabled {
   --bean-edge: #4a21a0;
 
   flex: 0 0 auto;
-  min-height: 32px;
-  padding: 0 16px;
+  min-height: 40px;
+  padding: 0 20px;
   border-radius: 999px;
   color: #fff;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: 0.03em;
   text-shadow: 0 1px 2px rgb(0 0 0 / 40%);
@@ -271,9 +271,9 @@ button:disabled {
 .jelly-field,
 .jelly-select {
   border: 2px solid var(--gel-line);
-  border-radius: 14px;
+  border-radius: 16px;
   color: var(--foam);
-  font-size: 14px;
+  font-size: 16px;
   background: linear-gradient(180deg, #02272d, #043a41);
   box-shadow:
     inset 0 2px 6px rgb(0 0 0 / 55%),
@@ -281,21 +281,21 @@ button:disabled {
 }
 
 .jelly-select {
-  min-height: 40px;
-  padding: 0 12px;
+  min-height: 48px;
+  padding: 0 16px;
   border-radius: 999px;
 }
 
 .jelly-pill {
   display: inline-grid;
-  min-width: 58px;
-  min-height: 30px;
-  padding: 0 12px;
+  min-width: 68px;
+  min-height: 38px;
+  padding: 0 14px;
   place-items: center;
   border: 2px solid var(--gel-line);
   border-radius: 999px;
   color: var(--cream);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
   background: linear-gradient(180deg, #02272d, #043a41);
   box-shadow: inset 0 2px 5px rgb(0 0 0 / 50%);
@@ -303,7 +303,7 @@ button:disabled {
 
 /* Chunky goo sliders */
 .goo-range {
-  height: 28px;
+  height: 34px;
   padding: 0;
   border: 0;
   appearance: none;
@@ -311,7 +311,7 @@ button:disabled {
 }
 
 .goo-range::-webkit-slider-runnable-track {
-  height: 14px;
+  height: 18px;
   border: 1px solid rgb(255 255 255 / 14%);
   border-radius: 999px;
   background: linear-gradient(180deg, #02272d, #06565f);
@@ -321,9 +321,11 @@ button:disabled {
 }
 
 .goo-range::-webkit-slider-thumb {
-  width: 26px;
-  height: 26px;
-  margin-top: -7px;
+  width: 30px;
+  height: 30px;
+
+  /* Centres the thumb on the track: (track height - thumb height) / 2. */
+  margin-top: -6px;
   border: 2px solid rgb(255 255 255 / 45%);
   border-radius: 50%;
   appearance: none;
@@ -341,7 +343,7 @@ button:disabled {
 }
 
 .goo-range::-moz-range-track {
-  height: 14px;
+  height: 18px;
   border: 1px solid rgb(255 255 255 / 14%);
   border-radius: 999px;
   background: linear-gradient(180deg, #02272d, #06565f);
@@ -351,8 +353,8 @@ button:disabled {
 }
 
 .goo-range::-moz-range-thumb {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   border: 2px solid rgb(255 255 255 / 45%);
   border-radius: 50%;
   appearance: none;
@@ -371,7 +373,7 @@ button:disabled {
 
 .app-shell {
   display: grid;
-  grid-template-rows: 76px minmax(0, 1fr) 88px;
+  grid-template-rows: 88px minmax(0, 1fr) 104px;
 
   /* A bare `min-height` lets the shell grow past the viewport, which takes the middle row with
      it, so the side panels never get a bounded height and their `overflow: auto` has nothing to
@@ -392,10 +394,14 @@ button:disabled {
   position: relative;
   z-index: 20;
   display: grid;
-  grid-template-columns: minmax(230px, 1fr) auto minmax(330px, 1fr);
+
+  /* The action cluster is the widest thing in this row and its buttons never shrink, so it takes
+     a larger share than the brand: an even 1fr:1fr split starves it at the desktop breakpoint and
+     the export button overlaps the history orbs. */
+  grid-template-columns: minmax(220px, 1fr) auto minmax(450px, 1.7fr);
   align-items: center;
-  gap: 18px;
-  padding: 0 18px;
+  gap: 20px;
+  padding: 0 22px;
   border-bottom: 3px solid var(--gel-line);
   background:
     linear-gradient(180deg, rgb(15 125 132 / 55%), rgb(6 57 63 / 85%)),
@@ -421,14 +427,14 @@ button:disabled {
 
 .brand-mark {
   display: grid;
-  width: 48px;
-  height: 48px;
-  margin-right: 12px;
+  width: 56px;
+  height: 56px;
+  margin-right: 14px;
   place-items: center;
   border: 3px solid rgb(255 255 255 / 75%);
   border-radius: 50%;
   color: #4a2c00;
-  font-size: 27px;
+  font-size: 31px;
   font-weight: 800;
   text-shadow: 0 1px 0 rgb(255 255 255 / 45%);
   background:
@@ -447,7 +453,7 @@ button:disabled {
 }
 
 .brand-word strong {
-  font-size: 25px;
+  font-size: 29px;
   font-weight: 800;
   letter-spacing: 0.01em;
   line-height: 1;
@@ -459,7 +465,7 @@ button:disabled {
 .brand-word small {
   margin-top: 4px;
   color: var(--yellow);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.3em;
   text-shadow: 0 1.5px 2px rgb(0 0 0 / 45%);
@@ -485,7 +491,7 @@ button:disabled {
 .layer-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .topbar-actions {
@@ -497,11 +503,11 @@ button:disabled {
 }
 
 .topbar-actions .export-button {
-  min-width: 138px;
+  min-width: 152px;
 }
 
 .export-format {
-  width: 74px;
+  width: 84px;
 }
 
 .zoom-strip .orb.playing {
@@ -515,7 +521,7 @@ button:disabled {
 
 .workspace {
   display: grid;
-  grid-template-columns: 256px minmax(360px, 1fr) 296px;
+  grid-template-columns: 312px minmax(360px, 1fr) 352px;
 
   /* The single implicit row would stretch to fill a definite-height container anyway, but saying
      so explicitly keeps the panels bounded if a second row is ever added here. */
@@ -524,11 +530,11 @@ button:disabled {
 }
 
 .workspace.left-closed {
-  grid-template-columns: 0 minmax(360px, 1fr) 296px;
+  grid-template-columns: 0 minmax(360px, 1fr) 352px;
 }
 
 .workspace.right-closed {
-  grid-template-columns: 256px minmax(360px, 1fr) 0;
+  grid-template-columns: 312px minmax(360px, 1fr) 0;
 }
 
 .workspace.left-closed.right-closed {
@@ -563,13 +569,13 @@ button:disabled {
 
 .panel-heading {
   display: flex;
-  height: 52px;
+  height: 62px;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding: 0 18px;
   border-bottom: 2px dashed rgb(23 183 189 / 40%);
   color: var(--cream);
-  font-size: 17px;
+  font-size: 19px;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-shadow: 0 2px 0 rgb(0 0 0 / 30%);
@@ -577,13 +583,13 @@ button:disabled {
 
 .panel-heading .count {
   display: grid;
-  min-width: 34px;
-  height: 30px;
-  padding: 0 8px;
+  min-width: 40px;
+  height: 34px;
+  padding: 0 10px;
   place-items: center;
   border-radius: 999px;
   color: #4a2c00;
-  font-size: 13px;
+  font-size: 14px;
   background:
     radial-gradient(circle at 32% 24%, rgb(255 255 255 / 90%) 0 7%, transparent 32%),
     linear-gradient(160deg, #fff3a0, #ffd23f 55%, #f79c1d);
@@ -594,8 +600,8 @@ button:disabled {
 }
 
 .selection-dot {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border: 2px solid rgb(255 255 255 / 60%);
   border-radius: 50%;
   background:
@@ -607,17 +613,17 @@ button:disabled {
 .search-field {
   position: relative;
   display: block;
-  margin: 14px 14px 12px;
+  margin: 16px 16px 14px;
 }
 
 .search-field input {
   width: 100%;
-  height: 42px;
-  padding: 0 40px 0 16px;
+  height: 52px;
+  padding: 0 48px 0 20px;
   border: 2px solid var(--gel-line);
   border-radius: 999px;
   color: var(--foam);
-  font-size: 14px;
+  font-size: 16px;
   background: linear-gradient(180deg, #02272d, #043a41);
   box-shadow:
     inset 0 2px 6px rgb(0 0 0 / 55%),
@@ -630,15 +636,15 @@ button:disabled {
 
 .search-field kbd {
   position: absolute;
-  top: 10px;
-  right: 12px;
+  top: 13px;
+  right: 14px;
   display: grid;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   place-items: center;
   border-radius: 50%;
   color: var(--mint);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
   background: rgb(23 183 189 / 25%);
   box-shadow: inset 0 -2px 3px rgb(0 0 0 / 30%);
@@ -649,15 +655,15 @@ button:disabled {
 .preset-categories {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 0 14px 14px;
+  gap: 10px;
+  padding: 0 16px 16px;
 }
 
 .preset-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  padding: 0 14px 18px;
+  gap: 14px;
+  padding: 0 16px 20px;
 }
 
 .preset-card {
@@ -675,7 +681,7 @@ button:disabled {
   aspect-ratio: 1.45;
   place-items: center;
   border: 3px solid rgb(23 183 189 / 55%);
-  border-radius: 18px;
+  border-radius: 20px;
   box-shadow:
     inset 0 2px 8px rgb(0 0 0 / 35%),
     0 5px 12px rgb(0 0 0 / 30%);
@@ -700,7 +706,7 @@ button:disabled {
 
 .preset-preview span {
   color: white;
-  font-size: 30px;
+  font-size: 34px;
   font-weight: 800;
   letter-spacing: -0.02em;
   text-shadow: 2px 2px 0 #0c2e33, 0 0 12px rgb(255 255 255 / 50%);
@@ -718,7 +724,7 @@ button:disabled {
 
 .preset-meta {
   display: block;
-  padding: 7px 2px 4px;
+  padding: 9px 3px 4px;
 }
 
 .preset-meta strong,
@@ -731,41 +737,43 @@ button:disabled {
 
 .preset-meta strong {
   color: var(--cream);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 800;
 }
 
 .preset-meta small {
-  margin-top: 2px;
+  margin-top: 3px;
   color: rgb(184 240 226 / 72%);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.12em;
 }
 
 .foundation-note {
-  margin: 16px 14px;
-  padding: 12px 14px;
+  margin: 18px 16px;
+  padding: 14px 18px;
   border: 2px dashed rgb(23 183 189 / 55%);
-  border-radius: 16px;
+  border-radius: 18px;
   color: var(--mint);
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 .canvas-panel {
   display: grid;
   min-width: 0;
   min-height: 0;
-  grid-template-rows: 52px minmax(0, 1fr) 48px;
+  grid-template-rows: 62px minmax(0, 1fr) 60px;
   background: transparent;
 }
 
 .canvas-toolbar {
   display: flex;
+  min-width: 0;
   align-items: center;
   justify-content: space-between;
-  padding: 0 14px;
+  gap: 12px;
+  padding: 0 16px;
   border-bottom: 2px dashed rgb(23 183 189 / 35%);
 }
 
@@ -778,14 +786,22 @@ button:disabled {
     0 0 16px rgb(79 220 242 / 55%);
 }
 
+/* The readout is the one part of the toolbar that may shrink. Without `min-width: 0` a flex item
+   refuses to go below its min-content width, so between the desktop breakpoint and roughly 1200px
+   -- where the two panels leave the canvas column its narrowest -- the pill pushed straight
+   through the tool buttons instead of trimming itself. */
 .canvas-status {
-  padding: 5px 14px;
+  min-width: 0;
+  padding: 7px 16px;
+  overflow: hidden;
   border: 2px solid rgb(23 183 189 / 45%);
   border-radius: 999px;
   color: var(--mint);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.1em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   background: rgb(3 38 44 / 60%);
 }
 
@@ -794,7 +810,7 @@ button:disabled {
   display: grid;
   overflow: auto;
   min-height: 0;
-  padding: 46px 40px 36px;
+  padding: 50px 44px 40px;
   place-items: center;
   background:
     radial-gradient(680px 380px at 78% 8%, rgb(79 220 242 / 10%), transparent 62%),
@@ -814,13 +830,13 @@ button:disabled {
 
 .canvas-rulers {
   position: absolute;
-  top: 9px;
+  top: 12px;
   right: 10%;
   left: 10%;
   display: flex;
   justify-content: space-between;
   color: rgb(184 240 226 / 68%);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -836,7 +852,7 @@ button:disabled {
   overflow: hidden;
   width: 100%;
   border: 3px solid #0e6b72;
-  border-radius: 22px;
+  border-radius: 24px;
   container-type: inline-size;
   background-color: white;
   background-image:
@@ -900,26 +916,26 @@ button:disabled {
 }
 
 .renderer-badge {
-  top: 10px;
-  right: 10px;
-  padding: 4px 10px;
+  top: 12px;
+  right: 12px;
+  padding: 5px 12px;
   border: 2px solid rgb(14 107 114 / 40%);
   border-radius: 999px;
   color: rgb(4 51 58 / 75%);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.08em;
   background: rgb(255 255 255 / 65%);
 }
 
 .render-error {
-  right: 14px;
-  bottom: 14px;
-  left: 14px;
-  padding: 10px 12px;
-  border-radius: 14px;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  padding: 12px 16px;
+  border-radius: 16px;
   color: #fff;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   background: rgb(170 20 50 / 90%);
 }
@@ -928,7 +944,7 @@ button:disabled {
   top: 50%;
   left: 50%;
   color: #5a6a72;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 800;
   transform: translate(-50%, -50%);
 }
@@ -937,16 +953,16 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
+  gap: 10px;
   border-top: 2px dashed rgb(23 183 189 / 35%);
 }
 
 .inspector-section,
 .effects-section {
-  margin: 12px 12px 0;
-  padding: 14px;
+  margin: 14px 14px 0;
+  padding: 18px;
   border: 2px solid rgb(23 183 189 / 35%);
-  border-radius: 20px;
+  border-radius: 22px;
   background:
     radial-gradient(200px 90px at 90% 0%, rgb(79 220 242 / 9%), transparent 65%),
     linear-gradient(170deg, rgb(10 90 98 / 65%), rgb(4 51 58 / 78%));
@@ -961,14 +977,14 @@ button:disabled {
 
 .inspector-section:last-child,
 .effects-section:last-child {
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .inspector-section h2,
 .effects-section h2 {
-  margin: 0 0 12px;
+  margin: 0 0 14px;
   color: var(--cream);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: 0.03em;
   text-decoration: underline wavy rgb(255 216 74 / 65%) 2px;
@@ -979,9 +995,9 @@ button:disabled {
 .inspector-section label > span,
 .field-label {
   display: block;
-  margin-bottom: 7px;
+  margin-bottom: 8px;
   color: var(--mint);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -994,28 +1010,29 @@ button:disabled {
 }
 
 .inspector-section textarea {
-  min-height: 74px;
-  padding: 11px 14px;
-  font-size: 15px;
+  min-height: 96px;
+  padding: 13px 16px;
+  font-size: 17px;
+  line-height: 1.4;
   resize: vertical;
 }
 
 .font-family-field {
   display: block;
-  margin-top: 12px;
+  margin-top: 14px;
 }
 
 .inspector-section input:not([type="range"]),
 .inspector-section select {
-  min-height: 40px;
-  padding: 0 12px;
+  min-height: 48px;
+  padding: 0 16px;
 }
 
 .field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 12px;
+  gap: 12px;
+  margin-top: 14px;
 }
 
 .warp-section h2,
@@ -1027,14 +1044,14 @@ button:disabled {
 .warp-section h2 span,
 .light-section h2 span {
   color: rgb(184 240 226 / 75%);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   text-decoration: none;
 }
 
 .range-field {
   display: block;
-  margin-top: 13px;
+  margin-top: 16px;
 }
 
 .range-field > span {
@@ -1059,13 +1076,13 @@ button:disabled {
 
 .section-title-row span {
   display: grid;
-  min-width: 28px;
-  height: 26px;
-  padding: 0 7px;
+  min-width: 32px;
+  height: 30px;
+  padding: 0 9px;
   place-items: center;
   border-radius: 999px;
   color: #053c46;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
   background:
     radial-gradient(circle at 32% 24%, rgb(255 255 255 / 90%) 0 8%, transparent 32%),
@@ -1077,39 +1094,44 @@ button:disabled {
 
 .effect-list {
   display: grid;
-  gap: 9px;
+  gap: 11px;
   padding: 0;
-  margin: 0 0 10px;
+  margin: 0 0 12px;
   list-style: none;
 }
 
+/* The row's own line is the grip, the swatch and the effect's name; everything else -- the action
+   buttons, the quick slider, the colour swatches -- stacks underneath, indented past the grip.
+   Sharing the line with four buttons left the name about 40px of a 352px panel, so every effect
+   read as "Inne..." / "Stro...". */
 .effect-list li {
   display: grid;
-  grid-template-columns: 12px 30px minmax(0, 1fr) auto;
-  min-height: 52px;
+  grid-template-columns: 14px 34px minmax(0, 1fr);
+  min-height: 62px;
   align-items: center;
-  gap: 7px;
-  padding: 8px;
+  gap: 9px;
+  padding: 10px;
   border: 2px solid rgb(23 183 189 / 40%);
-  border-radius: 16px;
+  border-radius: 18px;
   background: linear-gradient(170deg, rgb(9 82 89 / 70%), rgb(3 38 44 / 85%));
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
 }
 
 .effect-actions {
   display: flex;
-  gap: 3px;
+  grid-column: 2 / -1;
+  gap: 6px;
 }
 
 .drag-grip {
   color: rgb(184 240 226 / 72%);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
 }
 
 .effect-chip {
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   border: 2px solid rgb(255 255 255 / 40%);
   border-radius: 50%;
   background:
@@ -1128,28 +1150,28 @@ button:disabled {
 .effect-list strong {
   overflow: hidden;
   color: var(--cream);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .effect-list small {
-  margin-top: 2px;
+  margin-top: 3px;
   color: rgb(184 240 226 / 75%);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
 }
 
 .effect-list button {
-  min-width: 26px;
-  min-height: 26px;
-  padding: 3px 4px;
+  min-width: 40px;
+  min-height: 36px;
+  padding: 4px 8px;
   border: 2px solid rgb(23 183 189 / 45%);
   border-radius: 999px;
   color: var(--mint);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
   background: linear-gradient(180deg, #04333a, #03262c);
   box-shadow: inset 0 -2px 4px rgb(0 0 0 / 35%);
@@ -1167,11 +1189,11 @@ button:disabled {
 .effect-quick-control {
   display: grid;
   grid-column: 2 / -1;
-  grid-template-columns: 52px minmax(0, 1fr) 36px;
+  grid-template-columns: 58px minmax(0, 1fr) 40px;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   color: rgb(184 240 226 / 70%);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -1182,22 +1204,22 @@ button:disabled {
 
 .effect-quick-control output {
   color: var(--yellow);
-  font-size: 12px;
+  font-size: 13px;
   text-align: right;
 }
 
 .effect-color-controls {
   display: flex;
   grid-column: 2 / -1;
-  gap: 12px;
+  gap: 14px;
 }
 
 .effect-color-controls label {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: var(--mint);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -1206,8 +1228,8 @@ button:disabled {
    begin with. The rest of the app already holds to this -- the narrow breakpoints put a 44px
    minimum on every button group. */
 .effect-color-controls input[type="color"] {
-  width: 32px;
-  height: 26px;
+  width: 40px;
+  height: 32px;
   padding: 0;
   border: 2px solid rgb(23 183 189 / 55%);
   border-radius: 999px;
@@ -1216,19 +1238,19 @@ button:disabled {
 
 .effect-adder {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 84px;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  gap: 10px;
 }
 
 .no-selection {
-  padding: 48px 22px;
+  padding: 56px 26px;
   color: rgb(184 240 226 / 70%);
   text-align: center;
 }
 
 .no-selection span {
   color: var(--cream);
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: 0.1em;
   text-decoration: underline wavy rgb(255 95 176 / 60%) 2px;
@@ -1236,8 +1258,8 @@ button:disabled {
 }
 
 .no-selection p {
-  font-size: 14px;
-  line-height: 1.55;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 /* ---------------------------------------------------------------------------
@@ -1248,14 +1270,14 @@ button:disabled {
   position: relative;
   z-index: 10;
   display: grid;
-  grid-template-columns: 100px minmax(0, 1fr) auto;
+  grid-template-columns: 116px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 14px;
-  padding: 14px 18px;
+  gap: 16px;
+  padding: 16px 20px;
   border-top: 3px solid var(--gel-line);
   background:
-    radial-gradient(circle, rgb(232 251 244 / 22%) 3px, transparent 3.6px) 0 5px / 26px 9px repeat-x,
-    radial-gradient(circle, rgb(232 251 244 / 22%) 3px, transparent 3.6px) 0 calc(100% - 14px) / 26px 9px repeat-x,
+    radial-gradient(circle, rgb(232 251 244 / 22%) 3px, transparent 3.6px) 0 6px / 28px 9px repeat-x,
+    radial-gradient(circle, rgb(232 251 244 / 22%) 3px, transparent 3.6px) 0 calc(100% - 15px) / 28px 9px repeat-x,
     linear-gradient(180deg, #06343b, var(--pool-deep));
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 12%),
@@ -1269,33 +1291,33 @@ button:disabled {
 
 .layers-title span {
   color: var(--yellow);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: 0.26em;
   text-shadow: 0 1.5px 2px rgb(0 0 0 / 45%);
 }
 
 .layers-title strong {
-  margin-top: 3px;
+  margin-top: 4px;
   color: var(--mint);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 800;
 }
 
 .layer-list {
   display: flex;
   overflow-x: auto;
-  gap: 10px;
+  gap: 12px;
   padding: 4px 2px;
 }
 
 .layer-item {
   display: flex;
-  min-width: 150px;
-  height: 52px;
+  min-width: 176px;
+  height: 62px;
   align-items: stretch;
   border: 3px solid rgb(23 183 189 / 50%);
-  border-radius: 14px;
+  border-radius: 16px;
   background: linear-gradient(170deg, #095259, #03262c);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 10%),
@@ -1320,10 +1342,10 @@ button:disabled {
   min-width: 0;
   flex: 1;
   align-items: center;
-  gap: 10px;
-  padding: 0 12px;
+  gap: 12px;
+  padding: 0 14px;
   color: var(--mint);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   text-align: left;
   background: transparent;
@@ -1341,10 +1363,10 @@ button:disabled {
 
 .layer-visibility {
   flex: 0 0 auto;
-  padding: 0 10px;
+  padding: 0 12px;
   border-left: 2px dashed rgb(23 183 189 / 40%);
   color: rgb(184 240 226 / 75%);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   background: transparent;
 }
@@ -1355,14 +1377,14 @@ button:disabled {
 
 .layer-kind {
   display: grid;
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   flex: 0 0 auto;
   place-items: center;
   border: 2px solid rgb(255 255 255 / 55%);
   border-radius: 50%;
   color: #4a2c00;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 800;
   text-shadow: 0 1px 0 rgb(255 255 255 / 40%);
   background:
@@ -1375,22 +1397,24 @@ button:disabled {
 
 .toast-region {
   position: fixed;
-  right: 16px;
-  bottom: 104px;
+  right: 20px;
+
+  /* Clears the layer strip -- keep in step with the shell's last grid row. */
+  bottom: 120px;
   z-index: 50;
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .toast {
-  max-width: 320px;
-  padding: 13px 20px;
+  max-width: 360px;
+  padding: 15px 24px;
   border: 3px solid rgb(255 255 255 / 30%);
   border-radius: 999px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 800;
   text-align: left;
-  /* Every flavour pairs bright candy with deep text, like the dark-text orbs: white 13px text
+  /* Every flavour pairs bright candy with deep text, like the dark-text orbs: white text
      on these gradients falls well under WCAG AA's 4.5:1. */
   color: #053c46;
   text-shadow: 0 1px 0 rgb(255 255 255 / 35%);
@@ -1438,17 +1462,17 @@ button:disabled {
 
 .update-banner {
   position: fixed;
-  right: 16px;
-  bottom: 16px;
+  right: 20px;
+  bottom: 20px;
   z-index: 60;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
+  gap: 16px;
+  padding: 14px 20px;
   border: 3px solid var(--gel-bright);
-  border-radius: 22px;
+  border-radius: 24px;
   color: var(--foam);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   background: linear-gradient(170deg, #0a5a62, #04333a);
   box-shadow:
@@ -1467,25 +1491,25 @@ button:disabled {
 .font-picker-button {
   display: flex;
   width: 100%;
-  min-height: 44px;
+  min-height: 52px;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 0 16px;
+  gap: 12px;
+  padding: 0 18px;
   text-align: left;
   cursor: pointer;
 }
 
 .font-picker-current {
   overflow: hidden;
-  font-size: 17px;
+  font-size: 19px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .font-picker-caret {
   color: var(--yellow);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .font-picker-list {
@@ -1493,12 +1517,12 @@ button:disabled {
   right: 0;
   left: 0;
   z-index: 40;
-  max-height: 330px;
-  margin: 8px 0 0;
-  padding: 8px;
+  max-height: 400px;
+  margin: 10px 0 0;
+  padding: 10px;
   overflow: auto;
   border: 3px solid var(--gel-bright);
-  border-radius: 20px;
+  border-radius: 22px;
   background: linear-gradient(170deg, #0a5a62, #03262c);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 14%),
@@ -1514,9 +1538,9 @@ button:disabled {
 
 .font-picker-group {
   display: block;
-  padding: 8px 10px 4px;
+  padding: 10px 12px 5px;
   color: var(--yellow);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -1524,12 +1548,12 @@ button:disabled {
 }
 
 .font-picker-option {
-  padding: 7px 12px;
+  padding: 10px 14px;
   overflow: hidden;
   border: 2px solid transparent;
-  border-radius: 14px;
+  border-radius: 16px;
   color: var(--foam);
-  font-size: 19px;
+  font-size: 21px;
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1551,13 +1575,53 @@ button:disabled {
    --------------------------------------------------------------------------- */
 
 @media (max-width: 1050px) {
+  /* The action cluster gains the two panel toggles here, so it is the row's widest part while the
+     window is at its narrowest. Sizing its track to that content set the whole shell's width and
+     every row stretched past the viewport; giving the brand and history the space they need and
+     letting the cluster scroll keeps the shell inside the window with every control reachable. */
   .topbar {
-    grid-template-columns: minmax(140px, 1fr) auto auto;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    gap: 14px;
+    padding: 0 14px;
+  }
+
+  /* `justify-content: flex-end` would overflow backwards, past the scroll container's start edge,
+     leaving the first buttons unreachable. An auto margin right-aligns the row while it fits and
+     collapses to zero once it does not. */
+  .topbar-actions {
+    justify-content: flex-start;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .topbar-actions > :first-child {
+    margin-left: auto;
+  }
+
+  .topbar-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .topbar-actions .orb-sm {
+    padding: 0 16px;
+  }
+
+  .topbar-actions .export-button {
+    min-width: 124px;
+    padding: 0 20px;
+  }
+
+  /* Narrower box, so the pill's own padding comes back as room for the label instead of clipping
+     "PNG" to "PN". */
+  .export-format {
+    width: 76px;
+    padding-inline: 9px;
   }
 
   .history-actions .orb {
-    min-width: 44px;
-    padding: 0 12px;
+    min-width: 48px;
+    padding: 0 14px;
   }
 
   .topbar-actions .panel-toggle {
@@ -1569,7 +1633,7 @@ button:disabled {
   }
 
   .workspace {
-    grid-template-columns: 0 minmax(340px, 1fr) 296px;
+    grid-template-columns: 0 minmax(340px, 1fr) 352px;
   }
 
   .workspace .preset-panel {
@@ -1579,13 +1643,13 @@ button:disabled {
 
   .workspace:not(.left-closed) .preset-panel {
     position: fixed;
-    top: 76px;
-    bottom: 88px;
+    top: 88px;
+    bottom: 104px;
     left: 0;
     z-index: 30;
     visibility: visible;
-    width: 280px;
-    border-radius: 0 24px 24px 0;
+    width: 320px;
+    border-radius: 0 26px 26px 0;
     box-shadow: 20px 0 50px rgb(0 0 0 / 45%);
   }
 }
@@ -1604,19 +1668,19 @@ button:disabled {
        past the viewport here and must not be pinned to it. */
     height: auto;
     overflow: visible;
-    grid-template-rows: 68px minmax(520px, calc(100vh - 144px)) 76px;
+    grid-template-rows: 76px minmax(520px, calc(100vh - 160px)) 84px;
   }
 
   .topbar {
-    grid-template-columns: 52px minmax(0, 1fr);
+    grid-template-columns: 56px minmax(0, 1fr);
     gap: 6px;
     padding: 0 6px;
   }
 
   .brand-mark {
-    width: 44px;
-    height: 44px;
-    font-size: 23px;
+    width: 48px;
+    height: 48px;
+    font-size: 26px;
     margin-right: 0;
   }
 
@@ -1625,11 +1689,11 @@ button:disabled {
   }
 
   .topbar-actions button {
-    width: 46px;
-    min-width: 46px;
-    min-height: 44px;
+    width: 52px;
+    min-width: 52px;
+    min-height: 48px;
     padding-inline: 3px;
-    font-size: 10px;
+    font-size: 11px;
   }
 
   .topbar-actions {
@@ -1641,47 +1705,60 @@ button:disabled {
     scrollbar-width: none;
   }
 
+  /* The brand is down to its mark here, so the controls start beside it rather than being pushed
+     to the right edge with a hole in the middle. */
+  .topbar-actions > :first-child {
+    margin-left: 0;
+  }
+
   .topbar-actions::-webkit-scrollbar {
     display: none;
   }
 
   .export-format {
-    width: 58px;
-    min-height: 44px;
-    font-size: 11px;
+    width: 64px;
+    min-height: 48px;
+    font-size: 12px;
   }
 
   .topbar-actions .export-button {
-    width: 74px;
-    min-width: 74px;
-    font-size: 11px;
+    width: 80px;
+    min-width: 80px;
+    font-size: 12px;
   }
 
   .canvas-panel {
-    grid-template-rows: 56px minmax(0, 1fr) 54px;
+    grid-template-rows: 60px minmax(0, 1fr) 60px;
   }
 
   .tool-group button,
   .zoom-strip button,
   .layer-actions button {
-    min-height: 44px;
+    min-height: 48px;
   }
 
   .zoom-strip {
-    gap: 5px;
+    gap: 6px;
+  }
+
+  .layer-actions {
+    gap: 6px;
   }
 
   /* These strips are the widest fixed-width rows in the shell, and the shell's implicit grid
      column takes its min-content width: left chunky, they pushed the whole app past a 320px
-     viewport. */
+     viewport. They grow taller with the rest of the app but keep the desktop bump off their
+     width, which is the axis with no room to spare here. */
   .zoom-strip .orb-xs,
   .layer-actions .orb-xs {
     padding: 0 10px;
+    font-size: 12px;
   }
 
   .zoom-strip .jelly-pill {
-    min-width: 50px;
+    min-width: 52px;
     padding: 0 8px;
+    font-size: 12px;
   }
 
   .workspace,
@@ -1699,19 +1776,19 @@ button:disabled {
   .workspace:not(.right-closed) .inspector-panel {
     position: fixed;
     right: 0;
-    bottom: 76px;
+    bottom: 84px;
     left: 0;
     z-index: 35;
     visibility: visible;
-    max-height: 58vh;
+    max-height: 60vh;
     border-top: 3px solid var(--gel-bright);
-    border-radius: 24px 24px 0 0;
+    border-radius: 26px 26px 0 0;
     box-shadow: 0 -20px 50px rgb(0 0 0 / 50%);
   }
 
   .workspace:not(.left-closed) .preset-panel {
-    top: 68px;
-    bottom: 76px;
+    top: 76px;
+    bottom: 84px;
   }
 
   .canvas-status {
@@ -1719,7 +1796,7 @@ button:disabled {
   }
 
   .canvas-viewport {
-    padding: 30px 16px;
+    padding: 32px 16px;
   }
 
   .artboard-wrap {
@@ -1734,14 +1811,28 @@ button:disabled {
   }
 
   .layer-item {
-    min-width: 124px;
-    height: 48px;
+    min-width: 140px;
+    height: 56px;
+  }
+
+  .toast-region {
+    right: 12px;
+    bottom: 100px;
+    left: 12px;
+  }
+
+  .toast {
+    max-width: none;
   }
 
   .inspector-panel button,
   .inspector-panel input,
   .inspector-panel select {
-    min-height: 44px;
+    min-height: 48px;
+  }
+
+  .effect-list button {
+    min-width: 44px;
   }
 
   .font-picker-list {
@@ -1750,6 +1841,27 @@ button:disabled {
 
   .layer-actions button:last-child {
     display: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Touch pointers
+   --------------------------------------------------------------------------- */
+
+/* A finger is no more precise on a landscape tablet than on a phone, so the smallest controls take
+   the full 44px target from the pointer rather than from the viewport width. Height only: the rows
+   these sit in are the ones with no width to spare at 320px. */
+@media (pointer: coarse) {
+  .orb-xs,
+  .bean,
+  .jelly-select,
+  .font-picker-button,
+  .effect-list button {
+    min-height: 44px;
+  }
+
+  .effect-color-controls input[type="color"] {
+    height: 40px;
   }
 }
 
