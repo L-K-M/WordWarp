@@ -10,7 +10,8 @@ export. The product and rendering decisions are documented in [`PLAN.md`](./PLAN
 - 41 envelope warp presets plus path, mesh, and perspective mapping primitives
 - Editable fill, stroke, bevel, glow, shadow, extrusion, texture, reflection, and post effects
 - 113 built-in styles and 24 Office-compatible color ramps
-- 13 decoration stamps that take the same effect stack and styles as text
+- 45 decoration stamps, themed from Memphis marks to pumpkins and rockets, taking the same effect
+  stack and styles as text
 - Transparent or solid canvas background
 - Transparent PNG, animated APNG, and GIF export
 - Deterministic procedural animation with live reduced-motion-aware preview

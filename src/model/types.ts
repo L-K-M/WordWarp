@@ -359,29 +359,50 @@ export interface TextElement extends ElementBase {
 }
 
 /**
+ * Themed sections of the stamp catalogue, in the order the stamp menu shows them.
+ *
+ * The catalogue is grouped because it is no longer small enough to scan: a flat run of forty-five
+ * icons is a wall, and someone reaching for a pumpkin should not have to read past a cassette to
+ * find it. The sections deliberately echo the style rack's category tabs -- a scene built from the
+ * Spooky styles wants the Spooky stamps -- without being tied to them, since a cloud belongs beside
+ * a speech bubble whatever style ends up on it.
+ */
+export const STAMP_GROUPS = [
+  { id: 'basics', label: 'Basics' },
+  { id: 'marks', label: 'Marks' },
+  { id: 'nineties', label: '90s' },
+  { id: 'spooky', label: 'Spooky' },
+  { id: 'cosmic', label: 'Cosmic' },
+  { id: 'sweets', label: 'Sweets' },
+  { id: 'scene', label: 'Scene' },
+] as const;
+
+export type StampGroupId = (typeof STAMP_GROUPS)[number]['id'];
+
+/**
  * The stamp catalogue: decorations that sit beside the word rather than on it.
  *
  * The first four predate the catalogue and keep their meanings. The rest are the shapes a Memphis
- * sheet, a sticker book or a clipart disc from the decade actually printed, chosen so a scene can
- * be built without ever needing to draw geometry by hand.
+ * sheet, a sticker book, a clipart disc or a Halloween window cling from the decade actually
+ * printed, chosen so a scene can be built without ever needing to draw geometry by hand.
+ *
+ * Listed by section, and the section order here is the menu order. A stamp appears in exactly one
+ * section, so this doubles as the catalogue's index -- there is no second list to fall out of step
+ * with it.
  */
-export const STAMP_IDS = [
-  'rectangle',
-  'ellipse',
-  'star',
-  'splat',
-  'triangle',
-  'zigzag',
-  'squiggle',
-  'bolt',
-  'starburst',
-  'arch',
-  'chevron',
-  'crown',
-  'heart',
-] as const;
+export const STAMP_IDS_BY_GROUP = {
+  basics: ['rectangle', 'ellipse', 'triangle', 'arch', 'chevron', 'heart', 'speech', 'banner'],
+  marks: ['star', 'starburst', 'sparkle', 'splat', 'zigzag', 'squiggle', 'bolt', 'crown', 'gem'],
+  nineties: ['smiley', 'shades', 'bottle', 'cassette', 'floppy', 'boombox', 'pizza', 'daisy', 'peace', 'disc'],
+  spooky: ['pumpkin', 'ghost', 'bat', 'skull', 'tombstone', 'web'],
+  cosmic: ['rocket', 'planet', 'moon', 'comet', 'saucer'],
+  sweets: ['cone', 'donut', 'lolly'],
+  scene: ['sun', 'palm', 'cloud', 'flame'],
+} as const satisfies Record<StampGroupId, readonly string[]>;
 
-export type StampId = (typeof STAMP_IDS)[number];
+export const STAMP_IDS = STAMP_GROUPS.flatMap((group) => STAMP_IDS_BY_GROUP[group.id]);
+
+export type StampId = (typeof STAMP_IDS_BY_GROUP)[StampGroupId][number];
 
 export interface ShapeElement extends ElementBase {
   type: 'shape';

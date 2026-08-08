@@ -311,10 +311,31 @@ something to decorate.
 A **stamp** is a named outline generator: `shape` plus a `width` and `height` produce a path at draw
 time rather than geometry being stored. Resizing rebuilds the outline at the new size instead of
 scaling a rounded copy of the old one, and improving a generator improves every document that used
-it. The catalogue is `rectangle`, `ellipse`, `star`, `splat`, `triangle`, `zigzag`, `squiggle`,
-`bolt`, `starburst`, `arch`, `chevron`, `crown`, `heart`.
+it.
 
-Two properties make the feature much smaller than it looks:
+The catalogue is 45 stamps in seven themed sections, and the sections are the menu's order. Themes
+follow the style rack, because a scene assembled from the Spooky styles wants the Spooky
+decorations, without being bound to it -- a cloud belongs beside a speech bubble whatever style
+lands on it.
+
+| Section | Stamps |
+|---|---|
+| Basics | `rectangle` `ellipse` `triangle` `arch` `chevron` `heart` `speech` `banner` |
+| Marks | `star` `starburst` `sparkle` `splat` `zigzag` `squiggle` `bolt` `crown` `gem` |
+| 90s | `smiley` `shades` `bottle` `cassette` `floppy` `boombox` `pizza` `daisy` `peace` `disc` |
+| Spooky | `pumpkin` `ghost` `bat` `skull` `tombstone` `web` |
+| Cosmic | `rocket` `planet` `moon` `comet` `saucer` |
+| Sweets | `cone` `donut` `lolly` |
+| Scene | `sun` `palm` `cloud` `flame` |
+
+The catalogue splits in two by how a shape is defined. The **abstract marks** are parametric -- a
+star is however many points at whatever radii, and reads as itself at any proportion. The
+**pictorial figures** are drawn in a unit box and scaled: a pumpkin has one shape, and the work is
+getting it right rather than parameterising it. Figures are composed from a toolkit of primitives
+(arcs, bands, ribbons, mirrors, unions, holes) rather than written as runs of control points, so a
+figure can be read and argued with instead of only replaced.
+
+Three properties make the feature much smaller than it looks:
 
 - **Stamps reuse the whole effect library.** The effect stack works from a face's alpha channel and
   knows nothing about what drew it, so handing it a filled outline instead of a warped word gives a
@@ -325,7 +346,19 @@ Two properties make the feature much smaller than it looks:
   both come straight from `width`/`height`, so a shape that underfilled its box would have dead
   space around it and one that overshot would draw outside its own selection. Generators are
   measured after flattening and fitted, which also means a generator author never has to hand-tune
-  coordinates to reach all four edges.
+  coordinates to reach all four edges. Placement therefore has to supply a box of the right
+  proportion, or a stamp arrives squashed rather than cropped: the natural aspect is measured from
+  the generator at placement time rather than declared beside it, so a figure redrawn wider lands
+  wider with no table to keep in step.
+- **Holes come from winding, not from a second pass.** A face is filled with the nonzero rule, so a
+  contour wound against its surroundings is a hole -- which is what lets a smiley's grin, a
+  cassette's reels and a jack-o'-lantern's face take the effect stack as geometry: the keyline
+  traces them and a bevel lights their inner edges, where a painted-on face would sit flat over
+  whatever style was applied. Two rules follow, and both are enforced by tests rather than by care.
+  A hole must lie inside the fill it pierces -- outside it there is nothing to cancel, so it winds
+  negative and renders solid, and it would widen the path's bounds and shrink the whole figure. And
+  no two holes may cover the same place, for the same reason: -2 is not zero. A grid of winding
+  samples over every stamp is what catches both.
 
 `path` is the upgrade path to an editor. Setting it detaches the element from its generator: the
 renderer draws those commands verbatim and `shape` survives only as a record of where the geometry

@@ -3,6 +3,8 @@ dist/
 coverage/
 playwright-report/
 test-results/
+# Scratch git worktrees, which live inside the repo they are worktrees of.
+.claude/worktrees/
 .env
 .env.*
 !.env.example
