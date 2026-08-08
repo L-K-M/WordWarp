@@ -21,7 +21,18 @@ jobs:
   review:
     name: Review PR with GLM 5.2
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Long enough for the action to exhaust its own retry budget and report.
+    #
+    # The action gives each request 300s and retries a chunk three times, so an
+    # unresponsive upstream costs 15 minutes per chunk; MAX_DIFF_CHARS below
+    # allows two or three chunks, which is 30-45 minutes of pure waiting. At the
+    # previous ceiling of 30 the runner killed the job mid-retry, which is worse
+    # than a slow failure: the review comment is written only after the last
+    # chunk settles, so a cancellation discards the findings of every chunk that
+    # did succeed and posts nothing at all. Leaving room for the retries to run
+    # out turns that silent cancellation into the action's own "review
+    # incomplete" notice, naming the chunks that failed.
+    timeout-minutes: 50
     # pull_request_target exposes repository secrets and a write-capable token.
     # Never run this privileged job for branches from untrusted forks, and never
     # check out or execute pull-request code in this workflow.
