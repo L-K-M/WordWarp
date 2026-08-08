@@ -698,6 +698,11 @@ export const BUILT_IN_PRESETS: Preset[] = [
   ], warp('textWave4', 0.3), ['stars', 'night', 'sky'], [
     { id: 'starfield-sparkle', kind: 'sparkle', enabled: true, duration: 2, params: { amount: 20 }, seed: 99 },
   ]),
+  definePreset('molten-core', 'Molten Core', 'texture', ['#ff6a00', '#3d1505', '#0a0302', '#ff2a00'], [
+    shadow('#1a0202', 12, 14, 0.6), glow('#ff2a00', 34, 0.55),
+    fill(gradient(['#3d1505', '#1a0a05', '#0a0302'])), innerGlow('#ff7a00', 16, 0.9),
+    satin('#ff4500', 0.4), texture('grain', 0.22),
+  ], warp('textDeflate', 0.42), ['molten', 'lava', 'magma']),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {

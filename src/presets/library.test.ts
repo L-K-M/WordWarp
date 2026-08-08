@@ -16,6 +16,9 @@ describe('preset library', () => {
     // adding a style only ever needs the count below touched once.
     expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(BUILT_IN_PRESETS.length);
     expect(BUILT_IN_PRESETS).toHaveLength(PRESET_COUNT);
+  it('ships every named style from the six core categories', () => {
+    expect(BUILT_IN_PRESETS).toHaveLength(42);
+    expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(42);
     expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.category))).toEqual(
       new Set([
         'metallic', 'synthwave', 'y2k', 'nineties', 'dimensional', 'texture',
