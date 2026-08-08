@@ -25,8 +25,14 @@ export function FontPicker({ value, onPick }: FontPickerProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const [open, setOpen] = useState(false);
-  const [activeFamily, setActiveFamily] = useState(value);
+  const [activeChoice, setActiveChoice] = useState<{ family: string; forValue: string }>({ family: value, forValue: value });
   const [facesReady, setFacesReady] = useState(0);
+
+  // Derived, not synced by an effect: an external value change (undo/redo) while the popover is
+  // open must move the active descendant too, or Enter re-picks the family the document no
+  // longer uses. Explicit navigation re-anchors the choice to the current value.
+  const activeFamily = activeChoice.forValue === value ? activeChoice.family : value;
+  const setActiveFamily = (family: string) => setActiveChoice({ family, forValue: value });
 
   const known = getFontCatalogEntry(value);
   // UI-only faces (Baloo 2) are catalogued but never listed for documents, so a current family
@@ -73,12 +79,6 @@ export function FontPicker({ value, onPick }: FontPickerProps) {
     const active = listRef.current?.querySelector(`#${CSS.escape(`${baseId}-option-${slugify(activeFamily)}`)}`);
     active?.scrollIntoView({ block: 'nearest' });
   }, [open, activeFamily, baseId]);
-
-  // An external value change (undo/redo) while the popover is open must move the active
-  // descendant too, or Enter re-picks the family the document no longer uses.
-  useEffect(() => {
-    if (open) setActiveFamily(value);
-  }, [open, value]);
 
   const openMenu = (startAt?: string) => {
     setActiveFamily(startAt ?? value);
