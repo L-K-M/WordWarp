@@ -1981,21 +1981,48 @@ button:disabled {
 }
 
 /* The stamp menu drops out of the canvas toolbar, so it has to leave the toolbar's flow entirely:
-   in-flow it would push the artboard down every time it opened. */
+   in-flow it would push the artboard down every time it opened.
+
+   Forty-five stamps is longer than the viewport below the toolbar on a laptop, so the panel caps
+   its height and scrolls its sections rather than running off the bottom of the window. */
 .stamp-menu {
   position: absolute;
   z-index: 6;
   top: 100%;
   left: 12px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
-  gap: 6px;
   width: min(430px, calc(100% - 24px));
+  max-height: min(66vh, 560px);
   padding: 10px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border: 2px solid var(--gel-line);
   border-radius: 16px;
   background: var(--pool);
   box-shadow: 0 12px 28px rgb(0 0 0 / 45%);
+}
+
+.stamp-group + .stamp-group {
+  margin-top: 10px;
+}
+
+/* The heading rides with its section while the panel scrolls, so a stamp is never orphaned from
+   the label that says which theme it belongs to. */
+.stamp-group h3 {
+  position: sticky;
+  top: -10px;
+  margin: 0 0 5px;
+  padding: 4px 2px;
+  background: var(--pool);
+  color: var(--gel-bright);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.stamp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 6px;
 }
 
 .stamp-choice {

@@ -1,4 +1,5 @@
 import { createEffect } from '../effects/defaults';
+import { stampAspect } from '../geometry/stamps';
 import { createId } from '../lib/id';
 import { DOC_VERSION } from './types';
 import type { FillEffect, Point, ShapeElement, StampId, TextElement, WordWarpDocument } from './types';
@@ -26,18 +27,59 @@ export function createDefaultFill(id = createId()): FillEffect {
 export const STAMP_LABELS: Record<StampId, string> = {
   rectangle: 'Bar',
   ellipse: 'Dot',
-  star: 'Star',
-  splat: 'Splat',
   triangle: 'Triangle',
+  arch: 'Arch',
+  chevron: 'Chevron',
+  heart: 'Heart',
+  speech: 'Speech',
+  banner: 'Banner',
+  star: 'Star',
+  starburst: 'Starburst',
+  sparkle: 'Sparkle',
+  splat: 'Splat',
   zigzag: 'Zigzag',
   squiggle: 'Squiggle',
   bolt: 'Bolt',
-  starburst: 'Starburst',
-  arch: 'Arch',
-  chevron: 'Chevron',
   crown: 'Crown',
-  heart: 'Heart',
+  gem: 'Gem',
+  smiley: 'Smiley',
+  shades: 'Shades',
+  bottle: 'Bottle',
+  cassette: 'Cassette',
+  floppy: 'Floppy',
+  boombox: 'Boombox',
+  pizza: 'Pizza',
+  daisy: 'Daisy',
+  peace: 'Peace',
+  disc: 'Disc',
+  pumpkin: 'Pumpkin',
+  ghost: 'Ghost',
+  bat: 'Bat',
+  skull: 'Skull',
+  tombstone: 'Tombstone',
+  web: 'Web',
+  rocket: 'Rocket',
+  planet: 'Planet',
+  moon: 'Moon',
+  comet: 'Comet',
+  saucer: 'Saucer',
+  cone: 'Ice Cream',
+  donut: 'Doughnut',
+  lolly: 'Lollipop',
+  sun: 'Sun',
+  palm: 'Palm',
+  cloud: 'Cloud',
+  flame: 'Flame',
 };
+
+/**
+ * The longer side of a freshly placed stamp, in canvas units.
+ *
+ * The other side follows from the figure's own proportions, so a stamp lands looking like itself
+ * rather than squeezed into a square. Resizing is still free in both axes -- a stretched bar is a
+ * legitimate Memphis mark -- this only decides where it starts.
+ */
+const STAMP_PLACED_SIZE = 180;
 
 /**
  * A freshly placed stamp.
@@ -58,6 +100,7 @@ export function createStampElement(
   const keyline = createEffect('stroke');
   keyline.width = 5;
   keyline.paint = { kind: 'solid', color: [0.08, 0.08, 0.14, 1] };
+  const aspect = stampAspect(shape);
   return {
     id,
     type: 'shape',
@@ -80,8 +123,8 @@ export function createStampElement(
     effects: [fill, keyline],
     animations: [],
     shape,
-    width: 180,
-    height: 180,
+    width: aspect >= 1 ? STAMP_PLACED_SIZE : STAMP_PLACED_SIZE * aspect,
+    height: aspect >= 1 ? STAMP_PLACED_SIZE / aspect : STAMP_PLACED_SIZE,
     path: null,
   };
 }
