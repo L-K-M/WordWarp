@@ -80,6 +80,19 @@ describe('animated export frame budget', () => {
       .toThrow(/Lower the export resolution or shorten the loop/);
   });
 
+  it('quotes the floor it gave up at, measured at that count', () => {
+    // The loop only throws once `frameCount` has reached the floor -- `next` is never below it, and
+    // the throw needs `next >= frameCount` -- so the size behind the message belongs to the count
+    // the message is about, and the figure is exact rather than an over-estimate carried down from
+    // a wider frame.
+    const measure = vi.fn(fixed(8000, 8000));
+    const floor = 10; // 2 s at the 5 fps degrade floor.
+    expect(() => planAnimationFrames(2, 12, measure)).toThrow(
+      `needs ${Math.ceil((8000 * 8000 * 4 * floor) / (1024 * 1024))} MB of frame memory`,
+    );
+    expect(measure).toHaveBeenLastCalledWith(floor);
+  });
+
   it('never asks for more frames than the caller wanted just to reach the floor', () => {
     // 1 fps over 2 s is below the degrade floor already, so the only question is whether it fits.
     const plan = planAnimationFrames(2, 1, fixed(4000, 4000));
