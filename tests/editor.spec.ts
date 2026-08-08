@@ -185,6 +185,44 @@ test('resizes, slants and rotates the selection from its handles', async ({ page
   await expect.poll(async () => Number((await readout())[1])).toBeLessThan(0);
 });
 
+test('keeps hold of a gesture whose handle is dropped under the pointer', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('./');
+  await expect(page.locator('[data-handle="n"]')).toHaveCount(1);
+
+  const artboard = (await page.locator('.render-artboard').boundingBox())!;
+  const outline = () => page.locator('.selection-outline').getAttribute('points');
+  const before = await outline();
+
+  // Squashing the box far enough takes the edge handles away with it, including the one being
+  // dragged. Releasing clear of the artboard then leaves nothing under the pointer to notice --
+  // unless the capture is held somewhere that outlives the handle.
+  const top = (await page.locator('[data-handle="n"]').boundingBox())!;
+  const bottom = (await page.locator('[data-handle="s"]').boundingBox())!;
+  await page.mouse.move(top.x + top.width / 2, top.y + top.height / 2);
+  await page.mouse.down();
+  // Stop just short of the bottom edge, which is this handle's anchor. Going past it would mirror
+  // the element and make the box tall enough to hold its handles again.
+  await page.mouse.move(top.x + top.width / 2, bottom.y + bottom.height / 2 - 3, { steps: 10 });
+  await expect(page.locator('[data-handle="n"]')).toHaveCount(0);
+  await page.mouse.move(top.x + top.width / 2, artboard.y + artboard.height + 90, { steps: 6 });
+  await page.mouse.up();
+
+  // Undo is refused outright while a transaction is open, so getting the box back proves the
+  // gesture closed. A fresh drag afterwards proves the drag state cleared with it.
+  await page.keyboard.press('Control+Z');
+  await expect.poll(outline).toBe(before);
+
+  const centreX = artboard.x + artboard.width / 2;
+  const centreY = artboard.y + artboard.height / 2;
+  await page.mouse.move(centreX, centreY);
+  await page.mouse.down();
+  await page.mouse.move(centreX + 50, centreY, { steps: 6 });
+  await page.mouse.up();
+  await expect.poll(outline).not.toBe(before);
+});
+
 test('moves the element by dragging its body, and locks the drag to an axis with Shift', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium');
   await page.setViewportSize({ width: 1440, height: 900 });

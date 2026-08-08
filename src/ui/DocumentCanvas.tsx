@@ -43,12 +43,6 @@ interface DragState {
   transform: Transform;
   pointerStart: Point;
   /**
-   * The node holding the pointer capture. A handle's later events are retargeted to it and then
-   * bubble, so the element that ends the drag is not the one that started it, and releasing on
-   * the wrong node throws.
-   */
-  capturedBy: Element;
-  /**
    * What closes this gesture's history entry, taken when it opened. Held here rather than read
    * from props at the end so an unmount mid-drag can still close it with the right callback.
    */
@@ -153,7 +147,7 @@ export function DocumentCanvas({
 
   const selectedElement = document.elements.find((element) => element.id === selectedElementId);
   const selectedFrame = selectedElementId ? frames[selectedElementId] : undefined;
-  const interactive = Boolean(onTransform) && Boolean(selectedElement) && !selectedElement?.locked;
+  const interactive = Boolean(onTransform) && selectedElement !== undefined && !selectedElement.locked;
   const unitsPerPixel = layoutWidth > 0 && zoom > 0
     ? document.canvas.width / (layoutWidth * zoom)
     : 1;
@@ -175,11 +169,18 @@ export function DocumentCanvas({
     handle: Handle | null,
   ) => {
     const frame = frames[element.id];
+    const canvas = canvasRef.current;
     // A second finger must not take over a gesture that is already running: replacing the drag
     // would strand the first pointer's transaction open, and an open transaction blocks undo.
-    if (!frame || !onTransform || element.locked || dragRef.current) return;
-    const capturedBy = event.currentTarget;
-    capturedBy.setPointerCapture(event.pointerId);
+    if (!frame || !canvas || !onTransform || element.locked || dragRef.current) return;
+    // Captured on the canvas even when the drag started on a handle, because the canvas is the one
+    // node in here that cannot go away mid-gesture. A handle can: shrink an element past the width
+    // its edge handles need and `handleFits` drops the very handle under the pointer, which would
+    // release the capture with the button still down. The rest of the drag would then land on
+    // whatever happened to be beneath the pointer -- and a release outside the artboard would
+    // never reach `endDrag` at all, leaving the transaction open and every later drag refused by
+    // the guard above. Capturing here means the handles' lifetime stops mattering.
+    canvas.setPointerCapture(event.pointerId);
     dragRef.current = {
       pointerId: event.pointerId,
       elementId: element.id,
@@ -187,7 +188,6 @@ export function DocumentCanvas({
       frame,
       transform: element.transform,
       pointerStart: canvasPoint(event),
-      capturedBy,
       finish: onTransformEnd,
     };
     onTransformStart?.(element.id, handle ? gestureOf(handle) : 'move');
@@ -212,10 +212,9 @@ export function DocumentCanvas({
   const endDrag = (event: ReactPointerEvent<SVGElement | HTMLCanvasElement>) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
+    // No explicit release: this only runs from pointerup and pointercancel, and the spec has the
+    // user agent release capture immediately after firing either of them.
     dragRef.current = null;
-    if (drag.capturedBy.hasPointerCapture(event.pointerId)) {
-      drag.capturedBy.releasePointerCapture(event.pointerId);
-    }
     drag.finish?.();
   };
 
@@ -267,12 +266,7 @@ export function DocumentCanvas({
           </>
         )}
         {interactive && selectedElement && selectedFrame && (
-          <g
-            className="selection-handles"
-            onPointerMove={continueDrag}
-            onPointerUp={endDrag}
-            onPointerCancel={endDrag}
-          >
+          <g className="selection-handles">
             {TRANSFORM_HANDLES
               .filter((handle) => handleFits(selectedFrame, handle, unitsPerPixel))
               .map((handle) => (
