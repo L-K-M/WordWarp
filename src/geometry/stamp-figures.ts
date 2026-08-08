@@ -1,6 +1,6 @@
 import {
   appendArc, arcBand, arcSector, arcStart, circleAt, crescent, ellipseAt, mergePaths, mirrorX, pathBuilder,
-  polygon, rect, rotatePath, roundedRect, smoothClosedPath, strokeRibbon, translatePath, union,
+  polygon, rect, rotatePath, roundedRect, scalePath, smoothClosedPath, strokeRibbon, translatePath, union,
   withHoles,
 } from './stamp-toolkit';
 import type { PathData, Point } from '../model/types';
@@ -261,6 +261,36 @@ function disc(): PathData {
   );
 }
 
+/** A broad-winged gamepad with a cut-out d-pad and three face buttons. */
+function gamepad(): PathData {
+  const shell = pathBuilder();
+  shell.move(MID, 0.24);
+  shell.cubic(0.66, 0.21, 0.76, 0.14, 0.86, 0.22);
+  shell.cubic(0.96, 0.31, 1, 0.71, 0.88, 0.92);
+  shell.cubic(0.82, 1, 0.69, 0.80, 0.62, 0.68);
+  shell.line(0.38, 0.68);
+  shell.cubic(0.31, 0.80, 0.18, 1, 0.12, 0.92);
+  shell.cubic(0, 0.71, 0.04, 0.31, 0.14, 0.22);
+  shell.cubic(0.24, 0.14, 0.34, 0.21, MID, 0.24);
+  shell.close();
+  const dpad = polygon([
+    [0.265, 0.35], [0.335, 0.35], [0.335, 0.445], [0.43, 0.445],
+    [0.43, 0.515], [0.335, 0.515], [0.335, 0.61], [0.265, 0.61],
+    [0.265, 0.515], [0.17, 0.515], [0.17, 0.445], [0.265, 0.445],
+  ]);
+  return scalePath(
+    withHoles(
+      shell.build(),
+      dpad,
+      ellipseAt(0.72, 0.40, 0.045, 0.06),
+      ellipseAt(0.82, 0.53, 0.045, 0.06),
+      ellipseAt(0.62, 0.53, 0.045, 0.06),
+    ),
+    1,
+    0.72,
+  );
+}
+
 /* -------------------------------------------------------------------- spooky */
 
 /** Radii of the pumpkin's body, as points a smooth closed curve is run through. */
@@ -421,6 +451,19 @@ function web(): PathData {
   return union(...pieces);
 }
 
+/** A tapered six-sided coffin with one cross cut cleanly through its lid. */
+function coffin(): PathData {
+  const cross = polygon([
+    [0.465, 0.28], [0.535, 0.28], [0.535, 0.445], [0.67, 0.445],
+    [0.67, 0.515], [0.535, 0.515], [0.535, 0.70], [0.465, 0.70],
+    [0.465, 0.515], [0.33, 0.515], [0.33, 0.445], [0.465, 0.445],
+  ]);
+  return withHoles(
+    polygon([[0.34, 0], [0.66, 0], [0.88, 0.22], [0.76, 1], [0.24, 1], [0.12, 0.22]]),
+    cross,
+  );
+}
+
 /* -------------------------------------------------------------------- cosmic */
 
 /** A rocket: nose, window, swept fins and a flared nozzle. */
@@ -490,6 +533,29 @@ function saucer(): PathData {
   );
 }
 
+/** A panelled satellite with twin arrays, a faceted bus and a mast-mounted beacon. */
+function satellite(): PathData {
+  const leftPanel = rect(0, 0.30, 0.29, 0.70);
+  const rightPanel = rect(0.71, 0.30, 1, 0.70);
+  const mast = strokeRibbon([[0.53, 0.28], [0.70, 0.07]], 0.035);
+  return withHoles(
+    union(
+      leftPanel,
+      rightPanel,
+      strokeRibbon([[0.25, MID], [0.39, MID]], 0.05),
+      strokeRibbon([[0.61, MID], [0.75, MID]], 0.05),
+      polygon([[0.39, 0.25], [0.61, 0.25], [0.67, 0.75], [0.33, 0.75]]),
+      mast,
+      circleAt(0.72, 0.055, 0.045),
+    ),
+    rect(0.08, 0.35, 0.11, 0.65),
+    rect(0.18, 0.35, 0.21, 0.65),
+    rect(0.79, 0.35, 0.82, 0.65),
+    rect(0.89, 0.35, 0.92, 0.65),
+    ellipseAt(MID, MID, 0.07, 0.09),
+  );
+}
+
 /** A four-point twinkle: straight points pulled in by cubics that dip almost to the centre. */
 function sparkle(): PathData {
   const path = pathBuilder();
@@ -551,6 +617,43 @@ function lolly(): PathData {
   return withHoles(
     union(circleAt(MID, 0.335, 0.335), rect(0.465, 0.335, 0.535, 1)),
     strokeRibbon(spiral, 0.055),
+  );
+}
+
+/** A pillow-shaped sweet with two crisp twist wrappers. */
+function wrappedCandy(): PathData {
+  const wrapper = polygon([[0, 0.16], [0.26, 0.32], [0.26, 0.68], [0, 0.84], [0.07, MID]]);
+  return union(
+    roundedRect(0.21, 0.18, 0.79, 0.82, 0.12),
+    wrapper,
+    mirrorX(wrapper, MID),
+  );
+}
+
+/** A ridged cake wrapper under an asymmetric four-lobed cap of frosting. */
+function cupcake(): PathData {
+  const frosting = pathBuilder();
+  frosting.move(0.08, 0.43);
+  frosting.cubic(0.02, 0.34, 0.12, 0.23, 0.28, 0.27);
+  frosting.cubic(0.25, 0.12, 0.40, 0.05, MID, 0.17);
+  frosting.cubic(0.60, 0, 0.77, 0.09, 0.73, 0.26);
+  frosting.cubic(0.89, 0.22, 0.99, 0.34, 0.92, 0.43);
+  frosting.close();
+  return union(
+    frosting.build(),
+    polygon([[0.12, 0.40], [0.88, 0.40], [0.76, 1], [0.24, 1]]),
+  );
+}
+
+/** Two cherries joined at one stem fork, with a pointed leaf tucked behind it. */
+function cherries(): PathData {
+  const stemTop: Point = [0.55, 0.04];
+  return union(
+    strokeRibbon([[0.31, 0.68], stemTop], 0.035),
+    strokeRibbon([[0.70, 0.67], stemTop], 0.035),
+    circleAt(0.28, 0.76, 0.24),
+    circleAt(0.72, 0.75, 0.24),
+    rotatePath(ellipseAt(0.70, 0.15, 0.19, 0.075), deg(-26), 0.70, 0.15),
   );
 }
 
@@ -652,6 +755,26 @@ function cloud(): PathData {
   );
 }
 
+/** Four soft wings around a slim body, with eye-spots cut from the upper pair. */
+function butterfly(): PathData {
+  const upper = rotatePath(ellipseAt(0.27, 0.32, 0.27, 0.19), deg(33), 0.27, 0.32);
+  const lower = rotatePath(ellipseAt(0.31, 0.70, 0.19, 0.24), deg(-16), 0.31, 0.70);
+  const wingSpot = ellipseAt(0.23, 0.30, 0.045, 0.07);
+  return withHoles(
+    union(
+      upper,
+      mirrorX(upper, MID),
+      lower,
+      mirrorX(lower, MID),
+      ellipseAt(MID, 0.56, 0.075, 0.35),
+      strokeRibbon([[0.48, 0.24], [0.35, 0]], 0.025),
+      strokeRibbon([[0.52, 0.24], [0.65, 0]], 0.025),
+    ),
+    wingSpot,
+    mirrorX(wingSpot, MID),
+  );
+}
+
 /** A speech bubble with its tail down and to the left. */
 function speech(): PathData {
   return union(roundedRect(0, 0, 1, 0.72, 0.19), polygon([[0.22, 0.58], [0.08, 1], [0.54, 0.68]]));
@@ -691,11 +814,11 @@ function gem(): PathData {
 
 /** Every pictorial figure, in the unit box. */
 export const STAMP_FIGURES = {
-  smiley, shades, bottle, cassette, floppy, boombox, pizza, daisy, peace, disc,
-  pumpkin, ghost, bat, skull, tombstone, web,
-  rocket, planet, moon, comet, saucer, sparkle,
-  cone, donut, lolly,
-  sun, palm, flame, cloud, speech, banner, gem,
+  smiley, shades, bottle, cassette, floppy, boombox, pizza, daisy, peace, disc, gamepad,
+  pumpkin, ghost, bat, skull, tombstone, web, coffin,
+  rocket, planet, moon, comet, saucer, satellite, sparkle,
+  cone, donut, lolly, wrappedCandy, cupcake, cherries,
+  sun, palm, flame, cloud, butterfly, speech, banner, gem,
 } satisfies Record<string, () => PathData>;
 
 export type StampFigureId = keyof typeof STAMP_FIGURES;

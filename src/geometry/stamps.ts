@@ -1,4 +1,4 @@
-import { flattenPath, pathBounds } from './path';
+import { exactPathBounds, flattenPath, pathBounds } from './path';
 import { STAMP_FIGURES } from './stamp-figures';
 import {
   KAPPA, ellipse, mapPath, polygon, radialPoints, scalePath, smoothClosedPath, pathBuilder,
@@ -44,7 +44,19 @@ export function shapeOutline(element: ShapeElement): PathData {
 }
 
 export function stampOutline(shape: StampId, width: number, height: number): PathData {
-  return fitToBox(generate(shape, width, height), width, height);
+  if (
+    !Number.isFinite(width) || !Number.isFinite(height) ||
+    width <= 0 || height <= 0
+  ) {
+    throw new RangeError('Stamp dimensions must be finite positive numbers');
+  }
+  // Generate at the requested aspect ratio but bounded scale. Fitting then costs the same for a
+  // picker icon and a large imported stamp, and the final affine map restores its requested size.
+  const scale = Math.max(width, height);
+  const designWidth = width / scale;
+  const designHeight = height / scale;
+  const fitted = fitToBox(generate(shape, designWidth, designHeight), designWidth, designHeight);
+  return mapPath(fitted, ([x, y]) => [x * scale, y * scale]);
 }
 
 /**
@@ -70,12 +82,12 @@ export function stampAspect(shape: StampId): number {
  * selection outline and the hit test both come straight from the box, so a shape that underfills
  * it has dead space around it and one that overshoots draws outside its own selection.
  *
- * Measuring the *flattened* curve is what makes this correct for overshoot, and transforming the
- * control points by the same affine map is what makes it exact: an affine map of a Bezier's
+ * Measuring curve extrema rather than sampled points makes the fit independent of output scale,
+ * and transforming the control points by the same affine map is exact: an affine map of a Bezier's
  * controls is the same Bezier mapped.
  */
 function fitToBox(path: PathData, width: number, height: number): PathData {
-  const bounds = pathBounds(flattenPath(path));
+  const bounds = exactPathBounds(path);
   // A generator that collapsed in one axis has no scale that would fill the box, and dividing by
   // its extent would produce infinities. Leave it be and let the box test say so.
   if (bounds.width <= 0 || bounds.height <= 0) return path;

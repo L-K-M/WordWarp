@@ -1,8 +1,22 @@
 import { describe, expect, it } from 'vitest';
 
-import { flattenPath, pathBounds } from './path';
+import { exactPathBounds, flattenPath, pathBounds } from './path';
 
 describe('path flattening', () => {
+  it('measures Bezier extrema between endpoints exactly', () => {
+    const bounds = exactPathBounds({ commands: [
+      { type: 'M', point: [0, 0] },
+      { type: 'C', control1: [100, 100], control2: [-100, 100], point: [0, 0] },
+      { type: 'Q', control: [0, -40], point: [20, 0] },
+      { type: 'Z' },
+    ] });
+
+    expect(bounds.x).toBeCloseTo(-28.8675, 3);
+    expect(bounds.x + bounds.width).toBeCloseTo(28.8675, 3);
+    expect(bounds.y).toBeCloseTo(-20, 5);
+    expect(bounds.y + bounds.height).toBeCloseTo(75, 5);
+  });
+
   it('preserves lines, closure, and contour bounds', () => {
     const contours = flattenPath({
       commands: [

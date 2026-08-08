@@ -100,7 +100,7 @@ test('groups the stamp menu by theme and places a pierced figure at its own prop
 
   await page.getByRole('button', { name: 'Stamp', exact: true }).click();
   const menu = page.locator('#stamp-menu');
-  // Themed sections, not one wall of forty-five icons. The panel scrolls, so the later sections
+  // Themed sections, not one wall of fifty-two icons. The panel scrolls, so the later sections
   // only exist below the fold -- which is what the count is really checking.
   await expect(menu.locator('.stamp-group')).toHaveCount(7);
   await expect(menu.getByRole('heading', { name: 'Spooky' })).toBeAttached();
@@ -121,6 +121,76 @@ test('groups the stamp menu by theme and places a pierced figure at its own prop
   await page.locator('.preset-card').first().click();
   await expect(page.locator('.effect-list li')).not.toHaveCount(0);
   await expect(page.locator('.render-error')).toHaveCount(0);
+});
+
+test.describe('expanded stamp picker', () => {
+  test.describe('desktop', () => {
+    test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile, 'Desktop Chromium only');
+
+    test('reaches the final item and restores trigger focus', async ({ page }) => {
+      await page.setViewportSize({ width: 1366, height: 768 });
+      await page.goto('./');
+      const trigger = page.getByRole('button', { name: 'Stamp', exact: true });
+      await trigger.click();
+      const menu = page.getByRole('group', { name: 'Place a stamp' });
+      await expect(menu.locator('.stamp-choice')).toHaveCount(52);
+      const butterfly = menu.locator('.stamp-choice', { hasText: /^Butterfly$/ });
+      await butterfly.scrollIntoViewIfNeeded();
+      expect(await menu.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+      expect(await butterfly.evaluate((element) => {
+        const bounds = element.getBoundingClientRect();
+        const hit = document.elementFromPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+        return hit === element || element.contains(hit);
+      })).toBe(true);
+      await butterfly.click();
+      await expect(trigger).toBeFocused();
+      await expect(page.getByLabel('Shape')).toHaveValue('butterfly');
+
+      await trigger.click();
+      await page.keyboard.press('Escape');
+      await expect(menu).toBeHidden();
+      await expect(trigger).toBeFocused();
+      await expect(page.getByLabel('Shape')).toHaveValue('butterfly');
+    });
+  });
+
+  test.describe('mobile', () => {
+    test.skip(({ isMobile }) => !isMobile, 'Mobile projects only');
+
+    test('keeps every theme reachable', async ({ page }) => {
+      await page.goto('./');
+      const trigger = page.getByRole('button', { name: 'Stamp', exact: true });
+      await trigger.click();
+      const menu = page.getByRole('group', { name: 'Place a stamp' });
+      const butterfly = menu.locator('.stamp-choice', { hasText: /^Butterfly$/ });
+      await expect(menu.locator('.stamp-choice')).toHaveCount(52);
+      await page.getByRole('button', { name: 'Inspect' }).click();
+      await expect(page.getByLabel('Inspector')).toBeVisible();
+      await butterfly.scrollIntoViewIfNeeded();
+      expect(await menu.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+      expect(await butterfly.evaluate((element) => {
+        const bounds = element.getBoundingClientRect();
+        const hit = document.elementFromPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+        return hit === element || element.contains(hit);
+      })).toBe(true);
+      await butterfly.click();
+      await expect(trigger).toBeFocused();
+      await expect(page.getByLabel('Shape')).toHaveValue('butterfly');
+    });
+
+    test('shows one complete choice in short landscape', async ({ page }) => {
+      await page.setViewportSize({ width: 568, height: 320 });
+      await page.goto('./');
+      await page.getByRole('button', { name: 'Stamp', exact: true }).click();
+      const menu = page.getByRole('group', { name: 'Place a stamp' });
+      const choice = menu.locator('.stamp-choice').first();
+      const [menuBounds, choiceBounds] = await Promise.all([menu.boundingBox(), choice.boundingBox()]);
+      expect(menuBounds).not.toBeNull();
+      expect(choiceBounds).not.toBeNull();
+      expect(choiceBounds!.y + choiceBounds!.height).toBeLessThanOrEqual(menuBounds!.y + menuBounds!.height);
+      expect(choiceBounds!.y + choiceBounds!.height).toBeLessThanOrEqual(320);
+    });
+  });
 });
 
 test('outlines the element box itself rather than a rectangle around it', async ({ page }) => {

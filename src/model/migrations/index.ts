@@ -56,6 +56,12 @@ registerMigration(2, (document) => {
   return { ...document, version: 3 };
 });
 
+// v3 -> v4: widen the persisted stamp catalogue.
+//
+// No existing stamp id needs rewriting, but an enum is part of the document contract: a stale v3
+// client cannot validate a new motif. Existing elements remain unchanged.
+registerMigration(3, (document) => ({ ...document, version: 4 }));
+
 export function loadDocument(value: unknown): WordWarpDocument {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error('Document must be an object');

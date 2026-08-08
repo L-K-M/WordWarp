@@ -8,7 +8,7 @@ import { downloadPng, exportPng } from '../export/png';
 import { createDefaultDocument, createDefaultTextElement, createStampElement, STAMP_LABELS } from '../model/defaults';
 import { createId } from '../lib/id';
 import {
-  PRESET_WARP_IDS, STAMP_GROUPS, STAMP_IDS_BY_GROUP,
+  PRESET_WARP_IDS, STAMP_GROUPS, STAMP_IDS, STAMP_IDS_BY_GROUP,
   type Effect, type Paint, type Point, type Rgba, type ShapeElement, type StampId, type TextElement,
   type Transform,
 } from '../model/types';
@@ -32,6 +32,10 @@ import { warpDisplayName } from '../warp';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 
 const presetCategories = PRESET_CATEGORY_TABS;
+const STAMP_ICON_BOX = 40;
+const stampPreviewPaths = Object.fromEntries(
+  STAMP_IDS.map((shape) => [shape, stampPreviewPath(shape)]),
+) as Record<StampId, string>;
 
 /* Jellybean flavours come in bean-0 .. bean-6 in styles.css; cycle chips through them. */
 const BEAN_COLOR_COUNT = 7;
@@ -70,6 +74,7 @@ export function App() {
   const animationTimeRef = useRef(0);
   const autosaveRef = useRef<AutosaveController | null>(null);
   const pendingSearchFocus = useRef(false);
+  const stampButtonRef = useRef<HTMLButtonElement>(null);
   const document = useDocumentStore((state) => state.document);
   const pastCount = useDocumentStore((state) => state.past.length);
   const futureCount = useDocumentStore((state) => state.future.length);
@@ -229,6 +234,19 @@ export function App() {
     window.document.getElementById('preset-search')?.focus();
   }, [leftPanelOpen]);
 
+  useEffect(() => {
+    if (!stampMenuOpen) return;
+    const dismissStampMenu = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      setStampMenuOpen(false);
+      stampButtonRef.current?.focus();
+    };
+    window.addEventListener('keydown', dismissStampMenu, { capture: true });
+    return () => window.removeEventListener('keydown', dismissStampMenu, { capture: true });
+  }, [stampMenuOpen]);
+
   const selectedElement = document.elements.find((element) => element.id === selectedElementId);
   const selectedText = selectedElement?.type === 'text' ? selectedElement : null;
   const selectedShape = selectedElement?.type === 'shape' ? selectedElement : null;
@@ -337,6 +355,7 @@ export function App() {
     });
     selectElement(element.id);
     setStampMenuOpen(false);
+    stampButtonRef.current?.focus();
   };
 
   const updateStamp = (change: (element: ShapeElement) => void) => {
@@ -910,6 +929,7 @@ export function App() {
               <button className="orb orb-xs orb-aqua active" type="button">Select</button>
               <button className="orb orb-xs orb-lime" type="button" onClick={addText}>Text</button>
               <button
+                ref={stampButtonRef}
                 className="orb orb-xs orb-berry"
                 type="button"
                 aria-expanded={stampMenuOpen}
@@ -920,14 +940,14 @@ export function App() {
               </button>
             </div>
             {stampMenuOpen && (
-              <div className="stamp-menu" id="stamp-menu" aria-label="Place a stamp">
+              <div className="stamp-menu" id="stamp-menu" role="group" aria-label="Place a stamp">
                 {STAMP_GROUPS.map((group) => (
                   <section className="stamp-group" key={group.id} aria-label={group.label}>
                     <h3>{group.label}</h3>
                     <div className="stamp-grid">
                       {STAMP_IDS_BY_GROUP[group.id].map((shape) => (
                         <button key={shape} className="stamp-choice" type="button" onClick={() => addStamp(shape)}>
-                          <svg viewBox="0 0 40 40" aria-hidden="true"><path d={stampPreviewPath(shape)} /></svg>
+                          <svg viewBox="0 0 40 40" aria-hidden="true"><path d={stampPreviewPaths[shape]} /></svg>
                           <span>{STAMP_LABELS[shape]}</span>
                         </button>
                       ))}
@@ -1470,8 +1490,6 @@ function backgroundLabel(paint: Paint | null): string {
 }
 
 /** The side of the square viewBox a stamp's menu icon is drawn into. */
-const STAMP_ICON_BOX = 40;
-
 /**
  * A stamp's menu icon, drawn from the same generator that draws the stamp itself.
  *
