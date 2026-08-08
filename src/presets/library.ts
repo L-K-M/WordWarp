@@ -826,6 +826,10 @@ export const BUILT_IN_PRESETS: Preset[] = [
     glow('#33ff66', 10, 0.5), fill(solid('#46f97f')), innerGlow('#d6ffe0', 3, 0.3), post('scanlines', { amount: 0.3, period: 3 }, 0.6),
   ], none(), ['crt', 'phosphor', 'matrix', 'animated'], [
     { id: 'terminal-roll', kind: 'scanlineRoll', enabled: true, duration: 4, params: {}, seed: 41 },
+  definePreset('night-market', 'Night Market', 'synthwave', ['#ff2d55', '#ff9f1c', '#ffe8c8', '#3d0b12'], [
+    glow('#ff9f1c', 30, 0.5), glow('#ff2d55', 14, 1), fill(solid('#ffd9a8', 0.55)), stroke(4.5, '#ff5a36'),
+  ], none(), ['neon', 'sign', 'flicker', 'animated'], [
+    { id: 'night-market-flicker', kind: 'neonFlicker', enabled: true, duration: 2.4, params: {}, seed: 12 },
   ]),
 ];
 
