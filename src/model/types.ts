@@ -165,7 +165,15 @@ export interface TextureOverlayEffect extends EffectBase {
     | { type: 'asset'; assetId: string }
     | {
         type: 'procedural';
-        pattern: 'noise' | 'weave' | 'halftone' | 'grain' | 'topography' | 'mottle' | 'crystal';
+        pattern:
+          | 'noise'
+          | 'weave'
+          | 'halftone'
+          | 'grain'
+          | 'topography'
+          | 'mottle'
+          | 'crystal'
+          | 'stitch';
       };
   scale: number;
   rotation: number;

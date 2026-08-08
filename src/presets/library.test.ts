@@ -27,6 +27,21 @@ describe('preset library', () => {
     ]));
   });
 
+  it('builds Satin Stitch Sampler from directional thread and padded relief', () => {
+    const preset = BUILT_IN_PRESETS.find((candidate) => candidate.id === 'satin-stitch-sampler');
+
+    expect(preset?.apply.warp).toMatchObject({ kind: 'preset', preset: 'textCurveDown' });
+    expect(preset?.tags).toEqual(expect.arrayContaining(['embroidery', 'needlework', 'textile', 'handmade']));
+    expect(preset?.apply.effects.map((effect) => effect.kind)).toEqual([
+      'dropShadow', 'fill', 'textureOverlay', 'satin', 'bevel', 'innerGlow', 'stroke', 'stroke',
+    ]);
+    expect(preset?.apply.effects).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: 'textureOverlay', source: { type: 'procedural', pattern: 'stitch' } }),
+      expect.objectContaining({ kind: 'bevel', style: 'pillow' }),
+      expect.objectContaining({ kind: 'satin' }),
+    ]));
+  });
+
   it('ships all 24 Office ramp names with 20 stops each', () => {
     expect(Object.keys(OFFICE_RAMPS)).toHaveLength(24);
     for (const colors of Object.values(OFFICE_RAMPS)) expect(colors).toHaveLength(20);

@@ -544,6 +544,16 @@ export const BUILT_IN_PRESETS: Preset[] = [
     stroke(2, '#080711'),
     post('grain', { amount: 0.07 }, 0.22),
   ], warp('textStop', 0.32, 0.52), ['crystal', 'mineral', 'petrographic', 'microscope', 'birefringent', 'interference', 'thin-section']),
+  definePreset('satin-stitch-sampler', 'Satin Stitch Sampler', 'texture', ['#65132f', '#ed4165', '#ffd2a1', '#173e46'], [
+    shadow('#2a1022', 7, 8, 0.48),
+    fill(gradient(['#65132f', '#ed4165', '#ffd2a1', '#ed4165', '#65132f'], 108)),
+    texture('stitch', 0.72, 0.82, -18),
+    satin('#ffd6a3', 0.16),
+    bevel(10, 'pillow', 145),
+    innerGlow('#ffe4bb', 4, 0.32),
+    stroke(8, '#173e46'),
+    stroke(3, '#f2c66d'),
+  ], warp('textCurveDown', 0.14, 0.42), ['embroidery', 'satin-stitch', 'thread', 'fiber', 'needlework', 'sampler', 'textile', 'handmade']),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {

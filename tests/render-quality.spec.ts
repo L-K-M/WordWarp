@@ -157,6 +157,44 @@ test.describe('render quality', () => {
     expect(boundaryPixels).toBeGreaterThan(120);
   });
 
+  test('Satin Stitch Sampler retains individual thread ridges', async ({ page }) => {
+    await page.getByLabel('Content').fill('THREAD');
+    await page.getByRole('button', { name: 'Satin Stitch Sampler' }).click();
+
+    const image = await exportAt(page, '1');
+    const alpha = (x: number, y: number) => Number(image.data[(y * image.width + x) * 4 + 3]);
+    const luma = (x: number, y: number) => {
+      const offset = (y * image.width + x) * 4;
+      return (Number(image.data[offset]) + Number(image.data[offset + 1]) + Number(image.data[offset + 2])) / 3;
+    };
+    let counted = 0;
+    let strongRidges = 0;
+    let secondDifference = 0;
+    for (let y = 2; y < image.height - 2; y += 1) {
+      for (let x = 2; x < image.width - 2; x += 1) {
+        if (alpha(x, y) < 250
+          || alpha(x - 2, y) < 250
+          || alpha(x + 2, y) < 250
+          || alpha(x, y - 2) < 250
+          || alpha(x, y + 2) < 250) continue;
+        const center = luma(x, y);
+        if (center < 70) continue;
+        const localDifference = (
+          Math.abs(luma(x + 1, y) - center) + Math.abs(luma(x, y + 1) - center)
+        ) / 2;
+        secondDifference += Math.abs(luma(x + 1, y) - 2 * center + luma(x - 1, y));
+        if (localDifference > 12) strongRidges += 1;
+        counted += 1;
+      }
+    }
+
+    // Work well inside the opaque face so the border, shadow and anti-aliased silhouette cannot
+    // satisfy the assertion. Smooth gradient + bevel shading measures about half this frequency.
+    expect(counted).toBeGreaterThan(20_000);
+    expect(secondDifference / counted).toBeGreaterThan(10);
+    expect(strongRidges / counted).toBeGreaterThan(0.3);
+  });
+
   test('transparent export keeps shadows free of grey fringing', async ({ page }) => {
     await page.getByLabel('Content').fill('ALPHA');
     await page.getByRole('button', { name: 'Deep Extrude' }).click();

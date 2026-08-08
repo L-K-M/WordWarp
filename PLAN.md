@@ -296,6 +296,8 @@ Misregistration (2–3 flat inks offset 2–4px, multiply), Scanlines (period, o
 CRT Bloom, Film Grain, Distressed (mask by noise threshold), Chromatic Aberration (radial RGB
 offset). **Cross-Polar Crystal** adds seeded mineral cells with dark extinction boundaries over an
 interference-colour field, chisel relief and a faceted Stop warp.
+offset). **Satin Stitch Sampler** adds directional thread bundles, padded relief and a nested
+embroidered border with a gentle fabric-sag warp.
 
 ---
 

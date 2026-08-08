@@ -458,6 +458,15 @@ function renderTexture(
           26 * effect.scale,
           effect.rotation,
         );
+      } else if (pattern === 'stitch') {
+        // Thread spacing is quoted in logical document pixels, same as `crystal` above.
+        value = sampleStitchTexture(
+          globalX / logicalScale,
+          globalY / logicalScale,
+          seed,
+          3.2 * effect.scale,
+          effect.rotation,
+        );
       } else {
         value = hashNoise(globalX, globalY, seed);
       }
@@ -640,6 +649,33 @@ export function sampleCrystalTexture(
   );
   const cleavage = cleavageDistance < 0.018 && nearest < 0.52 ? 0.58 : 1;
   return clamp01((0.035 + (facetTone - 0.035) * smoothInterior + boundaryHighlight) * cleavage);
+}
+
+/** Sample parallel satin-stitch threads in logical document pixels. */
+export function sampleStitchTexture(
+  x: number,
+  y: number,
+  seed: number,
+  spacing: number,
+  rotation: number,
+): number {
+  const safeSpacing = Math.max(0.8, spacing);
+  const radians = (rotation * Math.PI) / 180;
+  const cosine = Math.cos(radians);
+  const sine = Math.sin(radians);
+  const perpendicular = x * cosine - y * sine;
+  const along = x * sine + y * cosine;
+  const bundle = Math.floor(perpendicular / (safeSpacing * 6));
+  const bundleSeed = hashNoise(bundle, seed, 113);
+  const drift = (bundleSeed - 0.5) * safeSpacing * 0.3;
+  const wobble = Math.sin(along / (safeSpacing * 4.5) + bundleSeed * Math.PI * 2) * safeSpacing * 0.09;
+  const phase = modulo(perpendicular + drift + wobble, safeSpacing) / safeSpacing;
+  const ridge = (0.5 + Math.cos(phase * Math.PI * 2) * 0.5) ** 0.7;
+  const twist = 0.5 + Math.sin(along / safeSpacing * 1.35 + bundleSeed * Math.PI * 2) * 0.5;
+  const glintPosition = clamp01(Math.min(phase, 1 - phase) / 0.08);
+  const glintFalloff = 1 - glintPosition * glintPosition * (3 - 2 * glintPosition);
+  const glint = twist * 0.1 * glintFalloff;
+  return clamp01(0.18 + ridge * (0.58 + twist * 0.12) + glint);
 }
 
 function drawReflection(output: CanvasSurface, offset: number, heightRatio: number, opacity: number): void {
