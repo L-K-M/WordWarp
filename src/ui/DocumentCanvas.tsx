@@ -48,6 +48,11 @@ interface DragState {
    * the wrong node throws.
    */
   capturedBy: Element;
+  /**
+   * What closes this gesture's history entry, taken when it opened. Held here rather than read
+   * from props at the end so an unmount mid-drag can still close it with the right callback.
+   */
+  finish: (() => void) | undefined;
 }
 
 /* Handle sizes, in CSS pixels: what they are drawn at, and the invisible square that catches the
@@ -111,6 +116,16 @@ export function DocumentCanvas({
     }
   }, []);
 
+  // Going away mid-gesture would leave the transaction the drag opened with nothing to close it,
+  // and the store refuses to undo while one is open -- so the editor would come back with its
+  // history frozen. The capture goes with the removed node on its own.
+  useEffect(() => () => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    dragRef.current = null;
+    drag.finish?.();
+  }, []);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || typeof ResizeObserver === 'undefined') return;
@@ -160,7 +175,9 @@ export function DocumentCanvas({
     handle: Handle | null,
   ) => {
     const frame = frames[element.id];
-    if (!frame || !onTransform || element.locked) return;
+    // A second finger must not take over a gesture that is already running: replacing the drag
+    // would strand the first pointer's transaction open, and an open transaction blocks undo.
+    if (!frame || !onTransform || element.locked || dragRef.current) return;
     const capturedBy = event.currentTarget;
     capturedBy.setPointerCapture(event.pointerId);
     dragRef.current = {
@@ -171,6 +188,7 @@ export function DocumentCanvas({
       transform: element.transform,
       pointerStart: canvasPoint(event),
       capturedBy,
+      finish: onTransformEnd,
     };
     onTransformStart?.(element.id, handle ? gestureOf(handle) : 'move');
   };
@@ -198,7 +216,7 @@ export function DocumentCanvas({
     if (drag.capturedBy.hasPointerCapture(event.pointerId)) {
       drag.capturedBy.releasePointerCapture(event.pointerId);
     }
-    onTransformEnd?.();
+    drag.finish?.();
   };
 
   const corners = selectedFrame ? frameCorners(selectedFrame) : null;

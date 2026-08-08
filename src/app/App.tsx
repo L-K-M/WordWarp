@@ -398,7 +398,9 @@ export function App() {
             <input
               className="goo-range"
               type="range"
-              min="0.05"
+              // The floor the canvas clamps a resize to, so the thumb and the readout cannot
+              // disagree about how small an element has been dragged.
+              min="0.01"
               max="4"
               step="0.01"
               value={element.transform[axis]}
