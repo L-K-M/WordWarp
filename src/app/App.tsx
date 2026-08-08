@@ -32,6 +32,7 @@ const presetCategories: Array<{ id: PresetCategory | 'all'; label: string }> = [
   { id: 'nineties', label: '90s' },
   { id: 'dimensional', label: '3D' },
   { id: 'texture', label: 'FX' },
+  { id: 'sweets', label: 'Sweets' },
 ];
 
 /* Jellybean flavours come in bean-0 .. bean-6 in styles.css; cycle chips through them. */

@@ -11,8 +11,10 @@ describe('preset library', () => {
     expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(44);
     expect(BUILT_IN_PRESETS).toHaveLength(42);
     expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(BUILT_IN_PRESETS.length);
+    expect(BUILT_IN_PRESETS).toHaveLength(49);
+    expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(49);
     expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.category))).toEqual(
-      new Set(['metallic', 'synthwave', 'y2k', 'nineties', 'dimensional', 'texture']),
+      new Set(['metallic', 'synthwave', 'y2k', 'nineties', 'dimensional', 'texture', 'sweets']),
     );
   });
 

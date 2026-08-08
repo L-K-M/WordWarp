@@ -299,6 +299,19 @@ interference-colour field, chisel relief and a faceted Stop warp.
 offset). **Satin Stitch Sampler** adds directional thread bundles, padded relief and a nested
 embroidered border with a gentle fabric-sag warp.
 
+### 4.7 Sweets / candy
+
+| # | Style | Palette | Stack |
+|---|---|---|---|
+| C1 | **Candy Cane** | `#ff2e4d #ffffff` stripes | Hard-edged striped fill at 45° → inner bevel → white inner glow → arch-up warp |
+| C2 | **Cotton Candy** | `#ffd1ec #ff9ec7 #b8a8ff` | Pastel gradient fill → grain texture → soft pink glow → inflate warp |
+| C3 | **Gumdrop** | `#ff5fa2 #c2185b #ffffff` | Radial highlight fill → pillow bevel → white inner glow → satin sheen |
+| C4 | **Bubblegum Blow** | `#ffffff #ff8fc0 #ff2e88` | Gloss gradient → big pillow bevel → strong inner glow → halftone dot texture. *Animated: pulse.* |
+| C5 | **Lollipop** | full hue sweep | Angular (conic) rainbow fill → circle warp → white gloss. *Animated: hue cycle.* |
+| C6 | **Licorice Twist** | `#2a2a2e #000000 #8a1538` | Near-black fill → chisel bevel → red satin sheen → wave-twist warp |
+| C7 | **Chocolate Bar** | `#b06b2e #6b3a16 #3a1d08` | Chocolate gradient → weave texture (moulded squares) → inner bevel → inner shadow |
+| C8 | **Peppermint** | `#ffffff #ff2e4d` | Hard-edged angular stripe swirl → inner bevel → white inner glow |
+
 ---
 
 ## 5. Core data model
@@ -1157,7 +1170,7 @@ content or transform:
 export interface Preset {
   id: string;
   name: string;
-  category: 'metallic' | 'synthwave' | 'y2k' | 'nineties' | 'dimensional' | 'texture' | 'user';
+  category: 'metallic' | 'synthwave' | 'y2k' | 'nineties' | 'dimensional' | 'texture' | 'sweets' | 'user';
   tags: string[];
   author?: string;
   thumbnail?: string;           // pre-rendered WebP for the built-ins
