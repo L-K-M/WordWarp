@@ -488,6 +488,9 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('caution-tape', 'Caution Tape', 'nineties', ['#ffd400', '#111111', '#fff3b0', '#5c4a00'], [
     shadow('#000000', 8, 3, 0.75), fill(gradient(['#ffd400', '#ffd400', '#111111', '#ffd400'], 45)), bevel(6, 'inner', 160), stroke(2, '#111111'),
   ], warp('textSlantUp', 0.45), ['caution', 'hazard']),
+  definePreset('pop-art', 'Pop Art', 'nineties', ['#ffd400', '#e0241c', '#000000', '#ffffff'], [
+    shadow('#000000', 9, 1, 0.95), fill(solid('#ffd400')), texture('halftone', 0.3), stroke(6, '#000000'),
+  ], warp('textArchUp', 0.32), ['comic', 'pop-art', 'halftone']),
 
   definePreset('jelly', 'Jelly', 'y2k', ['#ff8ac6', '#ffffff', '#c2185b', '#ffd9ec'], [
     shadow('#a1164f', 8, 12, 0.4), fill(solid('#ff8ac6', 0.72)), bevel(22, 'pillow', 200), innerGlow('#ffffff', 16, 0.8),
