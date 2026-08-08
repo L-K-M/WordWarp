@@ -18,6 +18,9 @@ interface RackResizerProps {
  * This is the ARIA window-splitter pattern: a focusable `separator` that reports its position, so
  * the rack is resizable from the keyboard as well as the pointer. `useKeyboardShortcuts` leaves
  * arrow keys alone while it holds focus -- see the separator entry in its interactive selector.
+ *
+ * Render it as a direct child of `.workspace`: a drag measures from its parent's left edge, so an
+ * extra wrapper would silently move the origin the width is counted from.
  */
 export function RackResizer({ width, onResize, onReset }: RackResizerProps) {
   // Read through a subscription rather than at render: nothing else re-renders this component when
@@ -71,6 +74,8 @@ export function RackResizer({ width, onResize, onReset }: RackResizerProps) {
       aria-orientation="vertical"
       aria-label="Style rack width"
       aria-valuenow={drawnWidth}
+      // A bare number announces as "separator, 568". The unit is the whole meaning here.
+      aria-valuetext={`${drawnWidth} pixels`}
       aria-valuemin={RACK_MIN_WIDTH}
       aria-valuemax={maxRackWidth(viewportWidth)}
       tabIndex={0}
