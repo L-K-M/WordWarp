@@ -305,7 +305,8 @@ export function App() {
     // Cascaded rather than centred: a scene is several stamps, and dropping each one on the
     // canvas midpoint would bury it under both the word and the stamp before it. The run wraps so
     // a long session cannot walk them off the bottom-right corner.
-    const offset = (document.elements.length % 8) * 56;
+    const placed = document.elements.reduce((count, element) => count + (element.type === 'shape' ? 1 : 0), 0);
+    const offset = (placed % 8) * 56;
     const element = createStampElement(shape, [
       document.canvas.width * 0.26 + offset,
       document.canvas.height * 0.26 + offset,
@@ -1249,8 +1250,7 @@ function hexToRgba(hex: string): Rgba {
 
 function backgroundHex(paint: Paint | null): string {
   if (paint?.kind !== 'solid') return '#ffffff';
-  const channel = (value: number) => Math.round(value * 255).toString(16).padStart(2, '0');
-  return `#${channel(paint.color[0])}${channel(paint.color[1])}${channel(paint.color[2])}`;
+  return rgbaToHex(paint.color);
 }
 
 function isActiveBackground(paint: Paint | null, hex: string): boolean {

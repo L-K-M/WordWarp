@@ -100,20 +100,30 @@ function fitToBox(path: PathData, width: number, height: number): PathData {
   };
 }
 
+/**
+ * Dispatch, written as an exhaustive switch with no default.
+ *
+ * The catalogue is a closed union, so leaving out the default makes the compiler the thing that
+ * notices a new stamp with no generator. An if-chain ending in a bare `return heart(...)` would
+ * not: a stamp added to `STAMP_IDS` and forgotten here would quietly draw a heart, and the box and
+ * closed-path tests would all pass, because a heart satisfies every one of them.
+ */
 function generate(shape: StampId, width: number, height: number): PathData {
-  if (shape === 'rectangle') return polygon([[0, 0], [width, 0], [width, height], [0, height]]);
-  if (shape === 'triangle') return polygon([[width / 2, 0], [width, height], [0, height]]);
-  if (shape === 'ellipse') return ellipse(width, height);
-  if (shape === 'star') return polygon(radialPoints(width, height, 5, 0.382));
-  if (shape === 'starburst') return polygon(radialPoints(width, height, 12, 0.46));
-  if (shape === 'splat') return splat(width, height);
-  if (shape === 'zigzag') return zigzag(width, height);
-  if (shape === 'squiggle') return squiggle(width, height);
-  if (shape === 'bolt') return normalizedPolygon(BOLT, width, height);
-  if (shape === 'crown') return normalizedPolygon(CROWN, width, height);
-  if (shape === 'arch') return arch(width, height);
-  if (shape === 'chevron') return chevron(width, height);
-  return heart(width, height);
+  switch (shape) {
+    case 'rectangle': return polygon([[0, 0], [width, 0], [width, height], [0, height]]);
+    case 'triangle': return polygon([[width / 2, 0], [width, height], [0, height]]);
+    case 'ellipse': return ellipse(width, height);
+    case 'star': return polygon(radialPoints(width, height, 5, 0.382));
+    case 'starburst': return polygon(radialPoints(width, height, 12, 0.46));
+    case 'splat': return splat(width, height);
+    case 'zigzag': return zigzag(width, height);
+    case 'squiggle': return squiggle(width, height);
+    case 'bolt': return normalizedPolygon(BOLT, width, height);
+    case 'crown': return normalizedPolygon(CROWN, width, height);
+    case 'arch': return arch(width, height);
+    case 'chevron': return chevron(width, height);
+    case 'heart': return heart(width, height);
+  }
 }
 
 function polygon(points: readonly Point[]): PathData {

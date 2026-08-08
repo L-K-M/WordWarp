@@ -224,7 +224,8 @@ export function shapeLocalBounds(element: ShapeElement): Bounds {
 }
 
 export function measureShapeElement(element: ShapeElement): Bounds {
-  return transformBounds(shapeLocalBounds(element), elementMatrix(element.transform, shapeLocalBounds(element)));
+  const localBounds = shapeLocalBounds(element);
+  return transformBounds(localBounds, elementMatrix(element.transform, localBounds));
 }
 
 /**
