@@ -21,6 +21,9 @@ const interactiveControlSelector = [
   'summary',
   'textarea',
   'video[controls]',
+  // A focusable splitter drives itself with the arrow keys, so the canvas must not also read them
+  // as a nudge and move the selected element behind the user's back.
+  '[role="separator"][tabindex]',
 ].join(', ');
 
 function isInteractiveControl(target: EventTarget | null): target is HTMLElement {

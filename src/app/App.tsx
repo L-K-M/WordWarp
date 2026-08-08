@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 import { documentAnimationDuration, evaluateDocumentAtTime, hasEnabledAnimationTracks } from '../animation/evaluate';
 import { createEffect, EFFECT_KINDS, type EffectKind } from '../effects/defaults';
@@ -16,12 +16,13 @@ import type { Preset, PresetCategory } from '../presets/types';
 import { buildShareUrl, decodeShareFragment } from '../share/url';
 import { subscribeToServiceWorkerUpdate, type ServiceWorkerUpdate } from '../service-worker-update';
 import { documentStore, useDocumentStore } from '../state/document-store';
-import { useEditorStore } from '../state/editor-store';
+import { PRESET_SIZE_LABELS, PRESET_SIZES, useEditorStore } from '../state/editor-store';
 import { holdToast, resumeToast, useUiStore } from '../state/ui-store';
 import { type FontCatalogEntry } from '../text/fonts';
 import { DocumentCanvas } from '../ui/DocumentCanvas';
 import { FontPicker } from '../ui/FontPicker';
 import { PresetPreview } from '../ui/PresetPreview';
+import { RackResizer } from '../ui/RackResizer';
 import { warpDisplayName } from '../warp';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 
@@ -68,6 +69,12 @@ export function App() {
   const toggleLeftPanel = useEditorStore((state) => state.toggleLeftPanel);
   const toggleRightPanel = useEditorStore((state) => state.toggleRightPanel);
   const syncPanelsForViewport = useEditorStore((state) => state.syncPanelsForViewport);
+  const viewportMode = useEditorStore((state) => state.viewportMode);
+  const rackWidth = useEditorStore((state) => state.rackWidth);
+  const setRackWidth = useEditorStore((state) => state.setRackWidth);
+  const resetRackWidth = useEditorStore((state) => state.resetRackWidth);
+  const presetSizeStep = useEditorStore((state) => state.presetSizeStep);
+  const stepPresetSize = useEditorStore((state) => state.stepPresetSize);
   const toasts = useUiStore((state) => state.toasts);
   const pushToast = useUiStore((state) => state.pushToast);
   const dismissToast = useUiStore((state) => state.dismissToast);
@@ -501,7 +508,15 @@ export function App() {
   }
 
   return (
-    <div className="app-shell" inert={isImporting || isUpdating} aria-busy={isImporting || isUpdating}>
+    <div
+      className="app-shell"
+      inert={isImporting || isUpdating}
+      aria-busy={isImporting || isUpdating}
+      style={{
+        '--rack-user-width': `${rackWidth}px`,
+        '--preset-size': `${PRESET_SIZES[presetSizeStep] ?? PRESET_SIZES[2]}px`,
+      } as CSSProperties}
+    >
       <header className="topbar">
         <button
           className="brand"
@@ -598,6 +613,26 @@ export function App() {
               </button>
             ))}
           </div>
+          <div className="preset-size-row">
+            <span>Preview size</span>
+            <span className="preset-size-controls" role="group" aria-label="Preview size">
+              <button
+                className="orb orb-xs orb-aqua"
+                type="button"
+                aria-label="Smaller previews"
+                disabled={presetSizeStep === 0}
+                onClick={() => stepPresetSize(-1)}
+              >−</button>
+              <output className="jelly-pill">{PRESET_SIZE_LABELS[presetSizeStep]}</output>
+              <button
+                className="orb orb-xs orb-aqua"
+                type="button"
+                aria-label="Larger previews"
+                disabled={presetSizeStep === PRESET_SIZES.length - 1}
+                onClick={() => stepPresetSize(1)}
+              >+</button>
+            </span>
+          </div>
           <div className="preset-grid">
             {visiblePresets.map((preset) => (
               <button
@@ -616,6 +651,12 @@ export function App() {
           </div>
           {visiblePresets.length === 0 && <p className="foundation-note">No styles match this search.</p>}
         </aside>
+
+        {/* Only the three-column desktop layout has a rack edge to drag: below 1051px the rack is
+            an overlay sitting on top of the canvas, and its width is not the canvas's loss. */}
+        {viewportMode === 'desktop' && leftPanelOpen && (
+          <RackResizer width={rackWidth} onResize={setRackWidth} onReset={resetRackWidth} />
+        )}
 
         <main className="canvas-panel">
           <div className="canvas-toolbar">

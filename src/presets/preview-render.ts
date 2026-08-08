@@ -15,10 +15,27 @@ import type { Preset } from './types';
  * means a card shows what applying the preset will actually do.
  */
 
-/** Rendered at 2x and shown at half that, so the thumbnail stays sharp on dense displays. */
+/**
+ * The document a card renders. Its size is the thumbnail's coordinate space, not its resolution:
+ * preset effects carry absolute pixel sizes, so changing these numbers would change how every
+ * style looks on its card. `PREVIEW_SCALE` is the knob for sharpness.
+ */
 const PREVIEW_WIDTH = 320;
 const PREVIEW_HEIGHT = 220;
 const PREVIEW_TEXT = 'Ww';
+
+/**
+ * Supersampling factor for the raster, applied the same way the exporter applies its scale, so the
+ * image is identical -- only denser.
+ *
+ * Sized for the rack's default card, which is 186 CSS px and so 372 device pixels on a 2x display:
+ * 320 * 1.25 = 400 covers that with room to spare. Covering the largest step the size stepper
+ * offers instead would want 1.8, and that was measured at 3.2x the render cost -- 130ms of blocked
+ * main thread per card against 41ms, which the eye catches as scroll stutter now that a
+ * three-across rack pulls half again as many cards into view at once. The two largest steps are
+ * deliberately left to upscale a little; a 1x display stays sharp at every step either way.
+ */
+const PREVIEW_SCALE = 1.25;
 
 // Rendering a preset costs a full effect stack, so hold onto the result: the library re-renders on
 // every search keystroke and category switch, and cards scroll in and out of view constantly.
@@ -40,10 +57,10 @@ function renderPresetPreview(doc: WordWarpDocument, presetId: string): string | 
   if (cached) return cached;
   try {
     const canvas = document.createElement('canvas');
-    canvas.width = PREVIEW_WIDTH;
-    canvas.height = PREVIEW_HEIGHT;
+    canvas.width = Math.round(PREVIEW_WIDTH * PREVIEW_SCALE);
+    canvas.height = Math.round(PREVIEW_HEIGHT * PREVIEW_SCALE);
     const context = get2dContext(canvas);
-    renderDocument2d(context, doc);
+    renderDocument2d(context, doc, { scale: PREVIEW_SCALE });
     const url = canvas.toDataURL('image/png');
     cache.set(presetId, url);
     return url;
