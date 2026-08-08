@@ -1,13 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 import { documentAnimationDuration, evaluateDocumentAtTime, hasEnabledAnimationTracks } from '../animation/evaluate';
 import { createEffect, EFFECT_KINDS, type EffectKind } from '../effects/defaults';
 import { downloadAnimation, exportAnimation } from '../export/animation';
 import { exportErrorMessage } from '../export/errors';
 import { downloadPng, exportPng } from '../export/png';
-import { createDefaultDocument, createDefaultTextElement } from '../model/defaults';
+import { createDefaultDocument, createDefaultTextElement, createStampElement, STAMP_LABELS } from '../model/defaults';
 import { createId } from '../lib/id';
-import { PRESET_WARP_IDS, type Effect, type TextElement } from '../model/types';
+import {
+  PRESET_WARP_IDS, STAMP_IDS,
+  type Effect, type Paint, type Point, type Rgba, type ShapeElement, type StampId, type TextElement,
+} from '../model/types';
+import { stampOutline } from '../geometry/stamps';
 import { startAutosave, type AutosaveController } from '../persistence/autosave';
 import { loadActiveDocument, saveDocument } from '../persistence/database';
 import { applyPresetToElement, BUILT_IN_PRESETS } from '../presets/library';
@@ -16,12 +20,13 @@ import type { Preset, PresetCategory } from '../presets/types';
 import { buildShareUrl, decodeShareFragment } from '../share/url';
 import { subscribeToServiceWorkerUpdate, type ServiceWorkerUpdate } from '../service-worker-update';
 import { documentStore, useDocumentStore } from '../state/document-store';
-import { useEditorStore } from '../state/editor-store';
+import { PRESET_SIZE_LABELS, PRESET_SIZES, useEditorStore } from '../state/editor-store';
 import { holdToast, resumeToast, useUiStore } from '../state/ui-store';
 import { type FontCatalogEntry } from '../text/fonts';
 import { DocumentCanvas } from '../ui/DocumentCanvas';
 import { FontPicker } from '../ui/FontPicker';
 import { PresetPreview } from '../ui/PresetPreview';
+import { RackResizer } from '../ui/RackResizer';
 import { warpDisplayName } from '../warp';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 
@@ -35,6 +40,7 @@ type ExportFormat = 'png' | 'apng' | 'gif';
 export function App() {
   const [isExporting, setIsExporting] = useState(false);
   const [newEffectKind, setNewEffectKind] = useState<EffectKind>('stroke');
+  const [stampMenuOpen, setStampMenuOpen] = useState(false);
   const [presetQuery, setPresetQuery] = useState('');
   const [presetCategory, setPresetCategory] = useState<PresetCategory | 'all'>('all');
   const [exportFormat, setExportFormat] = useState<ExportFormat>('png');
@@ -68,6 +74,12 @@ export function App() {
   const toggleLeftPanel = useEditorStore((state) => state.toggleLeftPanel);
   const toggleRightPanel = useEditorStore((state) => state.toggleRightPanel);
   const syncPanelsForViewport = useEditorStore((state) => state.syncPanelsForViewport);
+  const viewportMode = useEditorStore((state) => state.viewportMode);
+  const rackWidth = useEditorStore((state) => state.rackWidth);
+  const setRackWidth = useEditorStore((state) => state.setRackWidth);
+  const resetRackWidth = useEditorStore((state) => state.resetRackWidth);
+  const presetSizeStep = useEditorStore((state) => state.presetSizeStep);
+  const stepPresetSize = useEditorStore((state) => state.stepPresetSize);
   const toasts = useUiStore((state) => state.toasts);
   const pushToast = useUiStore((state) => state.pushToast);
   const dismissToast = useUiStore((state) => state.dismissToast);
@@ -205,6 +217,7 @@ export function App() {
 
   const selectedElement = document.elements.find((element) => element.id === selectedElementId);
   const selectedText = selectedElement?.type === 'text' ? selectedElement : null;
+  const selectedShape = selectedElement?.type === 'shape' ? selectedElement : null;
 
   const removeSelected = () => {
     if (!selectedElementId) return;
@@ -295,6 +308,37 @@ export function App() {
     selectElement(element.id);
   };
 
+  const addStamp = (shape: StampId) => {
+    // Cascaded rather than centred: a scene is several stamps, and dropping each one on the
+    // canvas midpoint would bury it under both the word and the stamp before it. The run wraps so
+    // a long session cannot walk them off the bottom-right corner.
+    const placed = document.elements.reduce((count, element) => count + (element.type === 'shape' ? 1 : 0), 0);
+    const offset = (placed % 8) * 56;
+    const element = createStampElement(shape, [
+      document.canvas.width * 0.26 + offset,
+      document.canvas.height * 0.26 + offset,
+    ]);
+    updateDocument(`Add ${STAMP_LABELS[shape].toLocaleLowerCase()}`, (draft) => {
+      draft.elements.push(element);
+    });
+    selectElement(element.id);
+    setStampMenuOpen(false);
+  };
+
+  const updateStamp = (change: (element: ShapeElement) => void) => {
+    if (!selectedShape) return;
+    updateDocument('Edit stamp', (draft) => {
+      const element = draft.elements.find((candidate) => candidate.id === selectedShape.id);
+      if (element?.type === 'shape') change(element);
+    });
+  };
+
+  const setBackground = (paint: Paint | null) => {
+    updateDocument(paint ? 'Set background' : 'Clear background', (draft) => {
+      draft.canvas.background = paint;
+    });
+  };
+
   const updateText = (text: string) => {
     if (!selectedText) return;
     updateDocument(
@@ -310,13 +354,63 @@ export function App() {
   };
 
   const applyPreset = (preset: Preset) => {
-    if (!selectedText) return;
+    if (!selectedElement) return;
     updateDocument(`Apply ${preset.name}`, (draft) => {
-      const element = draft.elements.find((candidate) => candidate.id === selectedText.id);
-      if (element?.type !== 'text') return;
+      const element = draft.elements.find((candidate) => candidate.id === selectedElement.id);
+      if (element?.type !== 'text' && element?.type !== 'shape') return;
       applyPresetToElement(element, preset);
     });
   };
+
+  /**
+   * The effect stack editor, shared by every element that has one.
+   *
+   * A stamp's stack is the same list of the same effects in the same order as a word's -- the
+   * renderer works from a face's alpha either way -- so it gets the same editor rather than a
+   * parallel one that would drift out of step with it.
+   */
+  const renderEffectsSection = (effects: Effect[]) => (
+    <section className="effects-section">
+        <div className="section-title-row">
+          <h2>Effect stack</h2>
+          <span>{effects.length}</span>
+        </div>
+        <ol className="effect-list">
+          {effects.map((effect, index) => (
+            <li key={effect.id}>
+              <span className="drag-grip" aria-hidden="true">::</span>
+              <span className={`effect-chip effect-${effect.kind}`} aria-hidden="true" />
+              <span>
+                <strong>{effectLabel(effect.kind)}</strong>
+                <small>{effect.slot.toUpperCase()} / {index + 1}</small>
+              </span>
+              <span className="effect-actions">
+                <button type="button" onClick={() => moveEffect(effect.id, -1)} aria-label="Move effect up">▲</button>
+                <button type="button" onClick={() => moveEffect(effect.id, 1)} aria-label="Move effect down">▼</button>
+                <button
+                  className={effect.enabled ? 'enabled' : ''}
+                  type="button"
+                  aria-label={`${effect.enabled ? 'Disable' : 'Enable'} ${effectLabel(effect.kind)}`}
+                  aria-pressed={effect.enabled}
+                  onClick={() => toggleEffect(effect.id)}
+                >
+                  {effect.enabled ? 'ON' : 'OFF'}
+                </button>
+                <button type="button" onClick={() => removeEffect(effect.id)} aria-label={`Remove ${effectLabel(effect.kind)}`}>✕</button>
+              </span>
+              <EffectQuickControl effect={effect} onChange={(value) => updateEffectPrimary(effect.id, value)} />
+              <EffectColorControls effect={effect} onChange={(target, hex) => updateEffectColor(effect.id, target, hex)} />
+            </li>
+          ))}
+        </ol>
+        <div className="effect-adder">
+          <select className="jelly-select" value={newEffectKind} onChange={(event) => setNewEffectKind(event.target.value as EffectKind)}>
+            {EFFECT_KINDS.map((kind) => <option key={kind} value={kind}>{effectLabel(kind)}</option>)}
+          </select>
+          <button className="add-effect orb orb-xs orb-lime" type="button" onClick={addEffect}>+ Add</button>
+        </div>
+      </section>
+  );
 
   const visiblePresets = BUILT_IN_PRESETS.filter((preset) => {
     const categoryMatches = presetCategory === 'all' || preset.category === presetCategory;
@@ -326,38 +420,38 @@ export function App() {
   });
 
   const toggleEffect = (effectId: string) => {
-    if (!selectedText) return;
+    if (!selectedElement) return;
     updateDocument('Toggle effect', (draft) => {
-      const element = draft.elements.find((candidate) => candidate.id === selectedText.id);
+      const element = draft.elements.find((candidate) => candidate.id === selectedElement.id);
       const effect = element?.effects.find((candidate) => candidate.id === effectId);
       if (effect) effect.enabled = !effect.enabled;
     });
   };
 
   const addEffect = () => {
-    if (!selectedText) return;
+    if (!selectedElement) return;
     const effect = createEffect(newEffectKind);
     updateDocument('Add effect', (draft) => {
-      const element = draft.elements.find((candidate) => candidate.id === selectedText.id);
-      if (element?.type === 'text') element.effects.push(effect);
+      const element = draft.elements.find((candidate) => candidate.id === selectedElement.id);
+      element?.effects.push(effect);
     });
   };
 
   const removeEffect = (effectId: string) => {
-    if (!selectedText) return;
+    if (!selectedElement) return;
     updateDocument('Remove effect', (draft) => {
-      const element = draft.elements.find((candidate) => candidate.id === selectedText.id);
-      if (element?.type !== 'text') return;
+      const element = draft.elements.find((candidate) => candidate.id === selectedElement.id);
+      if (!element) return;
       const index = element.effects.findIndex((effect) => effect.id === effectId);
       if (index >= 0) element.effects.splice(index, 1);
     });
   };
 
   const moveEffect = (effectId: string, direction: -1 | 1) => {
-    if (!selectedText) return;
+    if (!selectedElement) return;
     updateDocument('Reorder effect', (draft) => {
-      const element = draft.elements.find((candidate) => candidate.id === selectedText.id);
-      if (element?.type !== 'text') return;
+      const element = draft.elements.find((candidate) => candidate.id === selectedElement.id);
+      if (!element) return;
       const index = element.effects.findIndex((effect) => effect.id === effectId);
       const nextIndex = index + direction;
       if (index < 0 || nextIndex < 0 || nextIndex >= element.effects.length) return;
@@ -367,9 +461,9 @@ export function App() {
   };
 
   const updateEffectPrimary = (effectId: string, value: number) => {
-    if (!selectedText) return;
+    if (!selectedElement) return;
     updateDocument('Adjust effect', (draft) => {
-      const element = draft.elements.find((candidate) => candidate.id === selectedText.id);
+      const element = draft.elements.find((candidate) => candidate.id === selectedElement.id);
       const effect = element?.effects.find((candidate) => candidate.id === effectId);
       if (!effect) return;
       if (effect.kind === 'stroke') effect.width = value;
@@ -386,11 +480,11 @@ export function App() {
   };
 
   const updateEffectColor = (effectId: string, target: 'paint' | 'color' | 'highlight' | 'shadow', hex: string) => {
-    if (!selectedText) return;
+    if (!selectedElement) return;
     const rgb = hexToRgb(hex);
     if (!rgb) return;
     updateDocument('Change effect color', (draft) => {
-      const element = draft.elements.find((candidate) => candidate.id === selectedText.id);
+      const element = draft.elements.find((candidate) => candidate.id === selectedElement.id);
       const effect = element?.effects.find((candidate) => candidate.id === effectId);
       if (!effect) return;
       if (target === 'paint' && 'paint' in effect && effect.paint.kind === 'solid') {
@@ -513,7 +607,15 @@ export function App() {
   }
 
   return (
-    <div className="app-shell" inert={isImporting || isUpdating} aria-busy={isImporting || isUpdating}>
+    <div
+      className="app-shell"
+      inert={isImporting || isUpdating}
+      aria-busy={isImporting || isUpdating}
+      style={{
+        '--rack-user-width': `${rackWidth}px`,
+        '--preset-size': `${PRESET_SIZES[presetSizeStep] ?? PRESET_SIZES[2]}px`,
+      } as CSSProperties}
+    >
       <header className="topbar">
         <button
           className="brand"
@@ -610,6 +712,26 @@ export function App() {
               </button>
             ))}
           </div>
+          <div className="preset-size-row">
+            <span>Preview size</span>
+            <span className="preset-size-controls" role="group" aria-label="Preview size">
+              <button
+                className="orb orb-xs orb-aqua"
+                type="button"
+                aria-label="Smaller previews"
+                disabled={presetSizeStep === 0}
+                onClick={() => stepPresetSize(-1)}
+              >−</button>
+              <output className="jelly-pill">{PRESET_SIZE_LABELS[presetSizeStep]}</output>
+              <button
+                className="orb orb-xs orb-aqua"
+                type="button"
+                aria-label="Larger previews"
+                disabled={presetSizeStep === PRESET_SIZES.length - 1}
+                onClick={() => stepPresetSize(1)}
+              >+</button>
+            </span>
+          </div>
           <div className="preset-grid">
             {visiblePresets.map((preset) => (
               <button
@@ -629,15 +751,39 @@ export function App() {
           {visiblePresets.length === 0 && <p className="foundation-note">No styles match this search.</p>}
         </aside>
 
+        {/* Only the three-column desktop layout has a rack edge to drag: below 1051px the rack is
+            an overlay sitting on top of the canvas, and its width is not the canvas's loss. */}
+        {viewportMode === 'desktop' && leftPanelOpen && (
+          <RackResizer width={rackWidth} onResize={setRackWidth} onReset={resetRackWidth} />
+        )}
+
         <main className="canvas-panel">
           <div className="canvas-toolbar">
             <div className="tool-group" aria-label="Canvas tools">
               <button className="orb orb-xs orb-aqua active" type="button">Select</button>
               <button className="orb orb-xs orb-lime" type="button" onClick={addText}>Text</button>
-              <button className="orb orb-xs orb-berry" type="button" disabled>Warp</button>
+              <button
+                className="orb orb-xs orb-berry"
+                type="button"
+                aria-expanded={stampMenuOpen}
+                aria-controls="stamp-menu"
+                onClick={() => setStampMenuOpen((open) => !open)}
+              >
+                Stamp
+              </button>
             </div>
+            {stampMenuOpen && (
+              <div className="stamp-menu" id="stamp-menu" aria-label="Place a stamp">
+                {STAMP_IDS.map((shape) => (
+                  <button key={shape} className="stamp-choice" type="button" onClick={() => addStamp(shape)}>
+                    <svg viewBox="0 0 40 40" aria-hidden="true"><path d={stampPreviewPath(shape)} /></svg>
+                    <span>{STAMP_LABELS[shape]}</span>
+                  </button>
+                ))}
+              </div>
+            )}
             <span className="canvas-status">
-              {document.canvas.width} × {document.canvas.height} · TRANSPARENT GOO
+              {document.canvas.width} × {document.canvas.height} · {backgroundLabel(document.canvas.background)}
             </span>
           </div>
 
@@ -835,46 +981,7 @@ export function App() {
                 )}
               </section>
 
-              <section className="effects-section">
-                <div className="section-title-row">
-                  <h2>Effect stack</h2>
-                  <span>{selectedText.effects.length}</span>
-                </div>
-                <ol className="effect-list">
-                  {selectedText.effects.map((effect, index) => (
-                    <li key={effect.id}>
-                      <span className="drag-grip" aria-hidden="true">::</span>
-                      <span className={`effect-chip effect-${effect.kind}`} aria-hidden="true" />
-                      <span>
-                        <strong>{effectLabel(effect.kind)}</strong>
-                        <small>{effect.slot.toUpperCase()} / {index + 1}</small>
-                      </span>
-                      <span className="effect-actions">
-                        <button type="button" onClick={() => moveEffect(effect.id, -1)} aria-label="Move effect up">▲</button>
-                        <button type="button" onClick={() => moveEffect(effect.id, 1)} aria-label="Move effect down">▼</button>
-                        <button
-                          className={effect.enabled ? 'enabled' : ''}
-                          type="button"
-                          aria-label={`${effect.enabled ? 'Disable' : 'Enable'} ${effectLabel(effect.kind)}`}
-                          aria-pressed={effect.enabled}
-                          onClick={() => toggleEffect(effect.id)}
-                        >
-                          {effect.enabled ? 'ON' : 'OFF'}
-                        </button>
-                        <button type="button" onClick={() => removeEffect(effect.id)} aria-label={`Remove ${effectLabel(effect.kind)}`}>✕</button>
-                      </span>
-                      <EffectQuickControl effect={effect} onChange={(value) => updateEffectPrimary(effect.id, value)} />
-                      <EffectColorControls effect={effect} onChange={(target, hex) => updateEffectColor(effect.id, target, hex)} />
-                    </li>
-                  ))}
-                </ol>
-                <div className="effect-adder">
-                  <select className="jelly-select" value={newEffectKind} onChange={(event) => setNewEffectKind(event.target.value as EffectKind)}>
-                    {EFFECT_KINDS.map((kind) => <option key={kind} value={kind}>{effectLabel(kind)}</option>)}
-                  </select>
-                  <button className="add-effect orb orb-xs orb-lime" type="button" onClick={addEffect}>+ Add</button>
-                </div>
-              </section>
+              {renderEffectsSection(selectedText.effects)}
 
               <section className="inspector-section light-section">
                 <h2>Global light <span>{Math.round(document.globalLight.angle)} DEG</span></h2>
@@ -908,12 +1015,135 @@ export function App() {
                 </label>
               </section>
             </>
+          ) : selectedShape ? (
+            <>
+              <section className="inspector-section open">
+                <h2>Stamp</h2>
+                <label>
+                  <span>Shape</span>
+                  <select
+                    className="jelly-select"
+                    value={selectedShape.shape}
+                    onChange={(event) => {
+                      const shape = event.target.value as StampId;
+                      updateStamp((element) => {
+                        element.shape = shape;
+                        // Switching stamp regenerates geometry, so any detached path has to go with
+                        // it -- keeping it would silently ignore the choice the user just made.
+                        element.path = null;
+                        if (element.name === STAMP_LABELS[selectedShape.shape]) element.name = STAMP_LABELS[shape];
+                      });
+                    }}
+                  >
+                    {STAMP_IDS.map((shape) => (
+                      <option key={shape} value={shape}>{STAMP_LABELS[shape]}</option>
+                    ))}
+                  </select>
+                </label>
+                {selectedShape.path && (
+                  <p className="foundation-note">
+                    This stamp has edited geometry, so the shape above is a record of where it came
+                    from rather than what gets drawn.
+                  </p>
+                )}
+                <label className="range-field">
+                  <span>Width <output>{Math.round(selectedShape.width)}</output></span>
+                  <input
+                    className="goo-range"
+                    type="range"
+                    min="16"
+                    max="900"
+                    value={selectedShape.width}
+                    onChange={(event) => {
+                      const width = Number(event.target.value);
+                      updateStamp((element) => { element.width = width; });
+                    }}
+                  />
+                </label>
+                <label className="range-field">
+                  <span>Height <output>{Math.round(selectedShape.height)}</output></span>
+                  <input
+                    className="goo-range"
+                    type="range"
+                    min="16"
+                    max="900"
+                    value={selectedShape.height}
+                    onChange={(event) => {
+                      const height = Number(event.target.value);
+                      updateStamp((element) => { element.height = height; });
+                    }}
+                  />
+                </label>
+                <label className="range-field">
+                  <span>Rotation <output>{Math.round(selectedShape.transform.rotation)}</output></span>
+                  <input
+                    className="goo-range"
+                    type="range"
+                    min="-180"
+                    max="180"
+                    value={selectedShape.transform.rotation}
+                    onChange={(event) => {
+                      const rotation = Number(event.target.value);
+                      updateStamp((element) => { element.transform.rotation = rotation; });
+                    }}
+                  />
+                </label>
+                <p className="foundation-note">
+                  Stamps take the whole effect stack and every style in the rack, so a decoration
+                  can be chromed, bevelled or sprayed exactly like a word.
+                </p>
+              </section>
+              {renderEffectsSection(selectedShape.effects)}
+            </>
           ) : (
             <div className="no-selection">
               <span>NO GOO SELECTED</span>
-              <p>Pick a text blob on the canvas or in the layer strip to start squishing it.</p>
+              <p>Pick a text blob or a stamp on the canvas or in the layer strip to start squishing it.</p>
             </div>
           )}
+
+          <section className="inspector-section background-section">
+            <h2>Background <span>{backgroundLabel(document.canvas.background)}</span></h2>
+            <div className="background-swatches">
+              <button
+                className={`background-swatch${document.canvas.background ? '' : ' active'}`}
+                type="button"
+                onClick={() => setBackground(null)}
+                aria-pressed={!document.canvas.background}
+              >
+                <span className="background-none" aria-hidden="true" />
+                <span>None</span>
+              </button>
+              {BACKGROUND_SWATCHES.map((swatch) => (
+                <button
+                  key={swatch.label}
+                  className={`background-swatch${isActiveBackground(document.canvas.background, swatch.hex) ? ' active' : ''}`}
+                  type="button"
+                  onClick={() => setBackground({ kind: 'solid', color: hexToRgba(swatch.hex) })}
+                  aria-pressed={isActiveBackground(document.canvas.background, swatch.hex)}
+                >
+                  <span style={{ background: swatch.hex }} aria-hidden="true" />
+                  <span>{swatch.label}</span>
+                </button>
+              ))}
+            </div>
+            <label>
+              <span>Custom</span>
+              <input
+                className="jelly-field"
+                type="color"
+                aria-label="Custom background colour"
+                value={backgroundHex(document.canvas.background)}
+                onChange={(event) => setBackground({ kind: 'solid', color: hexToRgba(event.target.value) })}
+              />
+            </label>
+            {/* Transparent export is the product's core promise, so the one thing a background
+                changes beyond colour gets said out loud rather than discovered at export time. */}
+            <p className="foundation-note">
+              A background fills the frame, so exports stop being transparent and stop cropping to
+              the artwork. Set it back to None to get both behaviours back.
+            </p>
+          </section>
         </aside>
       </div>
 
@@ -1049,6 +1279,65 @@ function EffectColorControls({ effect, onChange }: { effect: Effect; onChange: (
 function rgbaToHex([red, green, blue]: readonly [number, number, number, number]): string {
   const channel = (value: number) => Math.round(Math.min(1, Math.max(0, value)) * 255).toString(16).padStart(2, '0');
   return `#${channel(red)}${channel(green)}${channel(blue)}`;
+}
+
+/**
+ * Ready-made grounds, picked so the 1990s styles have something period to sit on.
+ *
+ * A Memphis graphic was never printed on white -- the flat saturated ground is half of what makes
+ * it read as Memphis at all -- so the swatches lead with the colours those sheets actually used.
+ */
+const BACKGROUND_SWATCHES = [
+  { label: 'Cream', hex: '#f7f4ea' },
+  { label: 'Violet', hex: '#5b5bd6' },
+  { label: 'Teal', hex: '#00cfc1' },
+  { label: 'Pink', hex: '#ff5fa2' },
+  { label: 'Sun', hex: '#ffd93d' },
+  { label: 'Ink', hex: '#141433' },
+];
+
+function hexToRgba(hex: string): Rgba {
+  const rgb = hexToRgb(hex) ?? [0, 0, 0];
+  return [rgb[0], rgb[1], rgb[2], 1];
+}
+
+function backgroundHex(paint: Paint | null): string {
+  if (paint?.kind !== 'solid') return '#ffffff';
+  return rgbaToHex(paint.color);
+}
+
+function isActiveBackground(paint: Paint | null, hex: string): boolean {
+  return paint?.kind === 'solid' && backgroundHex(paint).toLowerCase() === hex.toLowerCase();
+}
+
+function backgroundLabel(paint: Paint | null): string {
+  if (!paint) return 'TRANSPARENT GOO';
+  if (paint.kind === 'solid') return `${backgroundHex(paint).toUpperCase()} GROUND`;
+  return `${paint.kind.toUpperCase()} GROUND`;
+}
+
+/**
+ * A stamp's menu icon, drawn from the same generator that draws the stamp itself.
+ *
+ * Hand-drawn icons would be a second definition of every shape, free to drift from the first. This
+ * way a menu entry cannot misrepresent what placing it produces, and a new stamp needs no icon.
+ */
+function stampPreviewPath(shape: StampId): string {
+  return stampOutline(shape, 40, 40).commands
+    .map((command) => {
+      if (command.type === 'M') return `M${round(command.point)}`;
+      if (command.type === 'L') return `L${round(command.point)}`;
+      if (command.type === 'Q') return `Q${round(command.control)} ${round(command.point)}`;
+      if (command.type === 'C') {
+        return `C${round(command.control1)} ${round(command.control2)} ${round(command.point)}`;
+      }
+      return 'Z';
+    })
+    .join(' ');
+}
+
+function round(point: Point): string {
+  return `${point[0].toFixed(1)},${point[1].toFixed(1)}`;
 }
 
 function hexToRgb(hex: string): [number, number, number] | null {

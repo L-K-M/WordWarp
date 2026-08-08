@@ -6,7 +6,7 @@ import type { WordWarpDocument } from '../model/types';
 import {
   effectContributesPixels,
   effectStackReach,
-  measureTextElement,
+  measureElement,
   renderDocument2d,
 } from '../render/fallback2d/renderer';
 import { get2dContext } from '../render/surface';
@@ -129,8 +129,9 @@ function maximumEffectReach(
 ): number {
   let reach = 2;
   for (const element of document.elements) {
-    if (!element.visible || element.opacity <= 0 || element.type !== 'text') continue;
-    const elementBounds = measureTextElement(context, element);
+    if (!element.visible || element.opacity <= 0) continue;
+    const elementBounds = measureElement(context, element);
+    if (!elementBounds) continue;
     reach = Math.max(reach, effectStackReach(elementBounds, element.effects, viewport));
   }
   return reach;

@@ -1,10 +1,13 @@
 import { elementMatrix, transformBounds, type Matrix } from '../../geometry/matrix';
 import { layoutText, type LaidOutText, type TextContext } from '../../text/layout';
-import type { BlendMode, Effect, FillEffect, TextElement, WordWarpDocument } from '../../model/types';
+import type {
+  BlendMode, Effect, Element, FillEffect, PathData, ShapeElement, TextElement, WordWarpDocument,
+} from '../../model/types';
 import { expandBounds, intersectBounds, roundOutBounds, type Bounds } from '../../geometry/bounds';
 import type { RenderResult, RenderViewport } from '../contracts';
 import { PIXELATE_DEFAULT_SIZE, renderEffectStack, textureOverlayReach } from '../effects/cpu-effects';
-import { createCanvasSurface, get2dContext } from '../surface';
+import { shapeOutline } from '../../geometry/stamps';
+import { createCanvasSurface, get2dContext, type CanvasSurface } from '../surface';
 import { createPaintStyle } from './paint';
 import { drawWarpedSurface, getWarpedBounds } from './warp';
 
@@ -47,15 +50,19 @@ export function renderDocument2d(
   const result: RenderResult = { elementBounds: new Map(), diagnostics: [] };
   for (const element of document.elements) {
     if (!element.visible || element.opacity <= 0) continue;
-    if (element.type !== 'text') {
-      result.diagnostics.push({
-        elementId: element.id,
-        severity: 'warning',
-        message: `${element.type} rendering is not available in the text-core renderer`,
-      });
+    if (element.type === 'text') {
+      drawTextElement(context, element, result, scale, viewport, effectViewport, document.globalLight);
       continue;
     }
-    drawTextElement(context, element, result, scale, viewport, effectViewport, document.globalLight);
+    if (element.type === 'shape') {
+      drawShapeElement(context, element, result, scale, viewport, effectViewport, document.globalLight);
+      continue;
+    }
+    result.diagnostics.push({
+      elementId: element.id,
+      severity: 'warning',
+      message: `${element.type} rendering is not available in the text-core renderer`,
+    });
   }
   context.setTransform(1, 0, 0, 1, 0, 0);
   context.globalAlpha = 1;
@@ -129,7 +136,51 @@ function drawTextElement(
   faceContext.setTransform(scale, 0, 0, scale, -renderBounds.x * scale, -renderBounds.y * scale);
   applyCanvasMatrix(faceContext, matrix);
   drawWarpedSurface(faceContext, source, layout.bounds, element.warp);
-  const hasEffects = element.effects.some((effect) => effectContributesPixels(effect) && effect.kind !== 'fill');
+  compositeFace(context, element, face, {
+    scale, viewport, effectViewport, globalLight, renderBounds, fullRenderBounds,
+  });
+  if (element.warp.keepUpright && element.warp.kind !== 'none') {
+    result.diagnostics.push({
+      elementId: element.id,
+      severity: 'warning',
+      message: 'Keep upright requires an outline-backed font and is unavailable for native-font raster warps',
+    });
+  }
+  for (const message of unsupportedFontFeatures(element)) {
+    result.diagnostics.push({ elementId: element.id, severity: 'warning', message });
+  }
+}
+
+interface CompositeOptions {
+  scale: number;
+  viewport: RenderViewport;
+  effectViewport: RenderViewport;
+  globalLight: { angle: number; altitude: number };
+  renderBounds: Bounds;
+  fullRenderBounds: Bounds;
+}
+
+/**
+ * Run the effect stack over a painted face and composite the result into the document.
+ *
+ * Everything from here on is indifferent to what drew the face, because the effect stack works
+ * from the face's alpha channel and nothing else. That is why a stamp needs no effect code of its
+ * own: give this function a filled outline instead of a warped word and every fill, stroke, bevel,
+ * glow, shadow, texture and post pass in the library applies to it unchanged -- and so does every
+ * preset built out of them.
+ */
+function compositeFace(
+  context: TextContext,
+  element: Element,
+  face: CanvasSurface,
+  options: CompositeOptions,
+): void {
+  const { scale, viewport, effectViewport, globalLight, renderBounds, fullRenderBounds } = options;
+  // A fill is already on the face, so a stack of nothing but fills has no work left to do. Running
+  // the stack anyway would copy the surface for no reason on the commonest case there is.
+  const hasEffects = element.effects.some(
+    (effect) => effectContributesPixels(effect) && effect.kind !== 'fill',
+  );
   const rendered = hasEffects
     ? renderEffectStack(face, element.effects, {
       scale,
@@ -153,15 +204,107 @@ function drawTextElement(
     (renderBounds.y - viewport.y) * scale,
   );
   context.restore();
-  if (element.warp.keepUpright && element.warp.kind !== 'none') {
-    result.diagnostics.push({
-      elementId: element.id,
-      severity: 'warning',
-      message: 'Keep upright requires an outline-backed font and is unavailable for native-font raster warps',
-    });
+}
+
+/**
+ * Where an element lands on the canvas, or `null` if this renderer cannot draw it.
+ *
+ * Callers that size an export or measure effect reach need the same answer the draw pass will
+ * produce, and they need it for every kind of element the draw pass handles. Returning `null` for
+ * the rest keeps "cannot be drawn" and "occupies no space" from collapsing into the same value.
+ */
+export function measureElement(context: TextContext, element: Element): Bounds | null {
+  if (element.type === 'text') return measureTextElement(context, element);
+  if (element.type === 'shape') return measureShapeElement(element);
+  return null;
+}
+
+export function shapeLocalBounds(element: ShapeElement): Bounds {
+  return { x: 0, y: 0, width: element.width, height: element.height };
+}
+
+export function measureShapeElement(element: ShapeElement): Bounds {
+  const localBounds = shapeLocalBounds(element);
+  return transformBounds(localBounds, elementMatrix(element.transform, localBounds));
+}
+
+/**
+ * A stamp, drawn straight into its face at the output scale.
+ *
+ * Text has to be rasterised into an intermediate surface first, because warping it means resampling
+ * a bitmap. A stamp is a path, so it goes onto the face through the element matrix in one step and
+ * stays resolution-independent all the way to the export scale -- there is no intermediate raster
+ * to lose detail in, and no warp stage to lose it through.
+ */
+function drawShapeElement(
+  context: TextContext,
+  element: ShapeElement,
+  result: RenderResult,
+  scale: number,
+  viewport: RenderViewport,
+  effectViewport: RenderViewport,
+  globalLight: { angle: number; altitude: number },
+): void {
+  const localBounds = shapeLocalBounds(element);
+  const matrix = elementMatrix(element.transform, localBounds);
+  const transformedBounds = transformBounds(localBounds, matrix);
+  const reach = effectStackReach(transformedBounds, element.effects, effectViewport);
+  const fullRenderBounds = roundOutBounds(expandBounds(transformedBounds, reach));
+  const renderBounds = intersectBounds(fullRenderBounds, viewport);
+  result.elementBounds.set(element.id, transformedBounds);
+  if (!renderBounds) return;
+
+  const face = createCanvasSurface(
+    Math.max(1, Math.ceil(renderBounds.width * scale)),
+    Math.max(1, Math.ceil(renderBounds.height * scale)),
+  );
+  const faceContext = get2dContext(face);
+  faceContext.setTransform(scale, 0, 0, scale, -renderBounds.x * scale, -renderBounds.y * scale);
+  applyCanvasMatrix(faceContext, matrix);
+  const outline = shapeOutline(element);
+  const fills = element.effects.filter(
+    (effect): effect is FillEffect => effect.enabled && effect.kind === 'fill',
+  );
+
+  // An unfilled face still has to be opaque white, not empty: the effect stack reads coverage from
+  // alpha, so a stamp carrying only a stroke or a bevel needs a silhouette for them to work from.
+  if (fills.length === 0) {
+    faceContext.globalAlpha = 1;
+    faceContext.globalCompositeOperation = 'source-over';
+    faceContext.fillStyle = '#ffffff';
+    tracePath(faceContext, outline);
+    faceContext.fill();
+  } else {
+    for (const fill of fills) {
+      faceContext.globalAlpha = fill.opacity;
+      faceContext.globalCompositeOperation = mapBlendMode(fill.blendMode);
+      // Paints are built in the element's own box, so a gradient is laid out across the stamp and
+      // then carried by the matrix -- rotating the stamp rotates its gradient with it.
+      faceContext.fillStyle = createPaintStyle(faceContext, fill.paint, localBounds);
+      tracePath(faceContext, outline);
+      faceContext.fill();
+    }
   }
-  for (const message of unsupportedFontFeatures(element)) {
-    result.diagnostics.push({ elementId: element.id, severity: 'warning', message });
+
+  compositeFace(context, element, face, {
+    scale, viewport, effectViewport, globalLight, renderBounds, fullRenderBounds,
+  });
+}
+
+function tracePath(context: TextContext, path: PathData): void {
+  context.beginPath();
+  for (const command of path.commands) {
+    if (command.type === 'M') context.moveTo(command.point[0], command.point[1]);
+    else if (command.type === 'L') context.lineTo(command.point[0], command.point[1]);
+    else if (command.type === 'Q') {
+      context.quadraticCurveTo(command.control[0], command.control[1], command.point[0], command.point[1]);
+    } else if (command.type === 'C') {
+      context.bezierCurveTo(
+        command.control1[0], command.control1[1],
+        command.control2[0], command.control2[1],
+        command.point[0], command.point[1],
+      );
+    } else context.closePath();
   }
 }
 

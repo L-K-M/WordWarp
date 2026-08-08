@@ -52,6 +52,46 @@ test('edits text, applies a preset, and exports transparent PNG', async ({ page 
   await expect(page.getByLabel('Content')).toHaveValue('Chrome test');
 });
 
+test('places a stamp, styles it from the rack, and exports it over a background', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('./');
+  await expect(page.getByRole('button', { name: 'WordWarp GOO TYPE LAB' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Stamp', exact: true }).click();
+  await page.locator('.stamp-choice', { hasText: /^Bolt$/ }).click();
+
+  // Placing a stamp selects it, and the inspector should be showing stamp controls rather than
+  // the text ones -- the two share a panel, so this is what proves the branch switched.
+  await expect(page.getByLabel('Shape')).toHaveValue('bolt');
+  await expect(page.locator('.layer-main').filter({ hasText: 'Bolt' })).toBeVisible();
+
+  // A style from the rack has to land on a decoration the same way it lands on a word. Memphis
+  // Confetti carries a warp that a stamp has no use for; applying it must not throw.
+  await page.locator('#preset-search').fill('Memphis Confetti');
+  await page.locator('.preset-card').first().click();
+  await expect(page.locator('.effect-list li')).not.toHaveCount(0);
+
+  // A background turns the export opaque and stops it cropping to the artwork, so the exported
+  // frame should now be the full canvas rather than a tight crop around the content.
+  await page.locator('.background-swatch', { hasText: 'Violet' }).click();
+  await expect(page.locator('.canvas-status')).toContainText('GROUND');
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: /Export PNG/ }).click();
+  const download = await downloadPromise;
+  const downloadPath = await download.path();
+  if (!downloadPath) throw new Error('Playwright did not provide the downloaded PNG path');
+  const image = decode(await readFile(downloadPath));
+  expect(image.width).toBe(2400);
+  expect(image.height).toBe(1260);
+
+  // Every pixel is opaque with a background set, and the corner is the ground colour rather than
+  // anything the artwork put there.
+  expect(image.data[3]).toBe(255);
+  expect([image.data[0], image.data[1], image.data[2]]).toEqual([0x5b, 0x5b, 0xd6]);
+});
+
 test('renders a non-interactive dual-stroke selection outline', async ({ page }) => {
   await page.goto('./');
 
@@ -360,6 +400,103 @@ test('style library scrolls to every preset and previews the real render', async
   const distinct = await page.locator('.preset-preview img').evaluateAll((nodes) =>
     new Set(nodes.map((node) => (node as HTMLImageElement).src)).size);
   expect(distinct).toBeGreaterThan(4);
+});
+
+test('the style rack opens three across and resizes by pointer and keyboard', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.goto('./');
+
+  const columnCount = () => page.locator('.preset-grid').evaluate((node) =>
+    getComputedStyle(node).gridTemplateColumns.split(' ').length);
+  const rackWidth = () => page.locator('.preset-panel').evaluate((node) =>
+    Math.round(node.getBoundingClientRect().width));
+  const noOverflow = () => page.evaluate(() =>
+    document.documentElement.scrollWidth <= document.documentElement.clientWidth);
+
+  expect(await columnCount()).toBe(3);
+  const defaultWidth = await rackWidth();
+
+  // Dragging the splitter widens the rack, and the extra room becomes another column rather than
+  // wider cards -- the size stepper owns card width, the handle owns how many fit.
+  const handle = page.locator('.rack-resizer');
+  const grip = (await handle.boundingBox())!;
+  await page.mouse.move(grip.x + grip.width / 2, 400);
+  await page.mouse.down();
+  await page.mouse.move(860, 400, { steps: 10 });
+  await page.mouse.up();
+  await expect.poll(rackWidth).toBe(860);
+  expect(await columnCount()).toBe(4);
+  expect(await noOverflow()).toBe(true);
+
+  // Arrow keys drive the splitter. They must not also reach the canvas, where they nudge the
+  // selected element: the shortcut handler treats a focusable separator as its own control.
+  const selectionBefore = await page.locator('.selection-overlay rect').first().getAttribute('x');
+  await handle.focus();
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowLeft');
+  await expect.poll(rackWidth).toBe(812);
+  expect(await page.locator('.selection-overlay rect').first().getAttribute('x')).toBe(selectionBefore);
+
+  // The width outlives a reload, and double-clicking the handle puts it back.
+  await page.reload();
+  await expect(page.locator('.preset-card').first()).toBeVisible();
+  expect(await rackWidth()).toBe(812);
+  await handle.dblclick();
+  await expect.poll(rackWidth).toBe(defaultWidth);
+});
+
+test('the first arrow key moves a rack carried over from a wider display', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  // A width set on a big monitor, reopened on a laptop. CSS draws what fits, and the stored
+  // preference survives for the next wide window -- but stepping from the remembered width spent
+  // the first keypress travelling back down to what was already on screen, moving nothing.
+  await page.addInitScript(() => localStorage.setItem('wordwarp:rack-width', '900'));
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('./');
+
+  const rackWidth = () => page.locator('.preset-panel').evaluate((node) =>
+    Math.round(node.getBoundingClientRect().width));
+  const drawn = await rackWidth();
+  expect(drawn).toBe(1280 - 712);
+
+  await page.locator('.rack-resizer').focus();
+  await page.keyboard.press('ArrowLeft');
+  await expect.poll(rackWidth).toBe(drawn - 24);
+});
+
+test('the preview size stepper resizes style cards and stops at both ends', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.goto('./');
+
+  const cardWidth = () => page.locator('.preset-card').first().evaluate((node) =>
+    Math.round(node.getBoundingClientRect().width));
+  const smaller = page.getByRole('button', { name: 'Smaller previews' });
+  const larger = page.getByRole('button', { name: 'Larger previews' });
+  const readout = page.locator('.preset-size-controls output');
+
+  await expect(readout).toHaveText('M');
+  const defaultCard = await cardWidth();
+  // 40% wider than the 133px card the old two-across rack showed at a fixed 312px.
+  expect(defaultCard).toBeGreaterThanOrEqual(186);
+
+  await larger.click();
+  await expect(readout).toHaveText('L');
+  expect(await cardWidth()).toBeGreaterThan(defaultCard);
+
+  await smaller.click();
+  await smaller.click();
+  await expect(readout).toHaveText('S');
+  expect(await cardWidth()).toBeLessThan(defaultCard);
+
+  await smaller.click();
+  await expect(readout).toHaveText('XS');
+  await expect(smaller).toBeDisabled();
+
+  // The choice is a preference, so it survives a reload.
+  await page.reload();
+  await expect(page.locator('.preset-size-controls output')).toHaveText('XS');
 });
 
 test('Fit zoom fits the artboard and is idempotent', async ({ page }, testInfo) => {

@@ -1,7 +1,7 @@
 import { createEffect } from '../effects/defaults';
 import { createId } from '../lib/id';
 import { DOC_VERSION } from './types';
-import type { FillEffect, TextElement, WordWarpDocument } from './types';
+import type { FillEffect, Point, ShapeElement, StampId, TextElement, WordWarpDocument } from './types';
 
 interface DefaultOptions {
   documentId?: string;
@@ -19,6 +19,70 @@ export function createDefaultFill(id = createId()): FillEffect {
     opacity: 1,
     blendMode: 'normal',
     paint: { kind: 'ramp', rampId: 'chrome', angle: 90, variant: 1 },
+  };
+}
+
+/** Human-readable stamp names, for the layer name and the placement menu. */
+export const STAMP_LABELS: Record<StampId, string> = {
+  rectangle: 'Bar',
+  ellipse: 'Dot',
+  star: 'Star',
+  splat: 'Splat',
+  triangle: 'Triangle',
+  zigzag: 'Zigzag',
+  squiggle: 'Squiggle',
+  bolt: 'Bolt',
+  starburst: 'Starburst',
+  arch: 'Arch',
+  chevron: 'Chevron',
+  crown: 'Crown',
+  heart: 'Heart',
+};
+
+/**
+ * A freshly placed stamp.
+ *
+ * It arrives with a flat fill and a hard unblurred keyline rather than bare, because a decoration
+ * with no effects at all renders as a white silhouette and reads as a bug. This pairing is also
+ * the one the 1990s styles are built on, so a stamp looks like it belongs beside them the moment
+ * it lands, and every one of those presets can then be applied to it.
+ */
+export function createStampElement(
+  shape: StampId,
+  position: Point,
+  id = createId(),
+  fillId = createId(),
+): ShapeElement {
+  const fill = createDefaultFill(fillId);
+  fill.paint = { kind: 'solid', color: [1, 0.37, 0.24, 1] };
+  const keyline = createEffect('stroke');
+  keyline.width = 5;
+  keyline.paint = { kind: 'solid', color: [0.08, 0.08, 0.14, 1] };
+  return {
+    id,
+    type: 'shape',
+    name: STAMP_LABELS[shape],
+    visible: true,
+    locked: false,
+    opacity: 1,
+    blendMode: 'normal',
+    transform: {
+      x: position[0],
+      y: position[1],
+      rotation: 0,
+      scaleX: 1,
+      scaleY: 1,
+      skewX: 0,
+      skewY: 0,
+      originX: 0.5,
+      originY: 0.5,
+    },
+    effects: [fill, keyline],
+    animations: [],
+    shape,
+    width: 180,
+    height: 180,
+    path: null,
   };
 }
 

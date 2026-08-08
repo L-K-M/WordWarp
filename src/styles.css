@@ -20,6 +20,12 @@
   --mint: #b8f0e2;
   --foam: #e8fbf4;
 
+  /* Style-rack geometry. The app shell restates both from the editor store, which is where the
+     resize handle and the preview-size stepper write; these are the values a document gets before
+     React mounts, and the fallback if it never does. Keep them in step with `editor-store.ts`. */
+  --rack-user-width: 636px;
+  --preset-size: 186px;
+
   /* The canvas selection outline is pinned: browser tests assert this exact stroke colour. */
   --cyan: #48e4ff;
   --pink: #ff5fb0;
@@ -520,8 +526,14 @@ button:disabled {
 }
 
 .workspace {
+  /* The store already clamps what the drag handle writes, but only against the window as it was
+     when the user let go. Restating the limit here is what keeps a window resized *afterwards*
+     from leaving the grid wider than its container. */
+  --rack-width: clamp(240px, var(--rack-user-width), calc(100vw - 712px));
+
+  position: relative;
   display: grid;
-  grid-template-columns: 312px minmax(360px, 1fr) 352px;
+  grid-template-columns: var(--rack-width) minmax(360px, 1fr) 352px;
 
   /* The single implicit row would stretch to fill a definite-height container anyway, but saying
      so explicitly keeps the panels bounded if a second row is ever added here. */
@@ -534,7 +546,57 @@ button:disabled {
 }
 
 .workspace.right-closed {
-  grid-template-columns: 312px minmax(360px, 1fr) 0;
+  grid-template-columns: var(--rack-width) minmax(360px, 1fr) 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Rack resize handle
+   --------------------------------------------------------------------------- */
+
+.rack-resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--rack-width);
+  z-index: 26;
+  display: grid;
+  width: 16px;
+  margin-left: -8px;
+  place-items: center;
+  background: transparent;
+  cursor: col-resize;
+
+  /* Without this a drag on a touch screen scrolls the panel instead of moving the handle. */
+  touch-action: none;
+}
+
+.rack-resizer-grip {
+  width: 6px;
+  height: 64px;
+  border-radius: 999px;
+  background: rgb(23 183 189 / 55%);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 40%);
+  transition: background 120ms ease, height 120ms ease, box-shadow 120ms ease;
+}
+
+.rack-resizer:hover .rack-resizer-grip,
+.rack-resizer:active .rack-resizer-grip {
+  height: 108px;
+  background: var(--yellow);
+  box-shadow: 0 0 14px rgb(255 216 74 / 55%);
+}
+
+/* The handle is a 16px strip of mostly empty space, so the ring goes on the grip that is actually
+   visible rather than around a sliver of background. */
+.rack-resizer:focus-visible {
+  outline: none;
+}
+
+.rack-resizer:focus-visible .rack-resizer-grip {
+  height: 108px;
+  background: var(--yellow);
+  outline: 3px solid var(--yellow);
+  outline-offset: 3px;
 }
 
 .workspace.left-closed.right-closed {
@@ -659,11 +721,49 @@ button:disabled {
   padding: 0 16px 16px;
 }
 
+/* Preview size drives the column count rather than the other way round: the stepper sets the card
+   width, and the rack's own width decides how many of them fit.
+
+   The stepper's size is a hard floor. Letting cards shrink a little to fit one more column packed
+   narrow racks better, but it cost the stepper its meaning: at the default width, stepping M to L
+   bought another column instead of a bigger card, so the control looked broken -- and dragging the
+   rack wider could make cards smaller. The narrow end is handled where it belongs, by the size the
+   rack opens at (see `editor-store.ts`). `min()` keeps the track from overflowing a rack dragged
+   narrower than a single card. */
 .preset-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(var(--preset-size), 100%), 1fr));
   gap: 14px;
   padding: 0 16px 20px;
+}
+
+.preset-size-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 16px 16px;
+  color: var(--mint);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.preset-size-controls {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.preset-size-controls .orb-xs {
+  min-width: 40px;
+  padding: 0 12px;
+}
+
+.preset-size-controls .jelly-pill {
+  min-width: 54px;
 }
 
 .preset-card {
@@ -768,6 +868,8 @@ button:disabled {
 }
 
 .canvas-toolbar {
+  /* Positioned so the stamp menu can hang off the toolbar rather than off the page. */
+  position: relative;
   display: flex;
   min-width: 0;
   align-items: center;
@@ -1641,6 +1743,8 @@ button:disabled {
     overflow: hidden;
   }
 
+  /* An overlay costs the canvas nothing, so it keeps whatever width the user set on the desktop
+     layout -- capped short of the full window, which leaves the canvas visible behind it. */
   .workspace:not(.left-closed) .preset-panel {
     position: fixed;
     top: 88px;
@@ -1648,7 +1752,7 @@ button:disabled {
     left: 0;
     z-index: 30;
     visibility: visible;
-    width: 320px;
+    width: min(var(--rack-user-width), 86vw);
     border-radius: 0 26px 26px 0;
     box-shadow: 20px 0 50px rgb(0 0 0 / 45%);
   }
@@ -1874,4 +1978,100 @@ button:disabled {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+/* The stamp menu drops out of the canvas toolbar, so it has to leave the toolbar's flow entirely:
+   in-flow it would push the artboard down every time it opened. */
+.stamp-menu {
+  position: absolute;
+  z-index: 6;
+  top: 100%;
+  left: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 6px;
+  width: min(430px, calc(100% - 24px));
+  padding: 10px;
+  border: 2px solid var(--gel-line);
+  border-radius: 16px;
+  background: var(--pool);
+  box-shadow: 0 12px 28px rgb(0 0 0 / 45%);
+}
+
+.stamp-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: rgb(23 183 189 / 12%);
+  color: var(--foam);
+  font: inherit;
+  font-size: 0.68rem;
+  cursor: pointer;
+}
+
+.stamp-choice:hover,
+.stamp-choice:focus-visible {
+  border-color: var(--gel-bright);
+  background: rgb(23 183 189 / 26%);
+}
+
+.stamp-choice svg {
+  width: 30px;
+  height: 30px;
+}
+
+/* Icons come from the stamp generators, which emit outlines rather than strokes, so they are
+   filled. `nonzero` keeps a self-overlapping outline solid instead of punching holes in itself. */
+.stamp-choice path {
+  fill: var(--cream);
+  fill-rule: nonzero;
+}
+
+.background-swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.background-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 2px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: rgb(23 183 189 / 12%);
+  color: var(--foam);
+  font: inherit;
+  font-size: 0.66rem;
+  cursor: pointer;
+}
+
+.background-swatch.active {
+  border-color: var(--gel-bright);
+}
+
+.background-swatch > span:first-child {
+  width: 100%;
+  height: 20px;
+  border: 1px solid rgb(0 0 0 / 35%);
+  border-radius: 7px;
+}
+
+/* The "no background" chip has to show transparency rather than name it, so it carries the same
+   chequerboard the artboard uses behind an empty canvas. */
+.background-none {
+  background-image:
+    linear-gradient(45deg, rgb(255 255 255 / 22%) 25%, transparent 25%),
+    linear-gradient(-45deg, rgb(255 255 255 / 22%) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgb(255 255 255 / 22%) 75%),
+    linear-gradient(-45deg, transparent 75%, rgb(255 255 255 / 22%) 75%);
+  background-position: 0 0, 0 5px, 5px -5px, -5px 0;
+  background-size: 10px 10px;
 }

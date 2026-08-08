@@ -1,7 +1,22 @@
 import alea from 'alea';
 import { createNoise2D } from 'simplex-noise';
 
-import type { AnimationTrack, Effect, Paint, Rgba, TextElement, WordWarpDocument } from '../model/types';
+import type {
+  AnimationTrack, Effect, Element, Paint, Rgba, ShapeElement, TextElement, WordWarpDocument,
+} from '../model/types';
+
+/**
+ * An element a track can drive.
+ *
+ * Most tracks move a transform or retune an effect, and neither is text-specific -- so a stamp
+ * animates on the same code path a word does. The two that genuinely are text-specific, the warp
+ * bend and the typewriter reveal, guard themselves where they are applied.
+ */
+type AnimatedElement = TextElement | ShapeElement;
+
+function isAnimatable(element: Element): element is AnimatedElement {
+  return element.type === 'text' || element.type === 'shape';
+}
 
 const noiseCache = new Map<number, ReturnType<typeof createNoise2D>>();
 const graphemeSegmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
@@ -34,9 +49,9 @@ export function evaluateDocumentAtTime(document: WordWarpDocument, normalizedTim
   const loopTime = modulo(normalizedTime, 1);
   const sourceElements = new Map(document.elements.map((element) => [element.id, element]));
   for (const element of evaluated.elements) {
-    if (element.type !== 'text') continue;
+    if (!isAnimatable(element)) continue;
     const source = sourceElements.get(element.id);
-    if (source?.type !== 'text') continue;
+    if (!source || !isAnimatable(source)) continue;
     for (const track of element.animations) {
       if (!track.enabled) continue;
       if (track.stagger) throw new Error('Per-character animation staggering is not supported yet');
@@ -49,7 +64,7 @@ export function evaluateDocumentAtTime(document: WordWarpDocument, normalizedTim
   return evaluated;
 }
 
-function applyTrack(element: TextElement, source: TextElement, track: AnimationTrack, phase: number): void {
+function applyTrack(element: AnimatedElement, source: AnimatedElement, track: AnimationTrack, phase: number): void {
   const cycle = Math.sin(phase * Math.PI * 2);
   const amount = numberParam(track, 'amount', 0.15);
   if (track.kind === 'pulse') {
@@ -62,6 +77,10 @@ function applyTrack(element: TextElement, source: TextElement, track: AnimationT
   } else if (track.kind === 'extrudeSpin') {
     forEachEffect(element, 'extrude', (effect) => { effect.angle += phase * 360; });
   } else if (track.kind === 'waveUndulate') {
+    // A warp is an envelope around laid-out text. A stamp is geometry and has no envelope, so
+    // there is nothing here to bend -- the track stays a no-op rather than an error, so a preset
+    // carrying one can still be applied to a stamp for the rest of its stack.
+    if (element.type !== 'text' || source.type !== 'text') return;
     element.warp.adj[1] = phase;
     element.warp.bend = clamp(source.warp.bend + cycle * amount, -2, 2);
   } else if (track.kind === 'neonFlicker') {
@@ -97,6 +116,7 @@ function applyTrack(element: TextElement, source: TextElement, track: AnimationT
   } else if (track.kind === 'glossSweep') {
     forEachEffect(element, 'reflection', (effect) => { effect.offset += (phase * 2 - 1) * 20; });
   } else if (track.kind === 'typewriter') {
+    if (element.type !== 'text' || source.type !== 'text') return;
     const reveal = phase < 0.7 ? phase / 0.7 : 1 - (phase - 0.7) / 0.3;
     const characters = Array.from(graphemeSegmenter.segment(source.text), ({ segment }) => segment);
     element.text = characters.slice(0, Math.floor(clamp(reveal, 0, 1) * (characters.length + 1))).join('');
@@ -104,7 +124,7 @@ function applyTrack(element: TextElement, source: TextElement, track: AnimationT
 }
 
 function forEachEffect<Kind extends Effect['kind']>(
-  element: TextElement,
+  element: AnimatedElement,
   kind: Kind,
   callback: (effect: Extract<Effect, { kind: Kind }>) => void,
 ): void {
@@ -114,7 +134,7 @@ function forEachEffect<Kind extends Effect['kind']>(
 }
 
 function forEachPost(
-  element: TextElement,
+  element: AnimatedElement,
   type: Extract<Effect, { kind: 'post' }>['type'],
   callback: (effect: Extract<Effect, { kind: 'post' }>) => void,
 ): void {
