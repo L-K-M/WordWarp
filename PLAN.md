@@ -1132,9 +1132,18 @@ equals the value at `t=0`.
 
 ### 13.3 Export budget
 
-Defaults: 24 fps, 2 s loop, 48 frames. UI shows an estimated file size live and warns past 5 MB.
-Frames render sequentially into the same FBO chain and are handed to the encoder in a Worker, so
-memory stays bounded at one frame plus the encoder's buffer.
+Planned defaults were 24 fps, 2 s loop, 48 frames. What ships is 12 fps over the same 2 s loop —
+24 frames — and no frame-rate control is exposed yet, so `exportAnimation`'s own default is the
+only rate a user can get. UI shows an estimated file size live and warns past 5 MB.
+
+Frames render sequentially into the same FBO chain, but memory is **not** bounded at one frame:
+APNG builds a single palette across the whole sequence, so `UPNG.encode` cannot start until the
+last frame exists and the worker holds `width * height * 4 * frameCount` bytes of raw RGBA. That
+figure grows with the square of the export scale, so the ceiling has to be generous enough to pay
+for the app's own defaults — an untouched document is 1776 × 676 at the default 2× resolution,
+which is 110 MB over a 2 s loop at 12 fps. `MAX_RAW_FRAME_BYTES` is 256 MB, and an export that
+does not fit has its frame rate lowered (never below ~5 fps, and the reduction is reported) rather
+than being rejected outright.
 
 ---
 
