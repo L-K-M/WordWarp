@@ -819,6 +819,9 @@ export const BUILT_IN_PRESETS: Preset[] = [
     { id: 'aurora-hue', kind: 'hueCycle', enabled: true, duration: 9, params: {}, seed: 21 },
     { id: 'aurora-ripple', kind: 'waveUndulate', enabled: true, duration: 5, params: { amount: 0.12 }, seed: 22 },
   ]),
+  definePreset('slime-time', 'Slime Time', 'nineties', ['#c9ff4a', '#12a02e', '#083f16', '#eaffb0'], [
+    shadow('#0d3b0d', 8, 10, 0.5), fill(gradient(['#c9ff4a', '#4ddb33', '#12a02e', '#0a5c1a'], 100)), bevel(26, 'pillow', 210), innerGlow('#eaffb0', 12, 0.5), stroke(3, '#083f16'),
+  ], warp('textInflateBottom', 0.65, 0.6), ['slime', 'goo', 'nickelodeon']),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {
