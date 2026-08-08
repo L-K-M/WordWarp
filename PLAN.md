@@ -1197,8 +1197,8 @@ content or transform:
 export interface Preset {
   id: string;
   name: string;
-  category: 'metallic' | 'synthwave' | 'y2k' | 'nineties' | 'dimensional' | 'texture' | 'sweets' | 'spooky' | 'user';
-  category: 'metallic' | 'synthwave' | 'y2k' | 'nineties' | 'dimensional' | 'texture' | 'cosmic' | 'user';
+  category: 'metallic' | 'synthwave' | 'y2k' | 'nineties' | 'dimensional' | 'texture'
+    | 'sweets' | 'spooky' | 'cosmic' | 'user';
   tags: string[];
   author?: string;
   thumbnail?: string;           // pre-rendered WebP for the built-ins
