@@ -144,6 +144,23 @@ describe('transform handles', () => {
       expect(locked.scaleX / locked.scaleY).toBeCloseTo(0.5);
     });
 
+    /**
+     * The aspect a constrained drag holds is the aspect of the *sizes*, which is what the lock is
+     * for. Crossing the anchor is a separate statement about which side of it the element sits on,
+     * and it is made one axis at a time -- so a corner taken past the anchor sideways only comes
+     * back mirrored sideways, at the proportions it went in with, rather than flipping both ways.
+     */
+    it('mirrors one axis under a constrained drag without disturbing the proportions', () => {
+      const transform = transformOf({ scaleX: 1, scaleY: 2 });
+      // The anchor is the top-left corner, at (300, 200); this lands well to the left of it and
+      // below, so the horizontal ratio goes negative while the vertical one stays positive.
+      const next = drag('se', transform, [200, 400], true);
+
+      expect(next.scaleX).toBeCloseTo(-1);
+      expect(next.scaleY).toBeCloseTo(2);
+      expect(Math.abs(next.scaleX / next.scaleY)).toBeCloseTo(0.5);
+    });
+
     it('mirrors rather than collapsing when dragged past the anchor', () => {
       const next = drag('e', transformOf(), [200, 300]);
 

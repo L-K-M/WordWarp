@@ -1,4 +1,7 @@
-import { useDeferredValue, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import {
+  useDeferredValue, useEffect, useLayoutEffect, useRef, useState,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 
 import { containsPoint } from '../geometry/bounds';
 import {
@@ -118,6 +121,16 @@ export function DocumentCanvas({
     if (!drag) return;
     dragRef.current = null;
     drag.finish?.();
+  }, []);
+
+  // Measured before the first paint rather than waiting for the observer. Both the render pass
+  // that fills `frames` and the observer's callback reach React as ordinary updates, and React is
+  // free to commit them in separate frames -- so the handles could reach the screen once at the
+  // placeholder scale. A layout effect closes that window and covers a browser with no
+  // ResizeObserver at all, where the observer below never runs.
+  useLayoutEffect(() => {
+    const width = canvasRef.current?.clientWidth ?? 0;
+    if (width > 0) setLayoutWidth(width);
   }, []);
 
   useEffect(() => {

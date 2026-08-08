@@ -347,16 +347,21 @@ export function App() {
     });
   };
 
+  /**
+   * `mergeKey` is for controls that emit a stream: a slider dragged across its track is one edit,
+   * not forty. A button press is already one edit, so it passes `undefined` -- sharing a key would
+   * fold two deliberate presses inside the merge window into a single history entry.
+   */
   const updateSelectedTransform = (
     label: string,
-    mergeKey: string,
+    mergeKey: string | undefined,
     change: (transform: Transform) => void,
   ) => {
     if (!selectedElement) return;
     updateDocument(label, (draft) => {
       const element = draft.elements.find((candidate) => candidate.id === selectedElement.id);
       if (element && !element.locked) change(element.transform);
-    }, `${mergeKey}:${selectedElement.id}`);
+    }, mergeKey === undefined ? undefined : `${mergeKey}:${selectedElement.id}`);
   };
 
   /**
@@ -424,7 +429,7 @@ export function App() {
             className="orb orb-xs orb-berry"
             type="button"
             aria-pressed={element.transform[axis] < 0}
-            onClick={() => updateSelectedTransform('Mirror element', `flip-${axis}`, (transform) => {
+            onClick={() => updateSelectedTransform('Mirror element', undefined, (transform) => {
               transform[axis] = -transform[axis];
             })}
           >
@@ -457,7 +462,7 @@ export function App() {
       <button
         className="orb orb-xs orb-grape"
         type="button"
-        onClick={() => updateSelectedTransform('Reset transform', 'reset', (transform) => {
+        onClick={() => updateSelectedTransform('Reset transform', undefined, (transform) => {
           // Position is deliberately left alone: this undoes the shaping, not the placement.
           transform.rotation = 0;
           transform.scaleX = 1;
