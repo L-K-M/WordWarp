@@ -63,7 +63,10 @@ export async function renderPresetPreviewAsync(preset: Preset): Promise<string |
   if (cache.has(preset.id)) return cache.get(preset.id);
   let render = inflight.get(preset.id);
   if (!render) {
-    render = (async () => {
+    // Defer the body to a microtask: an async IIFE runs synchronously until its first await, so
+    // a synchronous throw from previewDocument would resolve the promise and run the finally's
+    // delete BEFORE inflight.set stored anything -- caching a permanent undefined for the preset.
+    render = Promise.resolve().then(async () => {
       try {
         const doc = previewDocument(preset);
         await ensureFontsForDocument(doc);
@@ -73,7 +76,7 @@ export async function renderPresetPreviewAsync(preset: Preset): Promise<string |
       } finally {
         inflight.delete(preset.id);
       }
-    })();
+    });
     inflight.set(preset.id, render);
   }
   return render;

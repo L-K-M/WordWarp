@@ -35,7 +35,7 @@ export function FontPicker({ value, onPick }: FontPickerProps) {
   const options: FontCatalogEntry[] = useMemo(
     () => known && !known.ui
       ? [...DOCUMENT_FONTS]
-      : [{ family: value, source: 'local', weight: known?.weight ?? 400, tag: known?.tag ?? 'system' }, ...DOCUMENT_FONTS],
+      : [{ family: value, source: known?.source ?? 'local', weight: known?.weight ?? 400, tag: known?.tag ?? 'system' }, ...DOCUMENT_FONTS],
     [known, value],
   );
 
