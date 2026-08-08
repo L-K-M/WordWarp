@@ -378,6 +378,25 @@ test('the style rack opens three across and resizes by pointer and keyboard', as
   await expect.poll(rackWidth).toBe(defaultWidth);
 });
 
+test('the first arrow key moves a rack carried over from a wider display', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  // A width set on a big monitor, reopened on a laptop. CSS draws what fits, and the stored
+  // preference survives for the next wide window -- but stepping from the remembered width spent
+  // the first keypress travelling back down to what was already on screen, moving nothing.
+  await page.addInitScript(() => localStorage.setItem('wordwarp:rack-width', '900'));
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('./');
+
+  const rackWidth = () => page.locator('.preset-panel').evaluate((node) =>
+    Math.round(node.getBoundingClientRect().width));
+  const drawn = await rackWidth();
+  expect(drawn).toBe(1280 - 712);
+
+  await page.locator('.rack-resizer').focus();
+  await page.keyboard.press('ArrowLeft');
+  await expect.poll(rackWidth).toBe(drawn - 24);
+});
+
 test('the preview size stepper resizes style cards and stops at both ends', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium');
   await page.setViewportSize({ width: 1600, height: 900 });

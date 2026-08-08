@@ -52,8 +52,11 @@ export function RackResizer({ width, onResize, onReset }: RackResizerProps) {
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const step = event.shiftKey ? KEY_STEP_COARSE : KEY_STEP;
-    if (event.key === 'ArrowLeft') onResize(width - step);
-    else if (event.key === 'ArrowRight') onResize(width + step);
+    // Stepped from the width on screen, not the width being remembered. A preference carried over
+    // from a wider display is already clamped by the time it is drawn, so stepping from it spent
+    // the first keypress travelling back down to what was on screen -- the handle did not move.
+    if (event.key === 'ArrowLeft') onResize(drawnWidth - step);
+    else if (event.key === 'ArrowRight') onResize(drawnWidth + step);
     else if (event.key === 'Home') onResize(RACK_MIN_WIDTH);
     else if (event.key === 'End') onResize(maxRackWidth(viewportWidth));
     else if (event.key === 'Enter' || event.key === ' ') onReset();
