@@ -123,6 +123,25 @@ function generate(shape: StampId, width: number, height: number): PathData {
     case 'arch': return arch(width, height);
     case 'chevron': return chevron(width, height);
     case 'heart': return heart(width, height);
+    // Memphis and sticker-book staples: the shapes a 90s sheet actually printed beyond the original
+    // thirteen. Each is its own generator so it rebuilds exactly at any size.
+    case 'cross': return normalizedPolygon(CROSS, width, height);
+    case 'diamond': return normalizedPolygon(GEM, width, height);
+    case 'sparkle': return sparkle(width, height);
+    case 'cloud': return cloud(width, height);
+    case 'flower': return flower(width, height);
+    case 'arrow': return normalizedPolygon(ARROW, width, height);
+    case 'drop': return drop(width, height);
+    // Horror icons. The catalogue was 90s-only; these match the spooky presets that already shipped.
+    case 'crescent': return crescent(width, height);
+    case 'ghost': return ghost(width, height);
+    case 'bat': return normalizedPolygon(BAT, width, height);
+    case 'pumpkin': return pumpkin(width, height);
+    case 'tombstone': return tombstone(width, height);
+    case 'coffin': return normalizedPolygon(COFFIN, width, height);
+    // Cosmic accents for the cosmic presets.
+    case 'sun': return polygon(radialPoints(width, height, 8, 0.7));
+    case 'comet': return comet(width, height);
   }
 }
 
@@ -145,6 +164,37 @@ const BOLT: readonly Point[] = [
 /** Three-point crown on a solid base band. */
 const CROWN: readonly Point[] = [
   [0, 1], [0, 0.28], [0.22, 0.6], [0.5, 0.1], [0.78, 0.6], [1, 0.28], [1, 1],
+];
+
+/** A symmetric plus: twelve corners traced around the outside. */
+const CROSS: readonly Point[] = [
+  [1 / 3, 0], [2 / 3, 0], [2 / 3, 1 / 3], [1, 1 / 3], [1, 2 / 3], [2 / 3, 2 / 3],
+  [2 / 3, 1], [1 / 3, 1], [1 / 3, 2 / 3], [0, 2 / 3], [0, 1 / 3], [1 / 3, 1 / 3],
+];
+
+/** Brilliant-cut gem: a table on top, girdle at the sides, a single point at the culet. */
+const GEM: readonly Point[] = [
+  [0.3, 0], [0.7, 0], [1, 0.46], [0.5, 1], [0, 0.46],
+];
+
+/** Chunky right-pointing arrow: a bar with a triangular head. */
+const ARROW: readonly Point[] = [
+  [0, 0.34], [0.55, 0.34], [0.55, 0.04], [1, 0.5], [0.55, 0.96], [0.55, 0.66], [0, 0.66],
+];
+
+/** Stylised bat, drawn as one symmetric outline. Left half authored, right half mirrored. */
+const BAT_LEFT: readonly Point[] = [
+  [0.5, 0.12], [0.4, 0.06], [0.25, 0.14], [0.05, 0.05], [0, 0.32], [0.16, 0.3],
+  [0.09, 0.52], [0.26, 0.42], [0.21, 0.68], [0.39, 0.5], [0.5, 0.86],
+];
+const BAT: readonly Point[] = [
+  ...BAT_LEFT,
+  ...BAT_LEFT.slice(0, -1).reverse().map(([x, y]): Point => [1 - x, y]),
+];
+
+/** Toe-pincher coffin: narrow head, shoulders, hips tapering to a foot. */
+const COFFIN: readonly Point[] = [
+  [0.34, 0], [0.66, 0], [0.84, 0.32], [0.84, 0.66], [0.5, 1], [0.16, 0.66], [0.16, 0.32],
 ];
 
 /**
@@ -312,6 +362,224 @@ function heart(width: number, height: number): PathData {
   path.cubic(x(0.53), y(0.08), x(0.6), y(0.02), x(0.7), y(0.02));
   path.cubic(x(0.86), y(0.02), x(1), y(0.12), x(1), y(0.3));
   path.cubic(x(1), y(0.45), x(0.85), y(0.68), x(0.5), y(0.95));
+  path.close();
+  return path.build();
+}
+
+/**
+ * Points along a circular or elliptical arc, for the shapes with no exact Bezier form.
+ *
+ * Returns `steps + 1` points so two arcs can be concatenated without a doubled point at the seam
+ * by dropping the first point of the second arc. Angles are radians; `sweep` may be negative to
+ * travel clockwise, and may be more than a full turn.
+ */
+function arcPoints(
+  cx: number, cy: number, rx: number, ry: number, start: number, sweep: number, steps: number,
+): Point[] {
+  const points: Point[] = [];
+  for (let index = 0; index <= steps; index += 1) {
+    const angle = start + (index / steps) * sweep;
+    points.push([cx + Math.cos(angle) * rx, cy + Math.sin(angle) * ry]);
+  }
+  return points;
+}
+
+/**
+ * Four-point sparkle: each tip joined to the next by a cubic whose controls sit part-way from the
+ * tip toward the centre. That is what turns a square of tips into the concave-sided "kirakira"
+ * spike rather than a loop — controls at the centre pinch to a near-astroid, controls at the tips
+ * collapse to a diamond, and `SPIKE_CONTROL` picks the readable point between them.
+ */
+const SPIKE_CONTROL = 0.55;
+
+function sparkle(width: number, height: number): PathData {
+  const cx = width / 2;
+  const cy = height / 2;
+  const tips: readonly Point[] = [[cx, 0], [width, cy], [cx, height], [0, cy]];
+  const toward = (p: Point): Point => [p[0] + SPIKE_CONTROL * (cx - p[0]), p[1] + SPIKE_CONTROL * (cy - p[1])];
+  const path = pathBuilder();
+  path.move(cx, 0);
+  for (let index = 0; index < tips.length; index += 1) {
+    const start = tips[index]!;
+    const end = tips[(index + 1) % tips.length]!;
+    const c1 = toward(start);
+    const c2 = toward(end);
+    path.cubic(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+  }
+  path.close();
+  return path.build();
+}
+
+/**
+ * A puffy cloud: a flat floor with five humps across the top, drawn with cubics and built
+ * symmetrically so it sits level rather than lopsided.
+ */
+function cloud(width: number, height: number): PathData {
+  const x = (value: number) => value * width;
+  const y = (value: number) => value * height;
+  const floor = 0.82;
+  const path = pathBuilder();
+  path.move(x(0.16), y(floor));
+  path.line(x(0.84), y(floor));
+  // Right flank up into the rightmost hump, then humps across to the left flank. Each hump is a
+  // cubic whose control points pull up and out of its centre; the trough between humps stays above
+  // the floor so the silhouette keeps a connected top.
+  path.cubic(x(0.96), y(floor), x(1.0), y(0.58), x(0.86), y(0.5));
+  path.cubic(x(0.78), y(0.3), x(0.66), y(0.3), x(0.62), y(0.5));
+  path.cubic(x(0.58), y(0.2), x(0.42), y(0.2), x(0.38), y(0.5));
+  path.cubic(x(0.34), y(0.3), x(0.22), y(0.3), x(0.14), y(0.5));
+  path.cubic(x(0.0), y(0.58), x(0.04), y(floor), x(0.16), y(floor));
+  path.close();
+  return path.build();
+}
+
+/** A six-petal daisy: a smooth closed path through alternating petal-tips and inner points. */
+function flower(width: number, height: number): PathData {
+  // 0.36 keeps the petals rounded without closing the gaps between them: smaller and the flower
+  // turns into a thin cog, larger and the petals merge into a near-circle.
+  return smoothClosedPath(radialPoints(width, height, 6, 0.36));
+}
+
+/**
+ * A teardrop: pointed at the top, round at the bottom. Built symmetrically so the point sits on
+ * the centreline and the bulb is even.
+ */
+function drop(width: number, height: number): PathData {
+  const x = (value: number) => value * width;
+  const y = (value: number) => value * height;
+  const path = pathBuilder();
+  path.move(x(0.5), y(0));
+  path.cubic(x(0.18), y(0.34), x(0), y(0.56), x(0), y(0.74));
+  path.cubic(x(0), y(0.92), x(0.22), y(1), x(0.5), y(1));
+  path.cubic(x(0.78), y(1), x(1), y(0.92), x(1), y(0.74));
+  path.cubic(x(1), y(0.56), x(0.82), y(0.34), x(0.5), y(0));
+  path.close();
+  return path.build();
+}
+
+/**
+ * A crescent moon, as the difference of two circles: an outer arc bulging left and an inner arc
+ * (offset right) carving the bite. Both arcs are sampled, which is the same approach `squiggle`
+ * already takes for a curve with no Bezier form.
+ */
+function crescent(width: number, height: number): PathData {
+  const cx = width / 2;
+  const cy = height / 2;
+  const rx = width / 2;
+  const ry = height / 2;
+  const biteOffset = width * 0.15;
+  // The two ellipses (outer, and bite shifted right by `biteOffset`) cross where x is the midpoint
+  // of their centres. The crossing angle around each centre is `halfAngle`, with cos(halfAngle) the
+  // ratio of half the offset to the radius.
+  const halfAngle = Math.acos((biteOffset / 2) / rx);
+  // Outer arc: top crossing (-halfAngle) clockwise all the way around, through the left, to the
+  // bottom crossing. The sweep is the long way: a full turn minus the two half-angles.
+  const outer = arcPoints(cx, cy, rx, ry, -halfAngle, -(Math.PI * 2 - 2 * halfAngle), 64);
+  // Bite arc: bottom crossing (pi - halfAngle) counter-clockwise through the left (pi) to the top
+  // crossing. The sweep is the short way across the bite ellipse's left side: two half-angles.
+  const bite = arcPoints(cx + biteOffset, cy, rx, ry, Math.PI - halfAngle, 2 * halfAngle, 64).slice(1);
+  return polygon([outer[0]!, ...outer.slice(1), ...bite]);
+}
+
+/**
+ * A cartoon ghost: a rounded dome for the head, straight sides, and four scalloped feet along the
+ * hem. Symmetric about the centreline.
+ */
+function ghost(width: number, height: number): PathData {
+  const x = (value: number) => value * width;
+  const y = (value: number) => value * height;
+  const hem = 0.8;
+  const foot = 0.98;
+  const path = pathBuilder();
+  path.move(x(0), y(hem - 0.25));
+  path.cubic(x(0), y(0.22), x(0.22), y(0), x(0.5), y(0));
+  path.cubic(x(0.78), y(0), x(1), y(0.22), x(1), y(hem - 0.25));
+  path.line(x(1), y(hem));
+  // Four feet, each a cubic dipping to `foot` and back to the hem, evenly spaced and mirrored.
+  path.cubic(x(0.92), y(foot), x(0.83), y(foot), x(0.75), y(hem));
+  path.cubic(x(0.67), y(foot), x(0.58), y(foot), x(0.5), y(hem));
+  path.cubic(x(0.42), y(foot), x(0.33), y(foot), x(0.25), y(hem));
+  path.cubic(x(0.17), y(foot), x(0.08), y(foot), x(0), y(hem));
+  path.close();
+  return path.build();
+}
+
+/**
+ * A pumpkin: a lobed body of six vertical ribs with a stem tabbed on top. The body is a sampled
+ * circle whose radius is modulated by a cosine so the ribs are smooth, and the stem is traced as
+ * part of the same outline so one fill covers both.
+ */
+function pumpkin(width: number, height: number): PathData {
+  const stemLeft = 0.42;
+  const stemRight = 0.58;
+  const stemTop = 0.02;
+  const stemBase = 0.18;
+  const cx = width / 2;
+  const cy = height * 0.58;
+  const rx = width / 2;
+  const ry = height * 0.42;
+  // Ribbed body, sampled. The ribs come from a six-lobed cosine on the radius.
+  const steps = 120;
+  const body: Point[] = [];
+  for (let index = 0; index <= steps; index += 1) {
+    const angle = Math.PI / 2 - (index / steps) * Math.PI * 2;
+    const rib = 1 + 0.05 * Math.cos(6 * (Math.PI / 2 - angle));
+    body.push([cx + Math.cos(angle) * rx * rib, cy + Math.sin(angle) * ry * rib]);
+  }
+  const x = (value: number) => value * width;
+  const y = (value: number) => value * height;
+  // Two closed contours in one path: the stem rectangle, then the body loop. `nonzero` (the fill
+  // rule the renderer and the menu icon both use) fills their union, and the body's shoulders show
+  // either side of the stem because the stem only covers the centreline.
+  const path = pathBuilder();
+  path.move(x(stemLeft), y(stemTop));
+  path.line(x(stemRight), y(stemTop));
+  path.line(x(stemRight), y(stemBase));
+  path.line(x(stemLeft), y(stemBase));
+  path.close();
+  body.forEach(([bx, by], index) => (index === 0 ? path.move(bx, by) : path.line(bx, by)));
+  path.close();
+  return path.build();
+}
+
+/** A gravestone: a semicircular dome crowning a rectangular shaft. Symmetric about the centreline. */
+function tombstone(width: number, height: number): PathData {
+  const x = (value: number) => value * width;
+  const y = (value: number) => value * height;
+  const ox = (width / 2) * KAPPA;
+  const oy = (height / 2) * KAPPA;
+  const mid = 0.5;
+  const path = pathBuilder();
+  path.move(x(0), y(mid));
+  path.cubic(x(0), y(mid) - oy, x(0.5) - ox, y(0), x(0.5), y(0));
+  path.cubic(x(0.5) + ox, y(0), x(1), y(mid) - oy, x(1), y(mid));
+  path.line(x(1), y(1));
+  path.line(x(0), y(1));
+  path.close();
+  return path.build();
+}
+
+/**
+ * A comet: a round head with a tapered tail streaming out to one side. The head is a sampled arc
+ * (the major arc that faces away from the tail) and the tail is a triangle whose base meets the
+ * head and whose apex is the off-side edge of the box.
+ */
+function comet(width: number, height: number): PathData {
+  const cx = width * 0.32;
+  const cy = height / 2;
+  const r = width * 0.27;
+  // The tail roots are points on the head circle, defined by angle rather than by coordinates, so
+  // the head arc starts exactly where the tail meets it rather than a sub-pixel approximation off it.
+  const rootAngle = 0.95;
+  const topAngle = -rootAngle;
+  // Major arc over the left of the head: clockwise (negative) from the top root to the bottom root.
+  const head = arcPoints(cx, cy, r, r, topAngle, -(Math.PI * 2 - 2 * rootAngle), 48);
+  const path = pathBuilder();
+  path.move(width, cy);
+  path.line(head[0]![0], head[0]![1]);
+  head.forEach(([x, y], index) => {
+    if (index > 0) path.line(x, y);
+  });
   path.close();
   return path.build();
 }

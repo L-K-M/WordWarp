@@ -37,6 +37,21 @@ export const STAMP_LABELS: Record<StampId, string> = {
   chevron: 'Chevron',
   crown: 'Crown',
   heart: 'Heart',
+  cross: 'Plus',
+  diamond: 'Gem',
+  sparkle: 'Sparkle',
+  cloud: 'Cloud',
+  flower: 'Daisy',
+  arrow: 'Arrow',
+  drop: 'Drop',
+  crescent: 'Moon',
+  ghost: 'Ghost',
+  bat: 'Bat',
+  pumpkin: 'Pumpkin',
+  tombstone: 'Gravestone',
+  coffin: 'Coffin',
+  sun: 'Sun',
+  comet: 'Comet',
 };
 
 /**

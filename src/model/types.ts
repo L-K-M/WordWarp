@@ -361,9 +361,11 @@ export interface TextElement extends ElementBase {
 /**
  * The stamp catalogue: decorations that sit beside the word rather than on it.
  *
- * The first four predate the catalogue and keep their meanings. The rest are the shapes a Memphis
- * sheet, a sticker book or a clipart disc from the decade actually printed, chosen so a scene can
- * be built without ever needing to draw geometry by hand.
+ * The first four predate the catalogue and keep their meanings. The next nine are the shapes a
+ * Memphis sheet, a sticker book or a clipart disc from the decade actually printed, chosen so a
+ * scene can be built without ever needing to draw geometry by hand. The last groups open the
+ * catalogue beyond the 1990s: a handful of generic sticker-book shapes, a set of horror icons to
+ * match the spooky presets, and a pair of cosmic accents for the cosmic presets.
  */
 export const STAMP_IDS = [
   'rectangle',
@@ -379,6 +381,24 @@ export const STAMP_IDS = [
   'chevron',
   'crown',
   'heart',
+  // Memphis / sticker-book extras.
+  'cross',
+  'diamond',
+  'sparkle',
+  'cloud',
+  'flower',
+  'arrow',
+  'drop',
+  // Horror icons.
+  'crescent',
+  'ghost',
+  'bat',
+  'pumpkin',
+  'tombstone',
+  'coffin',
+  // Cosmic accents.
+  'sun',
+  'comet',
 ] as const;
 
 export type StampId = (typeof STAMP_IDS)[number];

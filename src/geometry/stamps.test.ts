@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { flattenPath, pathBounds } from './path';
 import { shapeOutline, stampOutline } from './stamps';
-import { STAMP_IDS, type ShapeElement } from '../model/types';
+import { STAMP_IDS, type Point, type ShapeElement, type StampId } from '../model/types';
 
 function stampElement(overrides: Partial<ShapeElement> = {}): ShapeElement {
   return {
@@ -86,5 +86,90 @@ describe('stamp outlines', () => {
     const radii = contour.map(([x, y]) => Math.hypot(x - 100, y - 100));
 
     expect(Math.min(...radii)).toBeLessThan(Math.max(...radii) * 0.7);
+  });
+
+  it('gives every symmetric stamp a mirror that lands back on itself', () => {
+    // A stamp that is supposed to sit straight (ghost, bat, pumpkin, cross, ...) is built symmetric
+    // about its centreline. Measuring that as geometry -- reflect the flattened outline and ask how
+    // many points still land on the outline -- is what stops a future coordinate edit from making a
+    // ghost lopsided or a bat that cannot fly, without ever putting one on a canvas.
+    const mirrorSymmetry = (shape: StampId, w: number, h: number, axis: 'x' | 'y'): number => {
+      const points = flattenPath(stampOutline(shape, w, h)).flat();
+      const reflect = (x: number, y: number): Point => (axis === 'x' ? [w - x, y] : [x, h - y]);
+      let matched = 0;
+      for (const [x, y] of points) {
+        const [rx, ry] = reflect(x, y);
+        const near = points.some((point) => Math.hypot(point[0] - rx, point[1] - ry) < 1.5);
+        if (near) matched += 1;
+      }
+      return matched / points.length;
+    };
+    const w = 220, h = 160;
+    // Symmetric about the vertical centreline (mirror left <-> right).
+    const verticallySymmetric: StampId[] = [
+      'rectangle', 'ellipse', 'star', 'triangle', 'zigzag', 'starburst', 'arch', 'heart',
+      'cross', 'diamond', 'sparkle', 'cloud', 'flower', 'drop', 'ghost', 'bat', 'pumpkin',
+      'tombstone', 'coffin', 'sun',
+    ];
+    // Symmetric about the horizontal centreline (mirror top <-> bottom).
+    const horizontallySymmetric: StampId[] = [
+      'rectangle', 'ellipse', 'starburst', 'cross', 'sparkle', 'flower', 'sun', 'chevron', 'arrow',
+    ];
+    for (const shape of verticallySymmetric) {
+      expect(mirrorSymmetry(shape, w, h, 'x'), `${shape} symmetric left-right`).toBeGreaterThan(0.98);
+    }
+    for (const shape of horizontallySymmetric) {
+      expect(mirrorSymmetry(shape, w, h, 'y'), `${shape} symmetric top-bottom`).toBeGreaterThan(0.98);
+    }
+  });
+
+  it('points the directional stamps the right way', () => {
+    // Orientation is the other half of "looks right": a chevron pointing left, or a comet whose
+    // tail led its head, would pass every closed-path and box test. The area centroid and the
+    // extreme points fix the direction each one faces.
+    const centroid = (shape: StampId): Point => {
+      const contour = flattenPath(stampOutline(shape, 200, 120))[0]!;
+      let area = 0;
+      let cx = 0;
+      let cy = 0;
+      for (let index = 0; index < contour.length; index += 1) {
+        const [x, y] = contour[index]!;
+        const [nextX, nextY] = contour[(index + 1) % contour.length]!;
+        const cross = x * nextY - nextX * y;
+        area += cross;
+        cx += (x + nextX) * cross;
+        cy += (y + nextY) * cross;
+      }
+      area /= 2;
+      return [cx / (6 * area), cy / (6 * area)];
+    };
+    const extremes = (shape: StampId) => {
+      const contour = flattenPath(stampOutline(shape, 200, 120))[0]!;
+      let maxX = -Infinity;
+      let maxXy = 0;
+      let minY = Infinity;
+      let minYx = 0;
+      let maxY = -Infinity;
+      let maxYx = 0;
+      for (const [x, y] of contour) {
+        if (x > maxX) { maxX = x; maxXy = y; }
+        if (y < minY) { minY = y; minYx = x; }
+        if (y > maxY) { maxY = y; maxYx = x; }
+      }
+      return { maxX, maxXy, minY, minYx, maxY, maxYx };
+    };
+
+    // The comet's head is round and its tail streams away to the right, so the bulk of its area
+    // sits left of the midline. The crescent's bite opens the same way.
+    expect(centroid('comet')[0]).toBeLessThan(100);
+    expect(centroid('crescent')[0]).toBeLessThan(100);
+    // The chevron and the arrow point right: their rightmost reach is on the vertical centreline.
+    expect(Math.abs(extremes('chevron').maxXy - 60)).toBeLessThan(6);
+    expect(Math.abs(extremes('arrow').maxXy - 60)).toBeLessThan(6);
+    // The triangle points up and the heart points down, each on the centreline.
+    expect(Math.abs(extremes('triangle').minYx - 100)).toBeLessThan(6);
+    expect(Math.abs(extremes('heart').maxYx - 100)).toBeLessThan(6);
+    // The drop's tip is at the top of its box, on the centreline.
+    expect(Math.abs(extremes('drop').minYx - 100)).toBeLessThan(6);
   });
 });
