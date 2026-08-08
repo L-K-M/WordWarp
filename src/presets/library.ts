@@ -122,6 +122,12 @@ function chiselBevel(size: number, depth = 130, style: BevelEffect['style'] = 'i
   return effect;
 }
 
+function chiselBevel(size: number, depth = 130, style: BevelEffect['style'] = 'inner'): BevelEffect {
+  const effect = bevel(size, style, depth);
+  effect.technique = 'chiselHard';
+  return effect;
+}
+
 function shadow(color: string, distance = 14, size = 12, opacity = 0.68): DropShadowEffect {
   const effect = createEffect('dropShadow');
   effect.color = hexColor(color);
@@ -672,6 +678,44 @@ export const BUILT_IN_PRESETS: Preset[] = [
     shadow('#0f1408', 8, 6, 0.65), fill(gradient(['#9caf66', '#6b8238', '#39441c'])), texture('grain', 0.35),
     innerShadow('#141a08', 5, 8, 0.6), post('grain', { amount: 0.16 }, 0.4),
   ], warp('textDeflate', 0.5), ['zombie', 'rotten', 'undead']),
+  definePreset('aurora', 'Aurora', 'cosmic', ['#39ff88', '#7dffd6', '#6a4dff', '#0d1b2a'], [
+    glow('#39ff88', 24, 0.5), shadow('#07130d', 8, 8, 0.5), fill(gradient(['#7dffd6', '#39ff88', '#1b6a4d', '#6a4dff'])),
+    satin('#b3ffd6', 0.35), innerGlow('#d6fff0', 10, 0.5),
+  ], warp('textWave1', 0.55, 0.6), ['aurora', 'space', 'northern']),
+  definePreset('nebula', 'Nebula', 'cosmic', ['#ff6ec7', '#a84dff', '#3d1a6a', '#0a0a1f'], [
+    glow('#a84dff', 30, 0.6), shadow('#0a0614', 10, 8, 0.6), fill(gradient(['#ff9ec7', '#c86bff', '#5a1fd6', '#1a0533'], 0, 'radial')),
+    texture('grain', 0.35), innerGlow('#ffd6f0', 12, 0.6), satin('#e5d9ff', 0.3),
+  ], warp('textInflate', 0.6, 0.7), ['nebula', 'galaxy', 'space'], [
+    { id: 'nebula-hue', kind: 'hueCycle', enabled: true, duration: 6, params: {}, seed: 21 },
+  ]),
+  definePreset('comet', 'Comet Trail', 'cosmic', ['#ffffff', '#ffd166', '#4d6bff', '#0a0a1f'], [
+    shadow('#050a1f', 8, 6, 0.6), extrude(46, '#2a3f8a', 200), fill(gradient(['#ffffff', '#ffd166', '#6a8aff'])),
+    glow('#ffd166', 18, 0.55), stroke(2, '#ffffff'),
+  ], warp('textSlantUp', 0.5), ['comet', 'meteor', 'trail']),
+  definePreset('solar-flare', 'Solar Flare', 'cosmic', ['#fff3a0', '#ff9f1c', '#ff3d2e', '#5c0a00'], [
+    glow('#ffb84d', 30, 0.7), shadow('#3a0a00', 8, 8, 0.5), fill(gradient(['#fff3a0', '#ffb84d', '#ff6a1a', '#c62800'])),
+    bevel(10, 'pillow', 180), innerGlow('#fff3a0', 12, 0.7), post('aberration', { amount: 3 }, 0.5),
+  ], warp('textInflate', 0.7, 0.7), ['sun', 'solar', 'flare']),
+  definePreset('galaxy-spiral', 'Galaxy Spiral', 'cosmic', ['#ff6ec7', '#6ec7ff', '#6a4dff', '#0d0d2b'], [
+    glow('#6ec7ff', 26, 0.55), shadow('#06061a', 9, 7, 0.6), fill(gradient(['#ff6ec7', '#a84dff', '#3a2fd6', '#6ec7ff', '#ff6ec7'], 0, 'angular')),
+    satin('#ffffff', 0.4), texture('grain', 0.2), stroke(1.5, '#c9b8ff'),
+  ], warp('textCircle', 1.15, 0.6), ['galaxy', 'spiral', 'vortex'], [
+    { id: 'galaxy-spin', kind: 'specularSweep', enabled: true, duration: 5, params: {}, seed: 55 },
+  ]),
+  definePreset('black-hole', 'Black Hole', 'cosmic', ['#ffffff', '#ffd166', '#6a4dff', '#000000'], [
+    glow('#ffd166', 22, 0.6), glow('#a84dff', 12, 0.5), fill(solid('#0a0a14', 0.92)), stroke(3, '#ffd166'),
+    post('aberration', { amount: 4 }, 0.6), post('scanlines', { amount: 0.12, period: 4 }, 0.4),
+  ], warp('textRingInside', 0.9, 0.6), ['black', 'hole', 'event']),
+  definePreset('red-giant', 'Red Giant', 'cosmic', ['#ffb36b', '#ff5a3c', '#b3002d', '#3d0014'], [
+    glow('#ff5a3c', 28, 0.65), shadow('#2a0008', 9, 8, 0.55), fill(gradient(['#ffc9a0', '#ff7a4d', '#d6153a', '#6a0018'])),
+    chiselBevel(9, 180), innerGlow('#ffd9a0', 10, 0.55), post('grain', { amount: 0.12 }, 0.4),
+  ], warp('textDeflate', 0.45), ['star', 'giant', 'space']),
+  definePreset('starfield', 'Starfield', 'cosmic', ['#ffffff', '#ffd166', '#aab8ff', '#0a0a1f'], [
+    glow('#ffd166', 18, 0.5), shadow('#05050f', 8, 8, 0.6), fill(solid('#e8ecff', 0.95)), texture('halftone', 0.5),
+    stroke(1.5, '#ffffff'), innerGlow('#ffffff', 8, 0.6), post('grain', { amount: 0.2 }, 0.5),
+  ], warp('textWave4', 0.3), ['stars', 'night', 'sky'], [
+    { id: 'starfield-sparkle', kind: 'sparkle', enabled: true, duration: 2, params: { amount: 20 }, seed: 99 },
+  ]),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {

@@ -9,6 +9,7 @@ export type PresetCategory =
   | 'texture'
   | 'sweets'
   | 'spooky'
+  | 'cosmic'
   | 'user';
 
 export interface Preset {

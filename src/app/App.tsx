@@ -33,6 +33,7 @@ const presetCategories: Array<{ id: PresetCategory | 'all'; label: string }> = [
   { id: 'dimensional', label: '3D' },
   { id: 'texture', label: 'FX' },
   { id: 'sweets', 'spooky', 'Sweets', 'Spooky' },
+  { id: 'cosmic', label: 'Cosmic' },
 ];
 
 /* Jellybean flavours come in bean-0 .. bean-6 in styles.css; cycle chips through them. */
