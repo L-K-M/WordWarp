@@ -74,6 +74,12 @@ export function FontPicker({ value, onPick }: FontPickerProps) {
     active?.scrollIntoView({ block: 'nearest' });
   }, [open, activeFamily, baseId]);
 
+  // An external value change (undo/redo) while the popover is open must move the active
+  // descendant too, or Enter re-picks the family the document no longer uses.
+  useEffect(() => {
+    if (open) setActiveFamily(value);
+  }, [open, value]);
+
   const openMenu = (startAt?: string) => {
     setActiveFamily(startAt ?? value);
     setOpen(true);

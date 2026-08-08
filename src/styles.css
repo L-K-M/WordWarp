@@ -355,6 +355,7 @@ button:disabled {
   height: 22px;
   border: 2px solid rgb(255 255 255 / 45%);
   border-radius: 50%;
+  appearance: none;
   background:
     radial-gradient(circle at 34% 26%, rgb(255 255 255 / 95%) 0 8%, transparent 30%),
     linear-gradient(160deg, #8ff5ff, #28c8dc 55%, #0b7c8e);
@@ -624,7 +625,7 @@ button:disabled {
 }
 
 .search-field input::placeholder {
-  color: rgb(184 240 226 / 68%);
+  color: rgb(184 240 226 / 75%);
 }
 
 .search-field kbd {
@@ -736,7 +737,7 @@ button:disabled {
 
 .preset-meta small {
   margin-top: 2px;
-  color: rgb(184 240 226 / 62%);
+  color: rgb(184 240 226 / 72%);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -818,7 +819,7 @@ button:disabled {
   left: 10%;
   display: flex;
   justify-content: space-between;
-  color: rgb(184 240 226 / 58%);
+  color: rgb(184 240 226 / 68%);
   font-size: 10px;
   font-weight: 700;
 }
@@ -1025,7 +1026,7 @@ button:disabled {
 
 .warp-section h2 span,
 .light-section h2 span {
-  color: rgb(184 240 226 / 68%);
+  color: rgb(184 240 226 / 75%);
   font-size: 11px;
   font-weight: 800;
   text-decoration: none;
@@ -1101,7 +1102,7 @@ button:disabled {
 }
 
 .drag-grip {
-  color: rgb(184 240 226 / 62%);
+  color: rgb(184 240 226 / 72%);
   font-size: 12px;
   font-weight: 800;
 }
@@ -1135,7 +1136,7 @@ button:disabled {
 
 .effect-list small {
   margin-top: 2px;
-  color: rgb(184 240 226 / 68%);
+  color: rgb(184 240 226 / 75%);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -1342,7 +1343,7 @@ button:disabled {
   flex: 0 0 auto;
   padding: 0 10px;
   border-left: 2px dashed rgb(23 183 189 / 40%);
-  color: rgb(184 240 226 / 65%);
+  color: rgb(184 240 226 / 75%);
   font-size: 11px;
   font-weight: 800;
   background: transparent;

@@ -37,7 +37,7 @@ export function PresetPreview({ preset, swatch }: PresetPreviewProps) {
             if (!cancelled && rendered) setSource(rendered);
           }, (error: unknown) => {
             // The swatch placeholder stays up; a thumbnail is decoration, not a hard failure.
-            console.warn(`Preset preview for "${preset.name}" did not render`, error);
+            if (!cancelled) console.warn(`Preset preview for "${preset.name}" did not render`, error);
           });
         });
       },
