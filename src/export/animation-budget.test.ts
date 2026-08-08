@@ -24,6 +24,15 @@ describe('animated export frame budget', () => {
     expect(1776 * 676 * 4 * plan.frameCount).toBeLessThanOrEqual(MAX_RAW_FRAME_BYTES);
   });
 
+  // A canvas background turns the export opaque and stops it cropping to the artwork, so bounds
+  // jump from the auto-fit crop to the whole 1200 x 630 canvas -- 2400 x 1260 at the default 2x,
+  // which is 12.1 MB a frame. That is 290 MB over a 2 s loop, just past the ceiling, so it costs
+  // one frame per second rather than the export.
+  it('degrades an opaque full-canvas export by a frame rather than refusing it', () => {
+    const plan = planAnimationFrames(2, 12, fixed(2400, 1260));
+    expect(plan).toMatchObject({ frameCount: 22, fps: 11, reduced: true });
+  });
+
   it('lowers the frame rate instead of failing when the requested count does not fit', () => {
     // 4x the default document: 19.2 MB a frame, so 24 frames would want 461 MB.
     const plan = planAnimationFrames(2, 12, fixed(3552, 1352));
