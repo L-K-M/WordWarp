@@ -5,11 +5,10 @@ import type { WordWarpDocument } from '../model/types';
 import { createCanvasSurface, get2dContext } from '../render/surface';
 import type { EncodeAnimationResponse } from '../workers/encode-protocol';
 import { encodeApng, encodeGif } from './animation-codec';
+import { planAnimationFrames } from './animation-budget';
 import { getExportBounds, validateExportSize } from './bounds';
 import { renderRgbaOnSurface } from './render-png';
 import { ensureFontsForDocument } from '../text/fonts';
-
-const MAX_RAW_FRAME_BYTES = 64 * 1024 * 1024;
 
 export interface AnimationExportOptions {
   format: 'apng' | 'gif';
@@ -24,6 +23,18 @@ export interface AnimationExport {
   width: number;
   height: number;
   frameCount: number;
+  /** Rate the frames were sampled at, which the frame budget may have lowered. */
+  fps: number;
+  /** Rate that was asked for, so a reduction can be reported against it. */
+  requestedFps: number;
+  /**
+   * Whether the frame budget, rather than the caller, decided the rate.
+   *
+   * This is the signal to report a reduction on -- not `fps < requestedFps`. Frame counts are
+   * whole numbers, so a loop whose length does not divide evenly lands just under the requested
+   * rate on rounding alone: 2.1 s at 12 fps is 25 frames at 11.9 fps with nothing reduced.
+   */
+  reduced: boolean;
 }
 
 export async function exportAnimation(
@@ -37,22 +48,26 @@ export async function exportAnimation(
   if (!Number.isFinite(scale) || scale <= 0) throw new Error('Animation scale must be positive');
   const duration = documentAnimationDuration(document);
   if (duration > 30) throw new Error('Animation loops longer than 30 seconds cannot be exported yet');
-  const frameCount = Math.max(2, Math.round(duration * fps));
   // Frames render on the main thread, so the window's font set needs every bundled family before
   // the first measurement.
   await ensureFontsForDocument(document);
-  const bounds = measureAnimationBounds(document, frameCount);
-  const { width, height } = validateExportSize(bounds, scale);
-  const frameBytes = width * height * 4;
-  if (frameBytes * frameCount > MAX_RAW_FRAME_BYTES) {
-    throw new Error('Animated export exceeds the 64 MB raw-frame budget');
-  }
+  // Bounds and frame count settle together: the export bounds are the union of the content over
+  // the frames that get rendered, so the planner measures again whenever it lowers the count.
+  const plan = planAnimationFrames(duration, fps, (candidate) => {
+    const measured = measureAnimationBounds(document, candidate);
+    return { ...validateExportSize(measured, scale), bounds: measured };
+  });
+  const { frameCount } = plan;
+  const { width, height, bounds } = plan.size;
   const frames: ArrayBuffer[] = [];
 
   for (let frame = 0; frame < frameCount; frame += 1) {
     const evaluated = evaluateDocumentAtTime(document, frame / frameCount);
     const rendered = renderRgbaOnSurface(evaluated, scale, () => createCanvasSurface(1, 1), bounds);
-    frames.push(new Uint8Array(rendered.pixels).buffer);
+    // `renderRgbaOnSurface` allocates each frame's buffer at exactly this size and keeps no
+    // reference to it, so it can be transferred to the worker as-is. Copying it first would put a
+    // second full frame on the heap at the one moment the budget is already at its tightest.
+    frames.push(rendered.pixels.buffer);
     options.onProgress?.((frame + 1) / (frameCount + 1));
     await yieldToBrowser();
   }
@@ -68,6 +83,9 @@ export async function exportAnimation(
     width,
     height,
     frameCount,
+    fps: plan.fps,
+    requestedFps: plan.requestedFps,
+    reduced: plan.reduced,
   };
 }
 

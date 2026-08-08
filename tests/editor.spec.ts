@@ -313,6 +313,37 @@ test('exports APNG and GIF through the animation worker', async ({ page }, testI
   expect(bytes.at(-1)).toBe(0x3b);
 });
 
+// The test above shrinks the text to a single 48px glyph, which is what let the frame budget ship
+// too small to pay for the app's own defaults. A new document already carries one text layer and
+// exports at 1776 x 676 at the default 2x resolution; 24 frames of that came to 110 MB against a
+// 64 MB ceiling, so every animated export failed on the first press of the button. The second
+// layer here is the shape the bug was reported in and pushes it to 1776 x 720 -- both sizes were
+// over. What matters is that no export control is touched beyond picking the format.
+test('exports an animation of the default document at the default resolution', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  // 24 frames at 1776 x 676 measures ~33 s locally, so this is roughly a 3x margin rather than a
+  // number picked for comfort. It matches the animation test above deliberately.
+  test.setTimeout(120_000);
+  await page.goto('./');
+  await page.getByRole('button', { name: 'Add text layer' }).click();
+
+  await page.getByLabel('Export format').selectOption('gif');
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: /Export GIF/ }).click();
+  const download = await downloadPromise;
+  const downloadPath = await download.path();
+  if (!downloadPath) throw new Error('Playwright did not provide the downloaded GIF path');
+  const bytes = await readFile(downloadPath);
+  expect(bytes.subarray(0, 6).toString()).toBe('GIF89a');
+  expect(bytes.at(-1)).toBe(0x3b);
+  // The default 2 s loop at the exporter's 12 fps, at full rate: the budget must not be quietly
+  // buying its way out of this by dropping frames either. The frame count alone implies that today
+  // -- a reduction always lowers it -- but say it outright, so a reduction that ever kept the count
+  // and took something else instead still fails here.
+  await expect(page.getByText('Exported 24-frame GIF').first()).toBeVisible();
+  await expect(page.getByText(/down from \d+ fps/)).toHaveCount(0);
+});
+
 test('loads from the production service worker while offline', async ({ page, context }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium');
   await page.goto('./');

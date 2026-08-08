@@ -16,8 +16,9 @@ describe('export error messages', () => {
 
   it('passes real export failures through untouched', () => {
     // These are the messages the export path raises on purpose, and they are already actionable.
-    expect(exportErrorMessage(new Error('Animated export exceeds the 64 MB raw-frame budget')))
-      .toBe('Animated export exceeds the 64 MB raw-frame budget');
+    const overBudget = 'Animated export at 3552 x 1352 needs 1024 MB of frame memory, over the'
+      + ' 256 MB budget. Lower the export resolution or shorten the loop.';
+    expect(exportErrorMessage(new Error(overBudget))).toBe(overBudget);
     expect(exportErrorMessage(new Error('PNG pixel buffer has an invalid length')))
       .toBe('PNG pixel buffer has an invalid length');
   });
