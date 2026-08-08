@@ -55,7 +55,10 @@ export interface AnimationFramePlan<Size extends FrameSize> {
  * anything the envelope missed would be clipped.
  *
  * The search only ever lowers the frame count, so it terminates: each pass either accepts the
- * current count, drops to a strictly smaller one, or gives up at the floor.
+ * current count, drops to a strictly smaller one, or gives up at the floor. It also drops straight
+ * to what the budget affords rather than stepping down one frame at a time, and fewer samples
+ * cannot enlarge a union of bounds by much, so a second pass almost always accepts -- one or two
+ * calls to `measure` in practice, and more only if bounds somehow grow as frames are removed.
  */
 export function planAnimationFrames<Size extends FrameSize>(
   duration: number,

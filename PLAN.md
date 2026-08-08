@@ -1093,7 +1093,9 @@ equals the value at `t=0`.
 
 ### 13.3 Export budget
 
-Defaults: 24 fps, 2 s loop, 48 frames. UI shows an estimated file size live and warns past 5 MB.
+Planned defaults were 24 fps, 2 s loop, 48 frames. What ships is 12 fps over the same 2 s loop —
+24 frames — and no frame-rate control is exposed yet, so `exportAnimation`'s own default is the
+only rate a user can get. UI shows an estimated file size live and warns past 5 MB.
 
 Frames render sequentially into the same FBO chain, but memory is **not** bounded at one frame:
 APNG builds a single palette across the whole sequence, so `UPNG.encode` cannot start until the

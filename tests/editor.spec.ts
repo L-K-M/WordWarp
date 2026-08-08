@@ -248,7 +248,9 @@ test('exports APNG and GIF through the animation worker', async ({ page }, testI
 // animated export failed on the first press of the button. This one touches no export control.
 test('exports an animation of the default document at the default resolution', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium');
-  test.setTimeout(180_000);
+  // 24 frames at 1776 x 676 measures ~33 s locally, so this is roughly a 3x margin rather than a
+  // number picked for comfort. It matches the animation test above deliberately.
+  test.setTimeout(120_000);
   await page.goto('./');
   await page.getByRole('button', { name: 'Add text layer' }).click();
 
