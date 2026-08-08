@@ -10,8 +10,9 @@ interface Toast {
 
 // Errors do not expire. A toast is the only surface these messages have, so once one goes the
 // text is unrecoverable -- and an error is exactly the kind a reader needs time to parse, re-read
-// or copy ("Animated export exceeds the 64 MB raw-frame budget" is actionable, and eight seconds
-// is not long to notice it and decide). Info and success really are transient.
+// or copy ("Animated export at 3552 x 1352 needs 1024 MB of frame memory, over the 256 MB budget.
+// Lower the export resolution or shorten the loop." is actionable, and eight seconds is not long
+// to notice it and decide). Info and success really are transient.
 const TOAST_TIMEOUTS: Record<Toast['tone'], number | null> = {
   info: 4000,
   success: 4000,

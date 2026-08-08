@@ -242,6 +242,30 @@ test('exports APNG and GIF through the animation worker', async ({ page }, testI
   expect(bytes.at(-1)).toBe(0x3b);
 });
 
+// The test above shrinks the text to a single 48px glyph, which is what let the frame budget ship
+// too small to pay for the app's own defaults: an untouched document exports at 1776 x 676 at the
+// default 2x resolution, and 24 frames of that came to 110 MB against a 64 MB ceiling. Every
+// animated export failed on the first press of the button. This one touches no export control.
+test('exports an animation of the default document at the default resolution', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  test.setTimeout(180_000);
+  await page.goto('./');
+  await page.getByRole('button', { name: 'Add text layer' }).click();
+
+  await page.getByLabel('Export format').selectOption('gif');
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: /Export GIF/ }).click();
+  const download = await downloadPromise;
+  const downloadPath = await download.path();
+  if (!downloadPath) throw new Error('Playwright did not provide the downloaded GIF path');
+  const bytes = await readFile(downloadPath);
+  expect(bytes.subarray(0, 6).toString()).toBe('GIF89a');
+  expect(bytes.at(-1)).toBe(0x3b);
+  // The default 2 s loop at the exporter's 12 fps, at full rate: the budget must not be quietly
+  // buying its way out of this by dropping frames either.
+  await expect(page.getByText('Exported 24-frame GIF').first()).toBeVisible();
+});
+
 test('loads from the production service worker while offline', async ({ page, context }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium');
   await page.goto('./');

@@ -19,7 +19,9 @@ export interface RenderedPng {
 }
 
 export interface RenderedRgba {
-  pixels: Uint8ClampedArray;
+  // Pinned to a plain `ArrayBuffer` rather than the default `ArrayBufferLike` so callers can hand
+  // the buffer straight to a worker: `postMessage` refuses to transfer a `SharedArrayBuffer`.
+  pixels: Uint8ClampedArray<ArrayBuffer>;
   width: number;
   height: number;
 }

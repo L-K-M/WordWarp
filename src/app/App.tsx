@@ -420,7 +420,17 @@ export function App() {
           onProgress: setExportProgress,
         });
         downloadAnimation(result);
-        pushToast(`Exported ${result.frameCount}-frame ${exportFormat.toUpperCase()}`, 'success');
+        // A frame rate the budget lowered is still a successful export, but it is not the export
+        // that was asked for, so it says so rather than reporting plain success.
+        if (result.fps < result.requestedFps) {
+          pushToast(
+            `Exported ${result.frameCount}-frame ${exportFormat.toUpperCase()} at ${result.fps} fps,`
+            + ` down from ${result.requestedFps} fps to fit this resolution in memory`,
+            'warning',
+          );
+        } else {
+          pushToast(`Exported ${result.frameCount}-frame ${exportFormat.toUpperCase()}`, 'success');
+        }
       }
     } catch (error) {
       pushToast(exportErrorMessage(error), 'error');
