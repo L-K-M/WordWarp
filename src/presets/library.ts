@@ -813,6 +813,11 @@ export const BUILT_IN_PRESETS: Preset[] = [
     shadow('#2b0a02', 10, 8, 0.6), glow('#ff5e00', 30, 0.7), fill(ramp('fire')), bevel(8, 'inner', 110), texture('grain', 0.18),
   ], warp('textDeflateInflate', 0.45), ['lava', 'fire', 'animated'], [
     { id: 'molten-flow', kind: 'specularSweep', enabled: true, duration: 6, params: {}, seed: 5 },
+  definePreset('aurora', 'Aurora', 'synthwave', ['#07223f', '#12c48a', '#9a6bff', '#7dffb2'], [
+    glow('#b967ff', 22, 0.35), glow('#7dffb2', 16, 0.4), fill(gradient(['#07223f', '#0b5a52', '#12c48a', '#9a6bff'], 100)), innerGlow('#c9ffe9', 10, 0.4),
+  ], warp('textWave2', 0.4), ['aurora', 'northern-lights', 'animated'], [
+    { id: 'aurora-hue', kind: 'hueCycle', enabled: true, duration: 9, params: {}, seed: 21 },
+    { id: 'aurora-ripple', kind: 'waveUndulate', enabled: true, duration: 5, params: { amount: 0.12 }, seed: 22 },
   ]),
 ];
 
