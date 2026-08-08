@@ -75,7 +75,8 @@ const CSS_GENERIC_FAMILIES = new Set([
  * named "inherit" must render as a missing face, not reset the property.
  */
 export function quoteFontFamily(family: string): string {
-  if (CSS_GENERIC_FAMILIES.has(family.toLowerCase())) return family;
+  const generic = family.toLowerCase();
+  if (CSS_GENERIC_FAMILIES.has(generic)) return generic;
   return `"${family.replaceAll(/[\\"]/g, '\\$&')}"`;
 }
 

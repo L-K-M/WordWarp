@@ -43,7 +43,10 @@ export function FontPicker({ value, onPick }: FontPickerProps) {
     // System families never enter the ready set, so only bundled faces count here.
     if (DOCUMENT_FONTS.every((entry) => entry.source !== 'bundled' || isFontReady(entry.family))) return;
     let cancelled = false;
-    void Promise.all(DOCUMENT_FONTS.map((entry) => ensureFontLoaded(entry.family))).then(() => {
+    const bundled = DOCUMENT_FONTS.filter((entry) => entry.source === 'bundled');
+    void Promise.all(bundled.map((entry) => ensureFontLoaded(entry.family))).then(() => {
+      // The bump is the point: it re-renders the list so freshly registered faces paint.
+      // (data-faces on the <ul> is just the bump made inspectable in devtools.)
       if (!cancelled) setFacesReady((count) => count + 1);
     });
     return () => {
