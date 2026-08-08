@@ -311,6 +311,41 @@ function pixelate(size: number, crisp = true): PostEffect {
   return post('pixelate', { size, crisp }, 1);
 }
 
+ * One band of a false-colour ramp keyed to depth inside the glyph.
+ *
+ * An inner glow's mask is a linear falloff from the outline to `size` pixels in, so a stack of
+ * them, largest first, paints a colour ramp along the glyph's own distance field: the last one
+ * drawn owns the pixels nearest the edge, and each earlier one shows through further in, with the
+ * fill left over at the core. That gives a heat map without a heat-map effect -- the ramp follows
+ * the letterform rather than a gradient axis, so a thin stem reads cool all the way through and a
+ * thick one lights up in the middle, which is what an instrument actually shows.
+ *
+ * ## Choosing the sizes
+ *
+ * Depth inside a letter is bounded by half its stem width -- five to ten pixels for normal-weight
+ * text at a typical size -- and that is the whole range the ramp has to fit into.
+ *
+ * What matters is the *narrowest* band. It has to sit comfortably inside half a stem, because it
+ * is the one drawn last and it is what makes the rim a rim rather than the whole letter. The
+ * widest band is deliberately larger than half a stem: its falloff is correspondingly shallow, so
+ * it is still contributing at the stem's centre, which is what keeps the ramp continuous instead
+ * of stopping partway in.
+ *
+ * The failure mode is not a band failing to reach the middle. It is every band being wide relative
+ * to the stem, at which point they all overlap at similar strengths everywhere and the ramp
+ * collapses into one muddy blend with no zones in it.
+ */
+function heatBand(color: string, size: number, opacity = 1): InnerGlowEffect {
+  const effect = innerGlow(color, size, opacity);
+  // Both of these happen to be the inner-glow defaults, and both are stated anyway because the
+  // ramp depends on them: `edge` is the direction the falloff runs, and `normal` is what makes a
+  // band replace the one under it instead of mixing into it. Neither is a detail a reader should
+  // have to go and look up to know whether the stack is doing what it claims.
+  effect.source = 'edge';
+  effect.blendMode = 'normal';
+  return effect;
+}
+
 function sparkleTrack(): AnimationTrack {
   return { id: 'sparkle-track', kind: 'sparkle', enabled: true, duration: 2, params: { amount: 16 }, seed: 971 };
 }
@@ -749,6 +784,28 @@ export const BUILT_IN_PRESETS: Preset[] = [
     post('scanlines', { amount: 0.18, period: 5 }, 0.4),
     post('grain', { amount: 0.1 }, 0.3),
   ], none(), ['thermal', 'heatmap', 'inferno']),
+  definePreset('thermal-ironbow', 'Thermal Ironbow', 'texture', ['#fffbe8', '#ff6a00', '#d61a6e', '#2a0a4a'], [
+    // Ironbow, the palette every thermal camera ships with: violet at the cold rim through
+    // magenta and orange to a white-hot core. Bands run largest to smallest so the narrowest
+    // ends up nearest the outline.
+    glow('#31106b', 30, 0.6), fill(solid('#fffbe8')),
+    heatBand('#ffd400', 20), heatBand('#ff6a00', 13), heatBand('#d61a6e', 8), heatBand('#3d1178', 4),
+  ], none(), ['thermal', 'infrared', 'heatmap', 'false-colour']),
+  definePreset('molten-core', 'Molten Core', 'texture', ['#fff4c2', '#ff9a1f', '#c1230a', '#1a0a06'], [
+    // The same ramp read as material rather than as data: a near-black crust at the rim over a
+    // white-hot interior, which is what cooling lava looks like. A wide orange glow does the heat
+    // haze and the noise breaks the crust up.
+    glow('#ff5a00', 26, 0.8), fill(solid('#fff4c2')),
+    heatBand('#ffb02e', 18), heatBand('#e8480d', 11), heatBand('#7d1204', 6), heatBand('#180703', 3),
+    texture('noise', 0.24),
+  ], warp('textInflate', 0.35, 0.6), ['fire', 'lava', 'burning', 'molten']),
+  definePreset('night-vision', 'Night Vision', 'texture', ['#c8ffd0', '#3dff6a', '#0d5c23', '#02120a'], [
+    // An image intensifier, not a heat map: one phosphor colour, bloom well past the subject, and
+    // the sensor noise and line structure that come with amplifying almost no light at all.
+    glow('#2dff6a', 22, 0.85), fill(solid('#b6ffc4')),
+    heatBand('#37e46a', 12), heatBand('#0c5c23', 5),
+    post('scanlines', { amount: 0.32, period: 3 }, 0.55), post('grain', { amount: 0.5 }, 0.6),
+  ], none(), ['thermal', 'phosphor', 'optics', 'green']),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {

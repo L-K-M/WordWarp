@@ -19,6 +19,8 @@ describe('preset library', () => {
   it('ships every named style from the six core categories', () => {
     expect(BUILT_IN_PRESETS).toHaveLength(42);
     expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(42);
+    expect(BUILT_IN_PRESETS).toHaveLength(44);
+    expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(44);
     expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.category))).toEqual(
       new Set([
         'metallic', 'synthwave', 'y2k', 'nineties', 'dimensional', 'texture',
