@@ -288,6 +288,7 @@ palette and the effect stack that reproduces it.
 | D3 | **Long Shadow Flat** | `#ff6348` + shadow `rgba(0,0,0,.18)` | Flat fill → 45° long shadow to canvas edge → no blur |
 | D4 | **Letterpress** | Paper `#efe7d8`, ink `#3a3226` | Subtractive: inner shadow top-left, inner highlight bottom-right, no fill change |
 | D5 | **Inflated Balloon** | `#ff4d6d #ffffff` | Inflate warp → pillow emboss size 40 → strong rim light → glossy specular blob → contact shadow |
+| D6 | **Topographic Taffy** | `#fff4cf #d9ed92 #65c6a6 #2d8b8c #f2b84b #e85d4f` | Nested inside strokes become elevation bands → paper grain → short cut-layer extrusion → Can Up terrain warp |
 
 ### 4.6 Post / texture
 

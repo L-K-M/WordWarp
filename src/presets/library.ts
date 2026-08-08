@@ -497,6 +497,18 @@ export const BUILT_IN_PRESETS: Preset[] = [
     innerGlow('#ffd97a', 7, 0.3),
     stroke(7, '#0a0a0a'),
   ], warp('textArchUp', 0.5), ['stained-glass', 'lead', 'tiffany']),
+  definePreset('topographic-taffy', 'Topographic Taffy', 'dimensional', ['#fff4cf', '#d9ed92', '#65c6a6', '#2d8b8c', '#f2b84b', '#e85d4f'], [
+    shadow('#0e1d2d', 10, 8, 0.52),
+    extrude(18, '#173d4a', 48),
+    fill(solid('#fff4cf')),
+    texture('grain', 0.12),
+    stroke(15, '#d9ed92', 'inside'),
+    stroke(12, '#65c6a6', 'inside'),
+    stroke(9, '#2d8b8c', 'inside'),
+    stroke(6, '#f2b84b', 'inside'),
+    stroke(3, '#e85d4f', 'inside'),
+    stroke(2, '#182936'),
+  ], warp('textCanUp', 0.36, 0.55), ['topographic', 'contour', 'map', 'strata', 'taffy', 'paper-cut', 'cartography']),
 
   definePreset('vaporwave-mall', 'Vaporwave Mall', 'synthwave', ['#ff71ce', '#01cdfe', '#fffb96', '#2d1b4e'], [
     glow('#ff71ce', 26, 0.6), fill(gradient(['#ff71ce', '#b967ff', '#01cdfe'], 100)), post('scanlines', { amount: 0.14, period: 4 }, 0.5), post('aberration', { amount: 2 }, 0.4),

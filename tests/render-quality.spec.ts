@@ -193,6 +193,41 @@ test.describe('render quality', () => {
     expect(counted).toBeGreaterThan(20_000);
     expect(secondDifference / counted).toBeGreaterThan(10);
     expect(strongRidges / counted).toBeGreaterThan(0.3);
+  test('Topographic Taffy keeps its elevation bands distinct', async ({ page }) => {
+    await page.getByLabel('Content').fill('TERRAIN');
+    await page.getByRole('button', { name: 'Topographic Taffy' }).click();
+
+    const image = await exportAt(page, '2');
+    const bandColours = [
+      [217, 237, 146],
+      [101, 198, 166],
+      [45, 139, 140],
+      [242, 184, 75],
+      [232, 93, 79],
+    ];
+    const counts = bandColours.map(() => 0);
+    for (let index = 0; index < image.width * image.height; index += 1) {
+      const offset = index * 4;
+      if (Number(image.data[offset + 3]) < 220) continue;
+      let closest = -1;
+      let closestDistance = Number.POSITIVE_INFINITY;
+      bandColours.forEach(([red, green, blue], colourIndex) => {
+        const distance = Math.hypot(
+          Number(image.data[offset]) - red,
+          Number(image.data[offset + 1]) - green,
+          Number(image.data[offset + 2]) - blue,
+        );
+        if (distance < closestDistance) {
+          closest = colourIndex;
+          closestDistance = distance;
+        }
+      });
+      if (closestDistance < 55) counts[closest] += 1;
+    }
+
+    // A too-wide outer stroke used to bury the inner elevations on ordinary glyph stems. Each
+    // designed tint must occupy a real region in the exported pixels, not just exist in metadata.
+    for (const count of counts) expect(count).toBeGreaterThan(250);
   });
 
   test('transparent export keeps shadows free of grey fringing', async ({ page }) => {

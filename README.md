@@ -10,6 +10,7 @@ export. The product and rendering decisions are documented in [`PLAN.md`](./PLAN
 - 41 envelope warp presets plus path, mesh, and perspective mapping primitives
 - Editable fill, stroke, bevel, glow, shadow, extrusion, texture, reflection, and post effects
 - 80+ built-in styles and 24 Office-compatible color ramps
+- 40+ built-in styles and 24 Office-compatible color ramps
 - Transparent PNG, animated APNG, and GIF export
 - Deterministic procedural animation with live reduced-motion-aware preview
 - IndexedDB autosave, compressed share URLs, direct manipulation, undo/redo, and offline PWA support
