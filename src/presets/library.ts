@@ -116,6 +116,12 @@ function chiselBevel(size: number, depth = 130, style: BevelEffect['style'] = 'i
   return effect;
 }
 
+function chiselBevel(size: number, depth = 130, style: BevelEffect['style'] = 'inner'): BevelEffect {
+  const effect = bevel(size, style, depth);
+  effect.technique = 'chiselHard';
+  return effect;
+}
+
 function shadow(color: string, distance = 14, size = 12, opacity = 0.68): DropShadowEffect {
   const effect = createEffect('dropShadow');
   effect.color = hexColor(color);
@@ -630,6 +636,42 @@ export const BUILT_IN_PRESETS: Preset[] = [
     shadow('#7a1028', 7, 7, 0.4), fill(stripes(['#ffffff', '#ff2e4d'], 0, 10, 4, 'angular')), bevel(7, 'inner', 150),
     innerGlow('#ffffff', 8, 0.5),
   ], none(), ['candy', 'mint', 'holiday']),
+  definePreset('blood-drip', 'Blood Drip', 'spooky', ['#8a0a12', '#d31c2e', '#4a0508', '#5c0508'], [
+    shadow('#2b0406', 6, 4, 0.75), fill(gradient(['#d31c2e', '#8a0a12', '#4a0508'])), bevel(8, 'pillow', 170),
+    innerGlow('#8a0a12', 10, 0.5), post('aberration', { amount: 2 }, 0.35),
+  ], warp('textCanDown', 0.42), ['blood', 'drip', 'halloween']),
+  definePreset('ghost', 'Ghost', 'spooky', ['#eaf0ff', '#b9c8ff', '#ffffff', '#5c6aa8'], [
+    glow('#aab8ff', 22, 0.55), shadow('#3a4268', 8, 8, 0.3), fill(solid('#eaf0ff', 0.72)), satin('#7d8fd4', 0.5),
+    stroke(1.5, '#ffffff'),
+  ], warp('textWave1', 0.5, 0.6), ['ghost', 'spectral'], [
+    { id: 'ghost-flicker', kind: 'neonFlicker', enabled: true, duration: 1.6, params: {}, seed: 13 },
+  ]),
+  definePreset('gravestone', 'Gravestone', 'spooky', ['#8f96a3', '#5a606b', '#3a3f47', '#2e7d32'], [
+    shadow('#15171b', 10, 6, 0.6), fill(gradient(['#aab0bc', '#6e747e', '#454a52'])), texture('noise', 0.3),
+    bevel(9, 'emboss', 150), innerShadow('#1c1f24', 5, 8, 0.6), satin('#3a7d3f', 0.2),
+  ], warp('textArchUp', 0.5), ['stone', 'grave', 'moss']),
+  definePreset('toxic-slime', 'Toxic Slime', 'spooky', ['#39ff14', '#0d5c0a', '#b6ff9c', '#1a1a1a'], [
+    glow('#39ff14', 26, 0.6), shadow('#0a2e08', 6, 6, 0.5), fill(gradient(['#b6ff9c', '#39ff14', '#0d5c0a'])),
+    bevel(14, 'pillow', 190), innerGlow('#d6ffc8', 12, 0.7), post('aberration', { amount: 2 }, 0.4),
+  ], warp('textInflate', 0.85, 0.7), ['slime', 'toxic', 'glow']),
+  definePreset('pumpkin-carve', 'Pumpkin Carve', 'spooky', ['#ff8c1a', '#e05a00', '#ffd9a0', '#5c2400'], [
+    glow('#ff9d2e', 20, 0.55), shadow('#3a1700', 8, 8, 0.55), fill(gradient(['#ffb35c', '#ff8c1a', '#d45700'])),
+    chiselBevel(8, 170), innerShadow('#4a1c00', 6, 10, 0.6), innerGlow('#ffd9a0', 8, 0.5),
+  ], warp('textArchDown', 0.42), ['pumpkin', 'jack', 'carve']),
+  definePreset('vampire', 'Vampire', 'spooky', ['#1a0508', '#4a0a12', '#8a1538', '#000000'], [
+    glow('#8a1538', 16, 0.4), shadow('#000000', 8, 6, 0.7), fill(gradient(['#3a0d14', '#1a0508', '#000000'])),
+    satin('#8a1538', 0.55), chiselBevel(7, 180), innerShadow('#000000', 4, 6, 0.6),
+  ], warp('textSlantUp', 0.3), ['vampire', 'dark', 'fang']),
+  definePreset('witchcraft', 'Witchcraft', 'spooky', ['#6a2eff', '#a84dff', '#1a0533', '#e5d9ff'], [
+    glow('#a84dff', 26, 0.6), shadow('#12021f', 8, 8, 0.6), fill(gradient(['#a84dff', '#5a1fd6', '#1a0533'], 35)),
+    satin('#e5d9ff', 0.4), post('glitch', { amount: 0.18 }, 0.4),
+  ], warp('textDoubleWave1', 0.5, 0.6), ['witch', 'magic', 'coven'], [
+    { id: 'witch-flicker', kind: 'neonFlicker', enabled: true, duration: 1.3, params: {}, seed: 42 },
+  ]),
+  definePreset('zombie', 'Zombie', 'spooky', ['#7a8f4a', '#4a5c28', '#1e2610', '#2b3a14'], [
+    shadow('#0f1408', 8, 6, 0.65), fill(gradient(['#9caf66', '#6b8238', '#39441c'])), texture('grain', 0.35),
+    innerShadow('#141a08', 5, 8, 0.6), post('grain', { amount: 0.16 }, 0.4),
+  ], warp('textDeflate', 0.5), ['zombie', 'rotten', 'undead']),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {

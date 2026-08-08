@@ -312,6 +312,19 @@ embroidered border with a gentle fabric-sag warp.
 | C7 | **Chocolate Bar** | `#b06b2e #6b3a16 #3a1d08` | Chocolate gradient → weave texture (moulded squares) → inner bevel → inner shadow |
 | C8 | **Peppermint** | `#ffffff #ff2e4d` | Hard-edged angular stripe swirl → inner bevel → white inner glow |
 
+### 4.7 Spooky / horror
+
+| # | Style | Palette | Stack |
+|---|---|---|---|
+| H1 | **Blood Drip** | `#d31c2e #8a0a12 #4a0508` | Wet pillow bevel → inner glow → chromatic aberration → can-down drip warp |
+| H2 | **Ghost** | `#eaf0ff #b9c8ff #5c6aa8` | Translucent fill → pale blue outer glow → satin sheen → wave warp. *Animated: flicker.* |
+| H3 | **Gravestone** | `#aab0bc #6e747e #3a3f47` + moss | Stone gradient → noise grain → emboss bevel → carved inner shadow → moss satin |
+| H4 | **Toxic Slime** | `#b6ff9c #39ff14 #0d5c0a` | Gloss pillow bevel → inner glow → green bloom → aberration → inflate |
+| H5 | **Pumpkin Carve** | `#ffb35c #ff8c1a #d45700` | Chisel bevel → carved inner shadow → warm inner glow → arch-down warp |
+| H6 | **Vampire** | `#3a0d14 #1a0508 #8a1538` | Dark fill → red satin sheen → chisel bevel → tight shadow → slant |
+| H7 | **Witchcraft** | `#a84dff #5a1fd6 #1a0533` | Purple gradient → satin → glitch → double-wave warp. *Animated: flicker.* |
+| H8 | **Zombie** | `#9caf66 #6b8238 #39441c` | Sickly fill → grain → inner shadow → film grain → deflate warp |
+
 ---
 
 ## 5. Core data model
@@ -1170,7 +1183,7 @@ content or transform:
 export interface Preset {
   id: string;
   name: string;
-  category: 'metallic' | 'synthwave' | 'y2k' | 'nineties' | 'dimensional' | 'texture' | 'sweets' | 'user';
+  category: 'metallic' | 'synthwave' | 'y2k' | 'nineties' | 'dimensional' | 'texture' | 'sweets' | 'spooky' | 'user';
   tags: string[];
   author?: string;
   thumbnail?: string;           // pre-rendered WebP for the built-ins
