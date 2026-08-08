@@ -193,6 +193,8 @@ test.describe('render quality', () => {
     expect(counted).toBeGreaterThan(20_000);
     expect(secondDifference / counted).toBeGreaterThan(10);
     expect(strongRidges / counted).toBeGreaterThan(0.3);
+  });
+
   test('Topographic Taffy keeps its elevation bands distinct', async ({ page }) => {
     await page.getByLabel('Content').fill('TERRAIN');
     await page.getByRole('button', { name: 'Topographic Taffy' }).click();

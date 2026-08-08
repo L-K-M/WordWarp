@@ -311,6 +311,7 @@ function pixelate(size: number, crisp = true): PostEffect {
   return post('pixelate', { size, crisp }, 1);
 }
 
+/**
  * One band of a false-colour ramp keyed to depth inside the glyph.
  *
  * An inner glow's mask is a linear falloff from the outline to `size` pixels in, so a stack of
@@ -784,7 +785,10 @@ export const BUILT_IN_PRESETS: Preset[] = [
   ], warp('textWave4', 0.3), ['stars', 'night', 'sky'], [
     { id: 'starfield-sparkle', kind: 'sparkle', enabled: true, duration: 2, params: { amount: 20 }, seed: 99 },
   ]),
-  definePreset('molten-core', 'Molten Core', 'texture', ['#ff6a00', '#3d1505', '#0a0302', '#ff2a00'], [
+  definePreset('magma-fissure', 'Magma Fissure', 'texture', ['#ff6a00', '#3d1505', '#0a0302', '#ff2a00'], [
+    // Cooled rock lit from within: a near-black gradient body with the heat arriving entirely
+    // through the inner glow, so the light reads as coming up through cracks rather than off the
+    // surface. Distinct from `molten-core`, which is the same material seen as depth-keyed bands.
     shadow('#1a0202', 12, 14, 0.6), glow('#ff2a00', 34, 0.55),
     fill(gradient(['#3d1505', '#1a0a05', '#0a0302'])), innerGlow('#ff7a00', 16, 0.9),
     satin('#ff4500', 0.4), texture('grain', 0.22),
@@ -821,11 +825,16 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('comic-pow', 'Comic Pow!', 'nineties', ['#ffd400', '#111111', '#d00000', '#fff9c4'], [
     shadow('#d00000', 11, 0.5, 0.95), fill(gradient(['#fff36e', '#ffd400', '#f7a500'], 100)), stroke(8, '#111111'), post('halftone', { frequency: 6 }, 0.32),
   ], warp('textArchUp', 0.28), ['comic', 'pop-art', 'halftone']),
-  definePreset('molten-core', 'Molten Core', 'texture', ['#fcef50', '#ee7d30', '#ad2718', '#52140e'], [
+  // Lava in motion, off the Office `fire` ramp, with a specular sweep for the crawl. The other two
+  // fire styles are both still: this is the one that flows.
+  definePreset('lava-flow', 'Lava Flow', 'texture', ['#fcef50', '#ee7d30', '#ad2718', '#52140e'], [
     shadow('#2b0a02', 10, 8, 0.6), glow('#ff5e00', 30, 0.7), fill(ramp('fire')), bevel(8, 'inner', 110), texture('grain', 0.18),
   ], warp('textDeflateInflate', 0.45), ['lava', 'fire', 'animated'], [
     { id: 'molten-flow', kind: 'specularSweep', enabled: true, duration: 6, params: {}, seed: 5 },
-  definePreset('aurora', 'Aurora', 'synthwave', ['#07223f', '#12c48a', '#9a6bff', '#7dffb2'], [
+  ]),
+  // The only aurora that drifts in hue as well as shape; `aurora` in the cosmic set is the still
+  // one and `aurora-borealis` is the detailed static build.
+  definePreset('aurora-drift', 'Aurora Drift', 'synthwave', ['#07223f', '#12c48a', '#9a6bff', '#7dffb2'], [
     glow('#b967ff', 22, 0.35), glow('#7dffb2', 16, 0.4), fill(gradient(['#07223f', '#0b5a52', '#12c48a', '#9a6bff'], 100)), innerGlow('#c9ffe9', 10, 0.4),
   ], warp('textWave2', 0.4), ['aurora', 'northern-lights', 'animated'], [
     { id: 'aurora-hue', kind: 'hueCycle', enabled: true, duration: 9, params: {}, seed: 21 },
@@ -838,6 +847,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
     glow('#33ff66', 10, 0.5), fill(solid('#46f97f')), innerGlow('#d6ffe0', 3, 0.3), post('scanlines', { amount: 0.3, period: 3 }, 0.6),
   ], none(), ['crt', 'phosphor', 'matrix', 'animated'], [
     { id: 'terminal-roll', kind: 'scanlineRoll', enabled: true, duration: 4, params: {}, seed: 41 },
+  ]),
   definePreset('night-market', 'Night Market', 'synthwave', ['#ff2d55', '#ff9f1c', '#ffe8c8', '#3d0b12'], [
     glow('#ff9f1c', 30, 0.5), glow('#ff2d55', 14, 1), fill(solid('#ffd9a8', 0.55)), stroke(4.5, '#ff5a36'),
   ], none(), ['neon', 'sign', 'flicker', 'animated'], [

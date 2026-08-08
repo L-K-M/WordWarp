@@ -7,7 +7,7 @@ import { OFFICE_RAMPS } from './office-ramps';
 import { PRESET_CATEGORY_TABS } from './types';
 
 /** Bump deliberately when a style is added or removed, so neither happens by accident. */
-const PRESET_COUNT = 82;
+const PRESET_COUNT = 99;
 
 describe('preset library', () => {
   it('ships every named style across the core and themed categories', () => {
@@ -16,12 +16,6 @@ describe('preset library', () => {
     // adding a style only ever needs the count below touched once.
     expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(BUILT_IN_PRESETS.length);
     expect(BUILT_IN_PRESETS).toHaveLength(PRESET_COUNT);
-  it('ships every named style from the six core categories', () => {
-    expect(BUILT_IN_PRESETS).toHaveLength(42);
-    expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(42);
-    expect(BUILT_IN_PRESETS).toHaveLength(44);
-    expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(44);
-    expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(BUILT_IN_PRESETS.length);
     expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.category))).toEqual(
       new Set([
         'metallic', 'synthwave', 'y2k', 'nineties', 'dimensional', 'texture',
@@ -59,6 +53,8 @@ describe('preset library', () => {
       expect.objectContaining({ kind: 'bevel', style: 'pillow' }),
       expect.objectContaining({ kind: 'satin' }),
     ]));
+  });
+
   it('builds Topographic Taffy from nested elevation bands', () => {
     const preset = BUILT_IN_PRESETS.find((candidate) => candidate.id === 'topographic-taffy');
 
