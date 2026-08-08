@@ -116,18 +116,6 @@ function chiselBevel(size: number, depth = 130, style: BevelEffect['style'] = 'i
   return effect;
 }
 
-function chiselBevel(size: number, depth = 130, style: BevelEffect['style'] = 'inner'): BevelEffect {
-  const effect = bevel(size, style, depth);
-  effect.technique = 'chiselHard';
-  return effect;
-}
-
-function chiselBevel(size: number, depth = 130, style: BevelEffect['style'] = 'inner'): BevelEffect {
-  const effect = bevel(size, style, depth);
-  effect.technique = 'chiselHard';
-  return effect;
-}
-
 function shadow(color: string, distance = 14, size = 12, opacity = 0.68): DropShadowEffect {
   const effect = createEffect('dropShadow');
   effect.color = hexColor(color);
@@ -291,12 +279,6 @@ function post(type: PostEffect['type'], params: PostEffect['params'], opacity = 
  */
 function dither(levels: number, matrix: number, dot: number, hardEdge = true): PostEffect {
   return post('dither', { levels, matrix, dot, hardEdge }, 1);
-}
-
-function chiselBevel(size: number, depth: number, style: BevelEffect['style'] = 'inner'): BevelEffect {
-  const effect = bevel(size, style, depth);
-  effect.technique = 'chiselHard';
-  return effect;
 }
 
 /**

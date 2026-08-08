@@ -11,6 +11,7 @@ import { PRESET_WARP_IDS, type Effect, type TextElement } from '../model/types';
 import { startAutosave, type AutosaveController } from '../persistence/autosave';
 import { loadActiveDocument, saveDocument } from '../persistence/database';
 import { applyPresetToElement, BUILT_IN_PRESETS } from '../presets/library';
+import { PRESET_CATEGORY_TABS } from '../presets/types';
 import type { Preset, PresetCategory } from '../presets/types';
 import { buildShareUrl, decodeShareFragment } from '../share/url';
 import { subscribeToServiceWorkerUpdate, type ServiceWorkerUpdate } from '../service-worker-update';
@@ -24,17 +25,7 @@ import { PresetPreview } from '../ui/PresetPreview';
 import { warpDisplayName } from '../warp';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 
-const presetCategories: Array<{ id: PresetCategory | 'all'; label: string }> = [
-  { id: 'all', label: 'All' },
-  { id: 'metallic', label: 'Metal' },
-  { id: 'synthwave', label: 'Synth' },
-  { id: 'y2k', label: 'Y2K' },
-  { id: 'nineties', label: '90s' },
-  { id: 'dimensional', label: '3D' },
-  { id: 'texture', label: 'FX' },
-  { id: 'sweets', 'spooky', 'Sweets', 'Spooky' },
-  { id: 'cosmic', label: 'Cosmic' },
-];
+const presetCategories = PRESET_CATEGORY_TABS;
 
 /* Jellybean flavours come in bean-0 .. bean-6 in styles.css; cycle chips through them. */
 const BEAN_COLOR_COUNT = 7;

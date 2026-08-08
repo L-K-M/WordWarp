@@ -295,9 +295,9 @@ Glitch (RGB split + block displacement), Halftone (dot screen, angle + frequency
 Misregistration (2–3 flat inks offset 2–4px, multiply), Scanlines (period, opacity, roll offset),
 CRT Bloom, Film Grain, Distressed (mask by noise threshold), Chromatic Aberration (radial RGB
 offset). **Cross-Polar Crystal** adds seeded mineral cells with dark extinction boundaries over an
-interference-colour field, chisel relief and a faceted Stop warp.
-offset). **Satin Stitch Sampler** adds directional thread bundles, padded relief and a nested
-embroidered border with a gentle fabric-sag warp.
+interference-colour field, chisel relief and a faceted Stop warp. **Satin Stitch Sampler** adds
+directional thread bundles, padded relief and a nested embroidered border with a gentle fabric-sag
+warp.
 
 ### 4.7 Sweets / candy
 
@@ -312,7 +312,7 @@ embroidered border with a gentle fabric-sag warp.
 | C7 | **Chocolate Bar** | `#b06b2e #6b3a16 #3a1d08` | Chocolate gradient → weave texture (moulded squares) → inner bevel → inner shadow |
 | C8 | **Peppermint** | `#ffffff #ff2e4d` | Hard-edged angular stripe swirl → inner bevel → white inner glow |
 
-### 4.7 Spooky / horror
+### 4.8 Spooky / horror
 
 | # | Style | Palette | Stack |
 |---|---|---|---|
@@ -325,7 +325,7 @@ embroidered border with a gentle fabric-sag warp.
 | H7 | **Witchcraft** | `#a84dff #5a1fd6 #1a0533` | Purple gradient → satin → glitch → double-wave warp. *Animated: flicker.* |
 | H8 | **Zombie** | `#9caf66 #6b8238 #39441c` | Sickly fill → grain → inner shadow → film grain → deflate warp |
 
-### 4.7 Cosmic / space
+### 4.9 Cosmic / space
 
 | # | Style | Palette | Stack |
 |---|---|---|---|

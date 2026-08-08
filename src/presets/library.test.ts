@@ -4,26 +4,29 @@ import { createDefaultDocument } from '../model/defaults';
 import { documentSchema } from '../model/schema';
 import { applyPresetToElement, BUILT_IN_PRESETS } from './library';
 import { OFFICE_RAMPS } from './office-ramps';
+import { PRESET_CATEGORY_TABS } from './types';
+
+/** Bump deliberately when a style is added or removed, so neither happens by accident. */
+const PRESET_COUNT = 82;
 
 describe('preset library', () => {
-  it('ships every named style from the six core categories', () => {
-    expect(BUILT_IN_PRESETS).toHaveLength(44);
-    expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(44);
-    expect(BUILT_IN_PRESETS).toHaveLength(42);
+  it('ships every named style across the core and themed categories', () => {
+    // Ids are what share links and autosaved documents carry, so a collision would silently make
+    // one preset unreachable. Asserted against the array length rather than a second literal, so
+    // adding a style only ever needs the count below touched once.
     expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(BUILT_IN_PRESETS.length);
-    expect(BUILT_IN_PRESETS).toHaveLength(49);
-    expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(49);
+    expect(BUILT_IN_PRESETS).toHaveLength(PRESET_COUNT);
     expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.category))).toEqual(
-      new Set(['metallic', 'synthwave', 'y2k', 'nineties', 'dimensional', 'texture', 'sweets']),
-    expect(BUILT_IN_PRESETS).toHaveLength(49);
-    expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(49);
-    expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.category))).toEqual(
-      new Set(['metallic', 'synthwave', 'y2k', 'nineties', 'dimensional', 'texture', 'spooky']),
-    expect(BUILT_IN_PRESETS).toHaveLength(49);
-    expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(49);
-    expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.category))).toEqual(
-      new Set(['metallic', 'synthwave', 'y2k', 'nineties', 'dimensional', 'texture', 'cosmic']),
+      new Set([
+        'metallic', 'synthwave', 'y2k', 'nineties', 'dimensional', 'texture',
+        'sweets', 'spooky', 'cosmic',
+      ]),
     );
+  });
+
+  it('offers every non-user category a tab in the picker', () => {
+    const tabbed = new Set(PRESET_CATEGORY_TABS.map((tab) => tab.id));
+    for (const preset of BUILT_IN_PRESETS) expect(tabbed.has(preset.category), preset.category).toBe(true);
   });
 
   it('builds Cross-Polar Crystal from interference colour and mineral cells', () => {
