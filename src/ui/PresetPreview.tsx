@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { getCachedPresetPreview, renderPresetPreview } from '../presets/preview-render';
+import { getCachedPresetPreview, renderPresetPreviewAsync } from '../presets/preview-render';
 import type { Preset } from '../presets/types';
 
 const SCRIM = 'rgb(9 11 18 / 62%)';
@@ -33,7 +33,12 @@ export function PresetPreview({ preset, swatch }: PresetPreviewProps) {
         if (!entries.some((entry) => entry.isIntersecting)) return;
         observer.disconnect();
         schedule(() => {
-          if (!cancelled) setSource(renderPresetPreview(preset));
+          void renderPresetPreviewAsync(preset).then((rendered) => {
+            if (!cancelled && rendered) setSource(rendered);
+          }, (error: unknown) => {
+            // The swatch placeholder stays up; a thumbnail is decoration, not a hard failure.
+            if (!cancelled) console.warn(`Preset preview for "${preset.name}" did not render`, error);
+          });
         });
       },
       { rootMargin: '240px' },

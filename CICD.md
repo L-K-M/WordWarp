@@ -16,6 +16,10 @@ checkout credentials.
   uploaded; traces and screenshots are retained on failure.
 - `container` builds and starts Compose, verifies SPA fallback, manifest media type, and service-worker
   cache headers, then always tears the service down.
+- Every `ci.yml` artifact upload is `continue-on-error`. All three are diagnostic — nothing downloads
+  them — so a full or unavailable artifact store must not turn a passing gate red, which makes an
+  infrastructure failure indistinguishable from a real one. `release.yml` uploads the archive its
+  publish job later downloads, so that one stays strict and is expected to fail the run.
 - Permissions are `contents: read`; PR code receives no secrets and cannot publish.
 
 Local equivalent:

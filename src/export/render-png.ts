@@ -10,6 +10,7 @@ import {
   renderDocument2d,
 } from '../render/fallback2d/renderer';
 import { get2dContext } from '../render/surface';
+import { ensureFontsForDocument, missingBundledFonts } from '../text/fonts';
 
 export interface RenderedPng {
   bytes: Uint8Array;
@@ -30,17 +31,34 @@ export async function renderPngOnSurface(
   scale: number,
   createSurface: () => ExportSurface,
 ): Promise<RenderedPng> {
+  // Bundled fonts must be registered before any text is measured or drawn -- in a worker (the
+  // preferred export path) that set is separate from the window's, so this cannot be hoisted to
+  // the caller. A font that fails to load leaves the fallback face in place rather than failing.
+  await ensureFontsForDocument(document);
   const rendered = renderRgbaOnSurface(document, scale, createSurface);
   const bytes = await encodePngPixels(rendered.pixels, rendered.width, rendered.height);
   return { bytes, width: rendered.width, height: rendered.height };
 }
 
+/**
+ * Rasterise a document to straight (un-premultiplied) RGBA pixels.
+ *
+ * Precondition: every bundled font the document uses must already be registered in this realm's
+ * FontFaceSet -- call `ensureFontsForDocument` first (`renderPngOnSurface` and `exportAnimation`
+ * both do). Skipping it renders fallback glyphs instead of failing, which is worse: it is wrong
+ * silently.
+ */
 export function renderRgbaOnSurface(
   document: WordWarpDocument,
   scale: number,
   createSurface: () => ExportSurface,
   fixedBounds?: Bounds,
 ): RenderedRgba {
+  // The precondition from the docstring, enforced as a signal rather than a silent wrong render.
+  const missingFonts = missingBundledFonts(document);
+  if (missingFonts.length > 0) {
+    console.warn(`WordWarp is rendering with unloaded bundled fonts (${missingFonts.join(', ')}); call ensureFontsForDocument first`);
+  }
   const surface = createSurface();
   const context = get2dContext(surface, true);
   const bounds = fixedBounds ?? getExportBounds(document, context);

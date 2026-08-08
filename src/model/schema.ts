@@ -179,7 +179,7 @@ export const effectSchema = z.discriminatedUnion('kind', [
       z.object({ type: z.literal('asset'), assetId: z.string().min(1) }),
       z.object({
         type: z.literal('procedural'),
-        pattern: z.enum(['noise', 'weave', 'halftone', 'grain']),
+        pattern: z.enum(['noise', 'weave', 'halftone', 'grain', 'topography', 'mottle', 'crystal', 'stitch']),
       }),
     ]),
     scale: finite.positive(),
@@ -197,7 +197,7 @@ export const effectSchema = z.discriminatedUnion('kind', [
   z.object({
     ...effectBase,
     kind: z.literal('post'),
-    type: z.enum(['glitch', 'halftone', 'scanlines', 'grain', 'aberration']),
+    type: z.enum(['glitch', 'halftone', 'scanlines', 'grain', 'aberration', 'dither', 'pixelate']),
     seed: z.number().int(),
     params: z.record(z.string(), z.union([finite, z.string(), z.boolean()])),
   }),

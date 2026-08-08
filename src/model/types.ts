@@ -161,7 +161,20 @@ export interface LongShadowEffect extends EffectBase {
 
 export interface TextureOverlayEffect extends EffectBase {
   kind: 'textureOverlay';
-  source: { type: 'asset'; assetId: string } | { type: 'procedural'; pattern: 'noise' | 'weave' | 'halftone' | 'grain' };
+  source:
+    | { type: 'asset'; assetId: string }
+    | {
+        type: 'procedural';
+        pattern:
+          | 'noise'
+          | 'weave'
+          | 'halftone'
+          | 'grain'
+          | 'topography'
+          | 'mottle'
+          | 'crystal'
+          | 'stitch';
+      };
   scale: number;
   rotation: number;
   clipToShape: boolean;
@@ -177,7 +190,7 @@ export interface ReflectionEffect extends EffectBase {
 
 export interface PostEffect extends EffectBase {
   kind: 'post';
-  type: 'glitch' | 'halftone' | 'scanlines' | 'grain' | 'aberration';
+  type: 'glitch' | 'halftone' | 'scanlines' | 'grain' | 'aberration' | 'dither' | 'pixelate';
   seed: number;
   params: Record<string, number | string | boolean>;
 }

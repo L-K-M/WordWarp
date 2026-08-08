@@ -288,13 +288,56 @@ palette and the effect stack that reproduces it.
 | D3 | **Long Shadow Flat** | `#ff6348` + shadow `rgba(0,0,0,.18)` | Flat fill → 45° long shadow to canvas edge → no blur |
 | D4 | **Letterpress** | Paper `#efe7d8`, ink `#3a3226` | Subtractive: inner shadow top-left, inner highlight bottom-right, no fill change |
 | D5 | **Inflated Balloon** | `#ff4d6d #ffffff` | Inflate warp → pillow emboss size 40 → strong rim light → glossy specular blob → contact shadow |
+| D6 | **Topographic Taffy** | `#fff4cf #d9ed92 #65c6a6 #2d8b8c #f2b84b #e85d4f` | Nested inside strokes become elevation bands → paper grain → short cut-layer extrusion → Can Up terrain warp |
 
 ### 4.6 Post / texture
 
 Glitch (RGB split + block displacement), Halftone (dot screen, angle + frequency), Riso
 Misregistration (2–3 flat inks offset 2–4px, multiply), Scanlines (period, opacity, roll offset),
 CRT Bloom, Film Grain, Distressed (mask by noise threshold), Chromatic Aberration (radial RGB
-offset).
+offset). **Cross-Polar Crystal** adds seeded mineral cells with dark extinction boundaries over an
+interference-colour field, chisel relief and a faceted Stop warp. **Satin Stitch Sampler** adds
+directional thread bundles, padded relief and a nested embroidered border with a gentle fabric-sag
+warp.
+
+### 4.7 Sweets / candy
+
+| # | Style | Palette | Stack |
+|---|---|---|---|
+| C1 | **Candy Cane** | `#ff2e4d #ffffff` stripes | Hard-edged striped fill at 45° → inner bevel → white inner glow → arch-up warp |
+| C2 | **Cotton Candy** | `#ffd1ec #ff9ec7 #b8a8ff` | Pastel gradient fill → grain texture → soft pink glow → inflate warp |
+| C3 | **Gumdrop** | `#ff5fa2 #c2185b #ffffff` | Radial highlight fill → pillow bevel → white inner glow → satin sheen |
+| C4 | **Bubblegum Blow** | `#ffffff #ff8fc0 #ff2e88` | Gloss gradient → big pillow bevel → strong inner glow → halftone dot texture. *Animated: pulse.* |
+| C5 | **Lollipop** | full hue sweep | Angular (conic) rainbow fill → circle warp → white gloss. *Animated: hue cycle.* |
+| C6 | **Licorice Twist** | `#2a2a2e #000000 #8a1538` | Near-black fill → chisel bevel → red satin sheen → wave-twist warp |
+| C7 | **Chocolate Bar** | `#b06b2e #6b3a16 #3a1d08` | Chocolate gradient → weave texture (moulded squares) → inner bevel → inner shadow |
+| C8 | **Peppermint** | `#ffffff #ff2e4d` | Hard-edged angular stripe swirl → inner bevel → white inner glow |
+
+### 4.8 Spooky / horror
+
+| # | Style | Palette | Stack |
+|---|---|---|---|
+| H1 | **Blood Drip** | `#d31c2e #8a0a12 #4a0508` | Wet pillow bevel → inner glow → chromatic aberration → can-down drip warp |
+| H2 | **Ghost** | `#eaf0ff #b9c8ff #5c6aa8` | Translucent fill → pale blue outer glow → satin sheen → wave warp. *Animated: flicker.* |
+| H3 | **Gravestone** | `#aab0bc #6e747e #3a3f47` + moss | Stone gradient → noise grain → emboss bevel → carved inner shadow → moss satin |
+| H4 | **Toxic Slime** | `#b6ff9c #39ff14 #0d5c0a` | Gloss pillow bevel → inner glow → green bloom → aberration → inflate |
+| H5 | **Pumpkin Carve** | `#ffb35c #ff8c1a #d45700` | Chisel bevel → carved inner shadow → warm inner glow → arch-down warp |
+| H6 | **Vampire** | `#3a0d14 #1a0508 #8a1538` | Dark fill → red satin sheen → chisel bevel → tight shadow → slant |
+| H7 | **Witchcraft** | `#a84dff #5a1fd6 #1a0533` | Purple gradient → satin → glitch → double-wave warp. *Animated: flicker.* |
+| H8 | **Zombie** | `#9caf66 #6b8238 #39441c` | Sickly fill → grain → inner shadow → film grain → deflate warp |
+
+### 4.9 Cosmic / space
+
+| # | Style | Palette | Stack |
+|---|---|---|---|
+| X1 | **Aurora** | `#7dffd6 #39ff88 #1b6a4d #6a4dff` | Glow → green→violet gradient → satin sheen → inner glow → wave warp |
+| X2 | **Nebula** | `#ff9ec7 #c86bff #5a1fd6 #1a0533` | Radial gradient → grain dust → glow → inner glow. *Animated: hue cycle.* |
+| X3 | **Comet Trail** | `#ffffff #ffd166 #6a8aff` | Perspective extrude (180°) → glow head → white stroke → slant |
+| X4 | **Solar Flare** | `#fff3a0 #ffb84d #ff6a1a #c62800` | Intense glow → pillow bevel → inner glow → chromatic aberration → inflate |
+| X5 | **Galaxy Spiral** | `#ff6ec7 #a84dff #3a2fd6 #6ec7ff` | Conic rainbow spiral → satin → grain → thin stroke → circle warp. *Animated: specular sweep.* |
+| X6 | **Black Hole** | `#ffd166 #a84dff #000000` | Double glow → near-black body → gold stroke → aberration → scanlines → ring-inside warp |
+| X7 | **Red Giant** | `#ffc9a0 #ff7a4d #d6153a #6a0018` | Glow → chisel bevel → inner glow → grain → deflate warp |
+| X8 | **Starfield** | `#e8ecff #ffd166 #0a0a1f` | Light fill → halftone star dots → grain → white stroke → wave warp. *Animated: sparkle.* |
 
 ---
 
@@ -1154,7 +1197,8 @@ content or transform:
 export interface Preset {
   id: string;
   name: string;
-  category: 'metallic' | 'synthwave' | 'y2k' | 'nineties' | 'dimensional' | 'texture' | 'user';
+  category: 'metallic' | 'synthwave' | 'y2k' | 'nineties' | 'dimensional' | 'texture'
+    | 'sweets' | 'spooky' | 'cosmic' | 'user';
   tags: string[];
   author?: string;
   thumbnail?: string;           // pre-rendered WebP for the built-ins

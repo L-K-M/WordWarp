@@ -23,6 +23,25 @@ testGlobals.__APP_VERSION__ ??= '0.0.0-test';
  * software path under headless, so ask for the accelerated one explicitly. If a machine cannot
  * provide it the render simply comes out seamless for a different reason and the test still passes.
  */
+
+/**
+ * Desktop Chromium only, and declared at file scope rather than inside the test.
+ *
+ * `test.use` below is file-scoped, so every project in the matrix inherits those flags -- and they
+ * are Chromium's. A skip in the test body comes too late to help: the browser is launched to build
+ * the `page` fixture before the body runs, so WebKit was being started with `--use-angle=swiftshader`
+ * and died on `Cannot parse arguments` before it could ever be skipped.
+ *
+ * Declared here, the condition is evaluated off `browserName` and `isMobile` -- both plain options,
+ * neither of which starts a browser -- so the non-Chromium projects skip without a launch. The
+ * `isMobile` half keeps the desktop-only scope the in-body check had: the iPhone profile also runs
+ * Chromium, and this test wants the desktop one.
+ */
+test.skip(
+  ({ browserName, isMobile }) => browserName !== 'chromium' || Boolean(isMobile),
+  'Needs desktop Chromium: the GPU rasterisation flags this test depends on are Chromium-only.',
+);
+
 test.use({
   launchOptions: {
     args: [
@@ -56,8 +75,7 @@ function warpedFillFragment(): string {
   return encodeShareFragment(document);
 }
 
-test('a warped glyph has no seams where its mesh triangles meet', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'chromium');
+test('a warped glyph has no seams where its mesh triangles meet', async ({ page }) => {
 
   await page.goto(`/#${encodeURI(warpedFillFragment().replace(/^#/, ''))}`);
   await expect(page.getByLabel('Content')).toHaveValue('SEAM');

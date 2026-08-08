@@ -61,7 +61,7 @@ test.describe('render quality', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium');
     await page.goto('/');
-    await expect(page.getByRole('button', { name: 'WORDWARP TYPE EFFECTS LAB' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'WordWarp GOO TYPE LAB' })).toBeVisible();
   });
 
   test('exporting at a higher scale adds resolution instead of upscaling', async ({ page }) => {
@@ -122,6 +122,114 @@ test.describe('render quality', () => {
     // Measured 2.49 before this was fixed and 1.06 after, against a floor of 0.54 with the bevel
     // switched off entirely. 1.6 sits clear of both.
     expect(total / counted).toBeLessThan(1.6);
+  });
+
+  test('Cross-Polar Crystal prints internal mineral boundaries', async ({ page }) => {
+    await page.getByLabel('Content').fill('CRYSTAL');
+    await page.getByRole('button', { name: 'Cross-Polar Crystal' }).click();
+
+    const image = await exportAt(page, '2');
+    const radius = 5;
+    const alpha = (x: number, y: number) => Number(image.data[(y * image.width + x) * 4 + 3]);
+    const luma = (x: number, y: number) => {
+      const offset = (y * image.width + x) * 4;
+      return (Number(image.data[offset]) + Number(image.data[offset + 1]) + Number(image.data[offset + 2])) / 3;
+    };
+    let boundaryPixels = 0;
+    for (let y = radius; y < image.height - radius; y += 1) {
+      for (let x = radius; x < image.width - radius; x += 1) {
+        if (alpha(x, y) < 240 || luma(x, y) > 100) continue;
+        const crossesBrightHorizontal = alpha(x - radius, y) > 240
+          && alpha(x + radius, y) > 240
+          && luma(x - radius, y) > 140
+          && luma(x + radius, y) > 140;
+        const crossesBrightVertical = alpha(x, y - radius) > 240
+          && alpha(x, y + radius) > 240
+          && luma(x, y - radius) > 140
+          && luma(x, y + radius) > 140;
+        if (crossesBrightHorizontal || crossesBrightVertical) boundaryPixels += 1;
+      }
+    }
+
+    // These are dark pixels enclosed by a bright glyph face on opposing sides. The silhouette,
+    // counter holes, outer stroke and extrusion do not qualify, so the signal comes from the
+    // clipped crystal network rather than from ordinary text edges.
+    expect(boundaryPixels).toBeGreaterThan(120);
+  });
+
+  test('Satin Stitch Sampler retains individual thread ridges', async ({ page }) => {
+    await page.getByLabel('Content').fill('THREAD');
+    await page.getByRole('button', { name: 'Satin Stitch Sampler' }).click();
+
+    const image = await exportAt(page, '1');
+    const alpha = (x: number, y: number) => Number(image.data[(y * image.width + x) * 4 + 3]);
+    const luma = (x: number, y: number) => {
+      const offset = (y * image.width + x) * 4;
+      return (Number(image.data[offset]) + Number(image.data[offset + 1]) + Number(image.data[offset + 2])) / 3;
+    };
+    let counted = 0;
+    let strongRidges = 0;
+    let secondDifference = 0;
+    for (let y = 2; y < image.height - 2; y += 1) {
+      for (let x = 2; x < image.width - 2; x += 1) {
+        if (alpha(x, y) < 250
+          || alpha(x - 2, y) < 250
+          || alpha(x + 2, y) < 250
+          || alpha(x, y - 2) < 250
+          || alpha(x, y + 2) < 250) continue;
+        const center = luma(x, y);
+        if (center < 70) continue;
+        const localDifference = (
+          Math.abs(luma(x + 1, y) - center) + Math.abs(luma(x, y + 1) - center)
+        ) / 2;
+        secondDifference += Math.abs(luma(x + 1, y) - 2 * center + luma(x - 1, y));
+        if (localDifference > 12) strongRidges += 1;
+        counted += 1;
+      }
+    }
+
+    // Work well inside the opaque face so the border, shadow and anti-aliased silhouette cannot
+    // satisfy the assertion. Smooth gradient + bevel shading measures about half this frequency.
+    expect(counted).toBeGreaterThan(20_000);
+    expect(secondDifference / counted).toBeGreaterThan(10);
+    expect(strongRidges / counted).toBeGreaterThan(0.3);
+  });
+
+  test('Topographic Taffy keeps its elevation bands distinct', async ({ page }) => {
+    await page.getByLabel('Content').fill('TERRAIN');
+    await page.getByRole('button', { name: 'Topographic Taffy' }).click();
+
+    const image = await exportAt(page, '2');
+    const bandColours = [
+      [217, 237, 146],
+      [101, 198, 166],
+      [45, 139, 140],
+      [242, 184, 75],
+      [232, 93, 79],
+    ];
+    const counts = bandColours.map(() => 0);
+    for (let index = 0; index < image.width * image.height; index += 1) {
+      const offset = index * 4;
+      if (Number(image.data[offset + 3]) < 220) continue;
+      let closest = -1;
+      let closestDistance = Number.POSITIVE_INFINITY;
+      bandColours.forEach(([red, green, blue], colourIndex) => {
+        const distance = Math.hypot(
+          Number(image.data[offset]) - red,
+          Number(image.data[offset + 1]) - green,
+          Number(image.data[offset + 2]) - blue,
+        );
+        if (distance < closestDistance) {
+          closest = colourIndex;
+          closestDistance = distance;
+        }
+      });
+      if (closestDistance < 55) counts[closest] += 1;
+    }
+
+    // A too-wide outer stroke used to bury the inner elevations on ordinary glyph stems. Each
+    // designed tint must occupy a real region in the exported pixels, not just exist in metadata.
+    for (const count of counts) expect(count).toBeGreaterThan(250);
   });
 
   test('transparent export keeps shadows free of grey fringing', async ({ page }) => {

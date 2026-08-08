@@ -4,14 +4,76 @@ import { createDefaultDocument } from '../model/defaults';
 import { documentSchema } from '../model/schema';
 import { applyPresetToElement, BUILT_IN_PRESETS } from './library';
 import { OFFICE_RAMPS } from './office-ramps';
+import { PRESET_CATEGORY_TABS } from './types';
+
+/** Bump deliberately when a style is added or removed, so neither happens by accident. */
+const PRESET_COUNT = 99;
 
 describe('preset library', () => {
-  it('ships every named style from the six core categories', () => {
-    expect(BUILT_IN_PRESETS).toHaveLength(41);
-    expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(41);
+  it('ships every named style across the core and themed categories', () => {
+    // Ids are what share links and autosaved documents carry, so a collision would silently make
+    // one preset unreachable. Asserted against the array length rather than a second literal, so
+    // adding a style only ever needs the count below touched once.
+    expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.id)).size).toBe(BUILT_IN_PRESETS.length);
+    expect(BUILT_IN_PRESETS).toHaveLength(PRESET_COUNT);
     expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.category))).toEqual(
-      new Set(['metallic', 'synthwave', 'y2k', 'nineties', 'dimensional', 'texture']),
+      new Set([
+        'metallic', 'synthwave', 'y2k', 'nineties', 'dimensional', 'texture',
+        'sweets', 'spooky', 'cosmic',
+      ]),
     );
+  });
+
+  it('offers every non-user category a tab in the picker', () => {
+    const tabbed = new Set(PRESET_CATEGORY_TABS.map((tab) => tab.id));
+    for (const preset of BUILT_IN_PRESETS) expect(tabbed.has(preset.category), preset.category).toBe(true);
+    // The unfiltered tab is the panel's initial state, so losing it would leave the picker opening
+    // with no tab selected -- which the per-category check above cannot see, since 'all' is not a
+    // category any preset carries.
+    expect(PRESET_CATEGORY_TABS[0]?.id).toBe('all');
+  });
+
+  it('builds Cross-Polar Crystal from interference colour and mineral cells', () => {
+    const preset = BUILT_IN_PRESETS.find((candidate) => candidate.id === 'cross-polar-crystal');
+
+    expect(preset?.apply.warp).toMatchObject({ kind: 'preset', preset: 'textStop' });
+    expect(preset?.tags).toEqual(expect.arrayContaining(['petrographic', 'birefringent', 'thin-section']));
+    expect(preset?.apply.effects).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: 'textureOverlay', source: { type: 'procedural', pattern: 'crystal' } }),
+      expect.objectContaining({ kind: 'bevel', technique: 'chiselHard' }),
+    ]));
+  });
+
+  it('builds Satin Stitch Sampler from directional thread and padded relief', () => {
+    const preset = BUILT_IN_PRESETS.find((candidate) => candidate.id === 'satin-stitch-sampler');
+
+    expect(preset?.apply.warp).toMatchObject({ kind: 'preset', preset: 'textCurveDown' });
+    expect(preset?.tags).toEqual(expect.arrayContaining(['embroidery', 'needlework', 'textile', 'handmade']));
+    expect(preset?.apply.effects.map((effect) => effect.kind)).toEqual([
+      'dropShadow', 'fill', 'textureOverlay', 'satin', 'bevel', 'innerGlow', 'stroke', 'stroke',
+    ]);
+    expect(preset?.apply.effects).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: 'textureOverlay', source: { type: 'procedural', pattern: 'stitch' } }),
+      expect.objectContaining({ kind: 'bevel', style: 'pillow' }),
+      expect.objectContaining({ kind: 'satin' }),
+    ]));
+  });
+
+  it('builds Topographic Taffy from nested elevation bands', () => {
+    const preset = BUILT_IN_PRESETS.find((candidate) => candidate.id === 'topographic-taffy');
+
+    expect(preset?.apply.warp).toMatchObject({ kind: 'preset', preset: 'textCanUp' });
+    expect(preset?.preview).toEqual(['#fff4cf', '#d9ed92', '#65c6a6', '#2d8b8c', '#f2b84b', '#e85d4f']);
+    expect(preset?.tags).toEqual(expect.arrayContaining(['topographic', 'contour', 'strata', 'cartography']));
+    const strokes = preset?.apply.effects.filter((effect) => effect.kind === 'stroke') ?? [];
+    expect(strokes.map((effect) => [effect.width, effect.position])).toEqual([
+      [15, 'inside'],
+      [12, 'inside'],
+      [9, 'inside'],
+      [6, 'inside'],
+      [3, 'inside'],
+      [2, 'outside'],
+    ]);
   });
 
   it('ships all 24 Office ramp names with 20 stops each', () => {

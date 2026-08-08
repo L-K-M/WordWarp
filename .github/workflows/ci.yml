@@ -40,7 +40,14 @@ jobs:
       - name: Validate shell entry points
         run: bash -n scripts/*.sh update.sh
 
+      # Diagnostic only -- nothing downloads this, and Pages builds its own artifact. Kept
+      # non-fatal so a full artifact store cannot turn a passing gate red: that failure is
+      # indistinguishable from a real one in the checks list, and it hid a broken WebKit test
+      # for weeks. `if-no-files-found: error` still fails the step when the build produced
+      # nothing, which is a genuine signal; continue-on-error only stops it failing the job.
+      # The release workflow's upload is a real dependency and is deliberately left strict.
       - name: Upload production build
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: wordwarp-site-${{ github.sha }}-${{ github.run_attempt }}
@@ -86,8 +93,12 @@ jobs:
         if: matrix.deployment == 'portable'
         run: npm run test:e2e -- --project=chromium
 
+      # Both uploads below are evidence for a human reading a failure, never an input to another
+      # job, so they are non-fatal for the same reason as the build upload above. Losing the
+      # report is a worse day; losing the test result it describes is a worse repository.
       - name: Upload Playwright report
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-report-${{ matrix.deployment }}-${{ github.sha }}-${{ github.run_attempt }}
@@ -97,6 +108,7 @@ jobs:
 
       - name: Upload Playwright failure evidence
         if: failure()
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-results-${{ matrix.deployment }}-${{ github.sha }}-${{ github.run_attempt }}

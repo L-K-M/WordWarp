@@ -4,10 +4,31 @@ import { expect, test } from '@playwright/test';
 import { decode } from 'fast-png';
 import { deflateSync, strToU8 } from 'fflate';
 
+test('picks a bundled display font and still exports a PNG', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  await page.goto('./');
+
+  const picker = page.getByRole('button', { name: /Font family/ });
+  await expect(picker).toContainText('Arial Black');
+  await picker.click();
+
+  const bungee = page.getByRole('option', { name: 'Bungee' });
+  await expect(bungee).toBeVisible();
+  await bungee.click();
+  await expect(picker).toContainText('Bungee');
+  await expect(page.locator('.render-error')).toHaveCount(0);
+
+  // The worker export path registers the same bundled face in its own font set.
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: /Export PNG/ }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/\.png$/);
+});
+
 test('edits text, applies a preset, and exports transparent PNG', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium');
   await page.goto('./');
-  await expect(page.getByRole('button', { name: 'WORDWARP TYPE EFFECTS LAB' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'WordWarp GOO TYPE LAB' })).toBeVisible();
 
   const content = page.getByLabel('Content');
   await content.fill('Chrome test');
@@ -230,7 +251,7 @@ test('loads from the production service worker while offline', async ({ page, co
   await context.setOffline(true);
   try {
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('button', { name: 'WORDWARP TYPE EFFECTS LAB' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'WordWarp GOO TYPE LAB' })).toBeVisible();
   } finally {
     await context.setOffline(false);
   }
@@ -273,7 +294,7 @@ test('style library scrolls to every preset and previews the real render', async
   test.skip(testInfo.project.name !== 'chromium');
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('./');
-  await expect(page.getByRole('button', { name: 'WORDWARP TYPE EFFECTS LAB' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'WordWarp GOO TYPE LAB' })).toBeVisible();
 
   const panel = page.locator('.preset-panel');
   const cards = page.locator('.preset-card');

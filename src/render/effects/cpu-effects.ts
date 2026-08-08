@@ -19,6 +19,14 @@ interface EffectOptions {
   originY: number;
   extentWidth: number;
   extentHeight: number;
+  /**
+   * Size of the element's whole effect layer in device pixels, which for a tiled export is larger
+   * than the tile being rendered. An effect that is a function of position *within the element* --
+   * rather than of the pixel grid, like grain -- has to measure from this, or every tile would
+   * restart the effect at its own centre and the seams would show.
+   */
+  layerWidth: number;
+  layerHeight: number;
 }
 
 export function renderEffectStack(
@@ -246,7 +254,7 @@ function renderFaceEffect(
   if (effect.kind === 'bevel') return renderBevel(effect, faceAlpha, getDistance(), width, height, options);
 
   if (effect.kind === 'textureOverlay') {
-    return [renderTexture(effect, faceAlpha, width, height, options)];
+    return [renderTexture(effect, faceAlpha, getDistance, width, height, options)];
   }
 
   return [];
@@ -329,26 +337,139 @@ function renderBevel(
   ];
 }
 
+/** Spacing between contour rings, in logical pixels, before the effect's own `scale` is applied. */
+const TOPOGRAPHY_PERIOD = 4;
+/** Weight of an ordinary contour, in logical pixels. Index contours are drawn at twice this. */
+const TOPOGRAPHY_LINE_WIDTH = 1;
+/** Every fifth contour is an index contour. This is the cartographic convention, not a free knob. */
+const TOPOGRAPHY_INDEX_INTERVAL = 5;
+/**
+ * Distance the unclipped outer ring field reaches, counted in ring periods.
+ *
+ * The falloff is linear and hits zero exactly here, so the outermost ring that is actually visible
+ * is the one before it: six rings are drawn outside the glyph, and the seventh is the fade's
+ * endpoint rather than a ring anybody sees.
+ */
+const TOPOGRAPHY_OUTER_RINGS = 7;
+
+/**
+ * Ring spacing in logical pixels, floored so the rings can never merge into a solid.
+ *
+ * The floor has to live in logical space, not render space. `textureOverlayReach` grows the render
+ * bounds from the logical spacing while `renderTexture` paints from the render-space spacing, and
+ * a floor applied only to the latter would let the paint run past the room reserved for it -- at
+ * the inspector's minimum texture scale of 0.2 the rings would reach two and a half times as far
+ * as the bounds allowed and get sliced off at the layer edge.
+ */
+function topographyPeriod(effectScale: number): number {
+  return Math.max(2, TOPOGRAPHY_PERIOD * effectScale);
+}
+/** Width of the coarsest mottle cell, in logical pixels, before the effect's `scale` is applied. */
+const MOTTLE_CELL = 16;
+/**
+ * Octave weights. Front-loaded, so the shape reads as blotches with detail rather than as fog.
+ *
+ * The frequency ratios are deliberately not powers of two: octaves that line up on a common grid
+ * reinforce each other in the same places every cell, and the pattern starts to look woven.
+ */
+const MOTTLE_OCTAVES = [
+  { frequency: 1, weight: 0.55 },
+  { frequency: 2.3, weight: 0.29 },
+  { frequency: 5.7, weight: 0.16 },
+];
+/** Contrast applied about the midpoint, so patches resolve into ink and no-ink rather than a haze. */
+const MOTTLE_CONTRAST = 2.1;
+/** Per-octave seed stride. Rounded, so every seed reaching `hashNoise` is a whole number. */
+const MOTTLE_SEED_STRIDE = 977;
+
 function renderTexture(
   effect: TextureOverlayEffect,
   faceAlpha: Uint8Array,
+  getDistance: () => Float32Array,
   width: number,
   height: number,
   options: EffectOptions,
 ): CanvasSurface {
   const pixels = new Uint8ClampedArray(width * height * 4);
   const pattern = effect.source.type === 'procedural' ? effect.source.pattern : 'noise';
+  const seed = hashString(effect.id);
+  // Every other procedural pattern is a function of the pixel grid alone. Topography is the first
+  // that is a function of the *shape*, so it needs the distance field the bevel and stroke already
+  // build -- read lazily so the other patterns never pay for it.
+  const distance = pattern === 'topography' ? getDistance() : null;
+  // Contour spacing and line weight both follow the render scale, because they describe the
+  // artwork rather than the display: an export has to put the same number of rings inside the same
+  // letter. `scale` is the effect's own multiplier and is what the inspector slider already edits.
+  const period = topographyPeriod(effect.scale) * options.scale;
+  const lineWidth = Math.max(1, TOPOGRAPHY_LINE_WIDTH * options.scale);
+  const outerReach = period * TOPOGRAPHY_OUTER_RINGS;
+  // Blotch size is a property of the ink, not of the screen it is displayed on, so it tracks the
+  // render scale the way a bevel size does. The grid-locked patterns deliberately do not: `noise`
+  // and `grain` are film artefacts and belong in device pixels.
+  //
+  // The sampler is built once for the whole surface, not per pixel, because it carries the corner
+  // cache that makes the pattern affordable -- see `createMottleSampler`.
+  const sampleMottle = pattern === 'mottle'
+    ? createMottleSampler(seed, Math.max(2, MOTTLE_CELL * effect.scale * options.scale))
+    : null;
+  const logicalScale = Number.isFinite(options.scale) && options.scale > 0 ? options.scale : 1;
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const index = y * width + x;
       const coverage = effect.clipToShape ? faceAlpha[index]! / 255 : 1;
       const globalX = x + options.originX;
       const globalY = y + options.originY;
-      let value = hashNoise(globalX, globalY, hashString(effect.id));
-      if (pattern === 'weave') value = ((Math.floor(globalX / 3) + Math.floor(globalY / 3)) & 1) === 0 ? 0.8 : 0.25;
-      if (pattern === 'halftone') value = (modulo(globalX, 8) - 4) ** 2 + (modulo(globalY, 8) - 4) ** 2 < 8 ? 0.9 : 0.1;
-      if (pattern === 'grain') value = 0.35 + value * 0.3;
       const offset = index * 4;
+      if (distance) {
+        // The other patterns fill their whole rectangle with an opaque grey and rely on
+        // `clipToShape` to hide the parts that miss the glyph. Contours cannot: unclipped they are
+        // meant to keep going past the letterform, and an opaque black field around them would
+        // composite as a visible box. So they paint white and carry the line in alpha instead --
+        // the gaps between rings are genuinely empty, whatever the blend mode.
+        // The field is positive outside the glyph and negative inside, so negate it: `depth` is
+        // how far *in* a pixel sits, and a negative depth means it fell outside the letterform.
+        const depth = -distance[index]!;
+        const falloff = depth < 0 ? clamp01(1 + depth / outerReach) : 1;
+        const line = topographyCoverage(depth, period, lineWidth) * falloff;
+        pixels[offset] = 255;
+        pixels[offset + 1] = 255;
+        pixels[offset + 2] = 255;
+        pixels[offset + 3] = Math.round(255 * coverage * line * effect.opacity);
+        continue;
+      }
+      // Branch rather than compute-then-overwrite: `mottle` is by far the most expensive pattern
+      // here, and a hash thrown away on top of it is the last thing this loop needs.
+      let value: number;
+      if (pattern === 'weave') {
+        value = ((Math.floor(globalX / 3) + Math.floor(globalY / 3)) & 1) === 0 ? 0.8 : 0.25;
+      } else if (pattern === 'halftone') {
+        value = (modulo(globalX, 8) - 4) ** 2 + (modulo(globalY, 8) - 4) ** 2 < 8 ? 0.9 : 0.1;
+      } else if (pattern === 'grain') {
+        value = 0.35 + hashNoise(globalX, globalY, seed) * 0.3;
+      } else if (sampleMottle) {
+        value = sampleMottle(globalX, globalY);
+      } else if (pattern === 'crystal') {
+        // Cell size is quoted in logical document pixels, so undo the render scale before
+        // sampling: an export has to put the same facets in the same places as the preview.
+        value = sampleCrystalTexture(
+          globalX / logicalScale,
+          globalY / logicalScale,
+          seed,
+          26 * effect.scale,
+          effect.rotation,
+        );
+      } else if (pattern === 'stitch') {
+        // Thread spacing is quoted in logical document pixels, same as `crystal` above.
+        value = sampleStitchTexture(
+          globalX / logicalScale,
+          globalY / logicalScale,
+          seed,
+          3.2 * effect.scale,
+          effect.rotation,
+        );
+      } else {
+        value = hashNoise(globalX, globalY, seed);
+      }
       const channel = Math.round(value * 255);
       pixels[offset] = channel;
       pixels[offset + 1] = channel;
@@ -357,6 +478,204 @@ function renderTexture(
     }
   }
   return imageSurface(pixels, width, height);
+}
+
+/**
+ * How far outside the glyph a topography overlay paints, in logical pixels.
+ *
+ * Unclipped contours keep going past the letterform -- that outward ring field is what turns a
+ * word into an island on a map -- so the render bounds have to be grown to hold them or the last
+ * rings are sliced off by the layer edge. Every other procedural pattern is clipped to the shape
+ * and needs no reach at all.
+ *
+ * This must stay the same expression `renderTexture` paints from, scaled: both go through
+ * `topographyPeriod`, so the floor applies identically on each side and the bounds can never come
+ * out smaller than the paint.
+ */
+export function textureOverlayReach(effect: TextureOverlayEffect): number {
+  if (effect.clipToShape) return 0;
+  if (effect.source.type !== 'procedural' || effect.source.pattern !== 'topography') return 0;
+  return topographyPeriod(effect.scale) * TOPOGRAPHY_OUTER_RINGS;
+}
+
+/**
+ * Coverage of the contour line nearest `depth`, anti-aliased over one pixel.
+ *
+ * `depth` is how far inside the glyph a pixel sits, so rings land on iso-distance curves: they
+ * follow the letterform rather than the pixel grid, tighten where a stem narrows, and close into
+ * islands around a counter. That is what makes the result read as elevation instead of as stripes.
+ *
+ * Every fifth ring is drawn heavier. Real contour maps do this -- the index contour is what lets a
+ * reader count elevation without tracing every line -- and it is the single detail that separates
+ * "concentric rings" from "a map".
+ */
+export function topographyCoverage(depth: number, period: number, lineWidth: number): number {
+  if (!(period > 0)) return 0;
+  const nearestRing = Math.round(depth / period);
+  const distanceToRing = Math.abs(depth - nearestRing * period);
+  const isIndex = modulo(nearestRing, TOPOGRAPHY_INDEX_INTERVAL) === 0;
+  const width = lineWidth * (isIndex ? 2 : 1);
+  return clamp01(width / 2 - distanceToRing + 0.5);
+}
+
+/**
+ * Fractal mottling: uneven ink coverage, in 0..1, centred on the midpoint.
+ *
+ * `hashNoise` is white noise -- independent per pixel, so it can only ever look like film grain,
+ * which is exactly why the existing `noise` and `grain` patterns use it raw. Sampling it on a
+ * coarse lattice and interpolating between the four corners instead gives features the size of the
+ * cell, which is what an uneven ink lay-down or a wash actually looks like. Three octaves put a
+ * large blotch shape underneath smaller variation, and a contrast curve about the middle pushes
+ * the result toward "ink" and "no ink" rather than an even haze.
+ *
+ * Centring on 0.5 means the symmetric blend modes -- `overlay`, `soft-light` -- leave the average
+ * tone alone and only redistribute it, so a mottled fill stays the colour it was.
+ *
+ * ## Why this is a factory
+ *
+ * Done naively this is four hashes per octave per pixel: twelve, against one for every other
+ * procedural pattern, and measurably too slow -- 85ms for a megapixel against 14ms for plain
+ * noise, which alone would eat most of the 100ms preset-switch budget on a large canvas.
+ *
+ * But the caller scans row-major, and a lattice cell is several pixels wide, so consecutive
+ * samples land in the same cell and want the same four corners. Holding them per octave until the
+ * cell changes cuts the hashes to roughly two per pixel. The state is per sampler and depends only
+ * on position, so it is a cache and not a mode: sampling in any order gives the same answer, just
+ * more slowly.
+ */
+export function createMottleSampler(seed: number, cell: number): (x: number, y: number) => number {
+  const octaves = MOTTLE_OCTAVES.map((octave) => ({
+    frequency: octave.frequency,
+    weight: octave.weight,
+    seed: seed + Math.round(octave.frequency * MOTTLE_SEED_STRIDE),
+    cellX: Number.NaN,
+    cellY: Number.NaN,
+    topLeft: 0,
+    topRight: 0,
+    bottomLeft: 0,
+    bottomRight: 0,
+  }));
+
+  return (x, y) => {
+    let total = 0;
+    for (const octave of octaves) {
+      const gridX = (x * octave.frequency) / cell;
+      const gridY = (y * octave.frequency) / cell;
+      const cellX = Math.floor(gridX);
+      const cellY = Math.floor(gridY);
+      if (cellX !== octave.cellX || cellY !== octave.cellY) {
+        octave.cellX = cellX;
+        octave.cellY = cellY;
+        octave.topLeft = hashNoise(cellX, cellY, octave.seed);
+        octave.topRight = hashNoise(cellX + 1, cellY, octave.seed);
+        octave.bottomLeft = hashNoise(cellX, cellY + 1, octave.seed);
+        octave.bottomRight = hashNoise(cellX + 1, cellY + 1, octave.seed);
+      }
+      const fractionX = gridX - cellX;
+      const fractionY = gridY - cellY;
+      const smoothX = fractionX * fractionX * (3 - 2 * fractionX);
+      const smoothY = fractionY * fractionY * (3 - 2 * fractionY);
+      const top = octave.topLeft + (octave.topRight - octave.topLeft) * smoothX;
+      const bottom = octave.bottomLeft + (octave.bottomRight - octave.bottomLeft) * smoothX;
+      total += (top + (bottom - top) * smoothY) * octave.weight;
+    }
+    return clamp01((total - 0.5) * MOTTLE_CONTRAST + 0.5);
+  };
+}
+
+/** One-off sample. Same maths as the sampler, with no cache to reuse -- for tests and callers
+ * that are not scanning a surface. */
+export function mottleValue(x: number, y: number, seed: number, cell: number): number {
+  return createMottleSampler(seed, cell)(x, y);
+}
+
+/** Sample a deterministic field of irregular mineral cells in logical document pixels. */
+export function sampleCrystalTexture(
+  x: number,
+  y: number,
+  seed: number,
+  cellSize: number,
+  rotation: number,
+): number {
+  const safeSize = Math.max(4, cellSize);
+  const radians = (rotation * Math.PI) / 180;
+  const cosine = Math.cos(radians);
+  const sine = Math.sin(radians);
+  const sampleX = (x * cosine - y * sine) / safeSize;
+  const sampleY = (x * sine + y * cosine) / safeSize;
+  const gridX = Math.floor(sampleX);
+  const gridY = Math.floor(sampleY);
+  let nearest = Number.POSITIVE_INFINITY;
+  let secondNearest = Number.POSITIVE_INFINITY;
+  let nearestFeatureX = 0;
+  let nearestFeatureY = 0;
+  let nearestHash = 0;
+
+  for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+    for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+      const cellX = gridX + offsetX;
+      const cellY = gridY + offsetY;
+      const hash = crystalCellHash(cellX, cellY, seed);
+      const featureX = cellX + 0.14 + ((hash & 0x3ff) / 0x3ff) * 0.72;
+      const featureY = cellY + 0.14 + (((hash >>> 10) & 0x3ff) / 0x3ff) * 0.72;
+      const distance = Math.hypot(sampleX - featureX, sampleY - featureY);
+      if (distance < nearest) {
+        secondNearest = nearest;
+        nearest = distance;
+        nearestFeatureX = featureX;
+        nearestFeatureY = featureY;
+        nearestHash = hash;
+      } else if (distance < secondNearest) {
+        secondNearest = distance;
+      }
+    }
+  }
+
+  // Equal distances identify a Voronoi boundary. Widen it into a dark extinction seam, then put
+  // a hairline highlight just inside the facet so cells retain relief at thumbnail size.
+  const interior = clamp01((secondNearest - nearest) * 12);
+  const smoothInterior = interior * interior * (3 - 2 * interior);
+  const facetTone = 0.34 + (((nearestHash >>> 20) & 0xfff) / 0xfff) * 0.52;
+  const boundaryHighlight = Math.max(0, 1 - Math.abs(interior - 0.32) / 0.2) * 0.16;
+
+  // A single seeded cleavage line crosses some facets. It is deliberately subordinate to the
+  // grain boundary: microscopy reads as crystalline structure, not a generic cracked surface.
+  const cleavageAngle = ((nearestHash >>> 8) & 0xff) / 0xff * Math.PI;
+  const cleavageOffset = (((nearestHash >>> 16) & 0xff) / 0xff - 0.5) * 0.42;
+  const localX = sampleX - nearestFeatureX;
+  const localY = sampleY - nearestFeatureY;
+  const cleavageDistance = Math.abs(
+    -Math.sin(cleavageAngle) * localX + Math.cos(cleavageAngle) * localY - cleavageOffset,
+  );
+  const cleavage = cleavageDistance < 0.018 && nearest < 0.52 ? 0.58 : 1;
+  return clamp01((0.035 + (facetTone - 0.035) * smoothInterior + boundaryHighlight) * cleavage);
+}
+
+/** Sample parallel satin-stitch threads in logical document pixels. */
+export function sampleStitchTexture(
+  x: number,
+  y: number,
+  seed: number,
+  spacing: number,
+  rotation: number,
+): number {
+  const safeSpacing = Math.max(0.8, spacing);
+  const radians = (rotation * Math.PI) / 180;
+  const cosine = Math.cos(radians);
+  const sine = Math.sin(radians);
+  const perpendicular = x * cosine - y * sine;
+  const along = x * sine + y * cosine;
+  const bundle = Math.floor(perpendicular / (safeSpacing * 6));
+  const bundleSeed = hashNoise(bundle, seed, 113);
+  const drift = (bundleSeed - 0.5) * safeSpacing * 0.3;
+  const wobble = Math.sin(along / (safeSpacing * 4.5) + bundleSeed * Math.PI * 2) * safeSpacing * 0.09;
+  const phase = modulo(perpendicular + drift + wobble, safeSpacing) / safeSpacing;
+  const ridge = (0.5 + Math.cos(phase * Math.PI * 2) * 0.5) ** 0.7;
+  const twist = 0.5 + Math.sin(along / safeSpacing * 1.35 + bundleSeed * Math.PI * 2) * 0.5;
+  const glintPosition = clamp01(Math.min(phase, 1 - phase) / 0.08);
+  const glintFalloff = 1 - glintPosition * glintPosition * (3 - 2 * glintPosition);
+  const glint = twist * 0.1 * glintFalloff;
+  return clamp01(0.18 + ridge * (0.58 + twist * 0.12) + glint);
 }
 
 function drawReflection(output: CanvasSurface, offset: number, heightRatio: number, opacity: number): void {
@@ -424,11 +743,34 @@ function applyPostEffect(
     }
   } else if (effect.type === 'aberration') {
     const shift = Math.max(1, Math.round(numericParam(effect, 'amount', 3)));
-    for (let y = 0; y < height; y += 1) {
-      for (let x = 0; x < width; x += 1) {
-        const offset = (y * width + x) * 4;
-        transformed[offset] = sampleChannel(source, width, height, x + shift, y, 0);
-        transformed[offset + 2] = sampleChannel(source, width, height, x - shift, y, 2);
+    if (stringParam(effect, 'mode', 'linear') === 'radial') {
+      // Lateral chromatic aberration, which is what glass and lenses actually do: a real optic
+      // fans the channels out along the radius from the axis, and by an amount that grows with
+      // the distance from it -- dead centre is in focus and the fringe widens toward the rim.
+      // The default 'linear' mode is a fixed horizontal split, which models an RGB signal fault
+      // (the VHS look the existing presets use it for) rather than an optical one.
+      //
+      // The centre is the whole layer's centre in its own coordinates, not this tile's, so a
+      // tiled export fans out around one axis instead of restarting it in every tile.
+      const centerX = options.layerWidth / 2 - options.originX;
+      const centerY = options.layerHeight / 2 - options.originY;
+      const maxRadius = Math.max(1, Math.hypot(options.layerWidth, options.layerHeight) / 2);
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          const offset = (y * width + x) * 4;
+          const deltaX = dispersionOffset(x - centerX, shift, maxRadius);
+          const deltaY = dispersionOffset(y - centerY, shift, maxRadius);
+          transformed[offset] = sampleChannel(source, width, height, x + deltaX, y + deltaY, 0);
+          transformed[offset + 2] = sampleChannel(source, width, height, x - deltaX, y - deltaY, 2);
+        }
+      }
+    } else {
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          const offset = (y * width + x) * 4;
+          transformed[offset] = sampleChannel(source, width, height, x + shift, y, 0);
+          transformed[offset + 2] = sampleChannel(source, width, height, x - shift, y, 2);
+        }
       }
     }
   } else if (effect.type === 'glitch') {
@@ -444,6 +786,56 @@ function applyPostEffect(
         transformed.set(source.subarray(sourceOffset, sourceOffset + 4), destination);
       }
     }
+  } else if (effect.type === 'dither') {
+    // Ordered (Bayer) dithering: quantise every channel to `levels` steps, but bias each pixel by
+    // its position in a recursive Bayer matrix before rounding. The bias is what turns a flat band
+    // of quantisation error into an interleaved dot pattern, so a smooth ramp survives a two-level
+    // palette as texture rather than as a hard step.
+    //
+    // The matrix is indexed in the effect layer's global coordinates, like grain and scanlines, so
+    // a tiled large export lays down one continuous pattern instead of restarting it per tile.
+    const levels = Math.max(2, Math.min(32, Math.round(numericParam(effect, 'levels', 2))));
+    const matrix = bayerMatrix(numericParam(effect, 'matrix', 8));
+    // `amount` fades the positional bias out. At 0 the effect is a plain posterise with hard
+    // banding; at 1 the dot pattern carries the full step. It is deliberately the parameter the
+    // inspector's generic post slider writes.
+    const strength = clamp01(numericParam(effect, 'amount', 1));
+    const hardEdge = booleanParam(effect, 'hardEdge', true);
+    // Dot pitch is the one post parameter here that follows the render scale. Grain, scanlines and
+    // aberration model the *display* a picture is shown on, so they stay in device pixels; a dither
+    // pattern is part of the picture, like a bevel or a stroke. If the pitch stayed in device
+    // pixels a 4x export would render the same style at a quarter the dot size and lose the look
+    // entirely, so it is snapped to whole device pixels at the current scale instead.
+    const dot = Math.max(1, Math.round(numericParam(effect, 'dot', 1) * options.scale));
+    const step = 255 / (levels - 1);
+    for (let y = 0; y < height; y += 1) {
+      const matrixY = modulo(Math.floor((y + options.originY) / dot), matrix.size) * matrix.size;
+      for (let x = 0; x < width; x += 1) {
+        const offset = (y * width + x) * 4;
+        const alpha = source[offset + 3]!;
+        if (alpha === 0) continue;
+        const column = modulo(Math.floor((x + options.originX) / dot), matrix.size);
+        const bias = matrix.values[matrixY + column]! * strength;
+        for (let channel = 0; channel < 3; channel += 1) {
+          transformed[offset + channel] = ditherQuantise(source[offset + channel]!, step, bias);
+        }
+        // Anti-aliased coverage is the one thing a genuine one-bit image cannot have, so the same
+        // matrix optionally thresholds alpha too. Without this a 1-bit fill still shows a smooth
+        // grey fringe around every stem and the illusion collapses at the edges.
+        if (hardEdge) transformed[offset + 3] = alpha / 255 + bias >= 0.5 ? 255 : 0;
+      }
+    }
+  } else if (effect.type === 'pixelate') {
+    // Resolution is part of the artwork, not of the screen showing it, so the block follows the
+    // render scale -- the same reasoning a bevel size does. Left in device pixels, a 4x export
+    // would quarter the block relative to the letterform and the sprite would dissolve.
+    const block = Math.max(1, Math.round(numericParam(effect, 'size', PIXELATE_DEFAULT_SIZE) * options.scale));
+    pixelateBlocks(source, transformed, width, height, {
+      originX: options.originX,
+      originY: options.originY,
+      block,
+      crisp: booleanParam(effect, 'crisp', true),
+    });
   } else if (effect.type === 'halftone') {
     const frequency = Math.max(3, Math.round(numericParam(effect, 'frequency', 8)));
     for (let y = 0; y < height; y += 1) {
@@ -708,6 +1100,193 @@ function numericParam(effect: PostEffect, name: string, fallback: number): numbe
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
+function booleanParam(effect: PostEffect, name: string, fallback: boolean): boolean {
+  const value = effect.params[name];
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+/**
+ * Snap one channel to the nearest of `255 / step + 1` palette levels, nudged by a dither bias.
+ *
+ * With `bias` at 0 this is a plain posterise. A bias in (-0.5, 0.5) moves the rounding boundary,
+ * so a value that sits between two levels lands on the higher one in some pixels and the lower one
+ * in others -- in exactly the proportion needed to average back to where it started.
+ */
+export function ditherQuantise(value: number, step: number, bias: number): number {
+  return clampByte(Math.round(value / step + bias) * step);
+}
+
+/**
+ * Recursive Bayer threshold matrix, returned centred on zero.
+ *
+ * The classic construction doubles an n x n matrix into 2n x 2n as
+ * `[[4M, 4M+2], [4M+3, 4M+1]]`, which spreads consecutive thresholds as far apart on the grid as
+ * possible -- that even spread is what stops the pattern reading as stripes. Values come back in
+ * (-0.5, 0.5) so a caller can add one straight to a quantisation index: a threshold of -0.5 always
+ * rounds down, +0.5 always rounds up, and the average bias across the tile is zero, so dithering
+ * preserves the mean colour it started from.
+ *
+ * `requested` is snapped to a power of two in [2, 16]; the 2x2 is coarse and stripy on purpose,
+ * 8x8 is the size the black-and-white bitmap era standardised on.
+ */
+export function bayerMatrix(requested: number): { size: number; values: Float32Array } {
+  const exponent = Math.max(1, Math.min(4, Math.round(Math.log2(Math.max(2, requested)))));
+  const size = 2 ** exponent;
+  let values = new Float32Array([0]);
+  let current = 1;
+  while (current < size) {
+    const next = new Float32Array(current * current * 4);
+    for (let y = 0; y < current; y += 1) {
+      for (let x = 0; x < current; x += 1) {
+        const base = values[y * current + x]! * 4;
+        next[y * current * 2 + x] = base;
+        next[y * current * 2 + x + current] = base + 2;
+        next[(y + current) * current * 2 + x] = base + 3;
+        next[(y + current) * current * 2 + x + current] = base + 1;
+      }
+    }
+    values = next;
+    current *= 2;
+  }
+  const total = size * size;
+  for (let index = 0; index < values.length; index += 1) {
+    values[index] = (values[index]! + 0.5) / total - 0.5;
+  }
+  return { size, values };
+}
+
+function stringParam(effect: PostEffect, name: string, fallback: string): string {
+  const value = effect.params[name];
+  return typeof value === 'string' ? value : fallback;
+}
+
+/**
+ * How far one axis of a channel is displaced, for radial chromatic aberration.
+ *
+ * `offsetFromCenter` is the pixel's distance from the optical axis along that axis, and the
+ * displacement is proportional to it: nothing on axis, `shift` pixels at the corner. Applying this
+ * per axis rather than along the radius is the same vector -- both are the offset scaled by
+ * `shift / maxRadius` -- and avoids a square root and a divide per pixel.
+ *
+ * Rounded, because the sample it feeds is a nearest-neighbour lookup; leaving it fractional would
+ * silently truncate and pull half the fringe a pixel toward the origin.
+ */
+export function dispersionOffset(offsetFromCenter: number, shift: number, maxRadius: number): number {
+  return Math.round((offsetFromCenter * shift) / maxRadius);
+}
+
+/**
+ * Block edge, in logical pixels, for a pixelate pass that does not state one.
+ *
+ * Shared with `effectReach`: the halo it reserves has to be computed from the same number the
+ * renderer will actually use, or a document that omits `size` gets a tile overlap sized for a
+ * different grid than the one it draws.
+ */
+export const PIXELATE_DEFAULT_SIZE = 8;
+
+interface PixelateOptions {
+  /** Where this surface sits inside the element's whole effect layer, in device pixels. */
+  originX: number;
+  originY: number;
+  /** Block edge, in device pixels. */
+  block: number;
+  /** Round each block's coverage in or out, rather than leaving a partly covered edge. */
+  crisp: boolean;
+}
+
+/**
+ * Quantise `source` onto a block grid, writing the result into `transformed`.
+ *
+ * Blocks are indexed in the layer's global coordinates, not the surface's, so a tiled export lands
+ * them on one grid rather than restarting it in every tile. Every *core* pixel's block is complete
+ * within its own tile because `effectReach` reserves a block of halo for exactly this; the partial
+ * blocks along a tile's rendered edge all fall in the halo and are discarded before the tile is
+ * copied out, so no seam reaches the output.
+ */
+export function pixelateBlocks(
+  source: Uint8ClampedArray,
+  transformed: Uint8ClampedArray,
+  width: number,
+  height: number,
+  { originX, originY, block, crisp }: PixelateOptions,
+): void {
+  const firstBlockX = Math.floor(originX / block);
+  const lastBlockX = Math.floor((originX + width - 1) / block);
+  const firstBlockY = Math.floor(originY / block);
+  const lastBlockY = Math.floor((originY + height - 1) / block);
+  for (let blockY = firstBlockY; blockY <= lastBlockY; blockY += 1) {
+    const top = Math.max(0, blockY * block - originY);
+    const bottom = Math.min(height, (blockY + 1) * block - originY);
+    for (let blockX = firstBlockX; blockX <= lastBlockX; blockX += 1) {
+      const left = Math.max(0, blockX * block - originX);
+      const right = Math.min(width, (blockX + 1) * block - originX);
+      const mean = averageBlock(source, width, left, top, right, bottom);
+      if (!mean) continue;
+      // Coverage decides the silhouette: a genuine low-resolution image has no partly filled
+      // pixels, so `crisp` rounds each block in or out instead of leaving a soft edge.
+      const covered = !crisp || mean[3] >= 128;
+      const alpha = crisp ? (covered ? 255 : 0) : Math.round(mean[3]);
+      // A block that rounds itself out of existence gets zeroed rather than keeping the colour it
+      // would have had. Nothing composites an RGB sitting under a zero alpha, but leaving one
+      // behind makes the buffer's empty regions non-canonical, and readback paths that
+      // un-premultiply have to special-case it.
+      const red = covered ? mean[0] : 0;
+      const green = covered ? mean[1] : 0;
+      const blue = covered ? mean[2] : 0;
+      for (let y = top; y < bottom; y += 1) {
+        for (let x = left; x < right; x += 1) {
+          const offset = (y * width + x) * 4;
+          transformed[offset] = red;
+          transformed[offset + 1] = green;
+          transformed[offset + 2] = blue;
+          transformed[offset + 3] = alpha;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Mean colour of a rectangle of `source`, as `[r, g, b, meanAlpha]`, or null for an empty rect.
+ *
+ * The colour is averaged in premultiplied space -- each channel weighted by its own pixel's alpha,
+ * then divided by the total alpha rather than the pixel count. Straight RGBA averaging would let
+ * the colour of fully transparent pixels into the result, and a transparent pixel's colour is
+ * arbitrary: it is whatever was last written under a zero alpha. Every block straddling the glyph
+ * edge would then drift toward that value, which is the classic dark or white halo around a
+ * naively downsampled sprite.
+ *
+ * Alpha itself comes back as a plain mean over the rectangle, because coverage is what it is.
+ */
+export function averageBlock(
+  source: Uint8ClampedArray,
+  width: number,
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
+): [number, number, number, number] | null {
+  let red = 0;
+  let green = 0;
+  let blue = 0;
+  let alpha = 0;
+  let count = 0;
+  for (let y = top; y < bottom; y += 1) {
+    for (let x = left; x < right; x += 1) {
+      const offset = (y * width + x) * 4;
+      const pixelAlpha = source[offset + 3]!;
+      red += source[offset]! * pixelAlpha;
+      green += source[offset + 1]! * pixelAlpha;
+      blue += source[offset + 2]! * pixelAlpha;
+      alpha += pixelAlpha;
+      count += 1;
+    }
+  }
+  if (count === 0) return null;
+  if (alpha === 0) return [0, 0, 0, 0];
+  return [Math.round(red / alpha), Math.round(green / alpha), Math.round(blue / alpha), alpha / count];
+}
+
 function sampleChannel(
   pixels: Uint8ClampedArray,
   width: number,
@@ -724,6 +1303,13 @@ function hashNoise(x: number, y: number, seed: number): number {
   let value = (Math.trunc(x) * 374761393 + Math.trunc(y) * 668265263 + seed * 1442695041) | 0;
   value = (value ^ (value >>> 13)) * 1274126177;
   return ((value ^ (value >>> 16)) >>> 0) / 0xffffffff;
+}
+
+function crystalCellHash(x: number, y: number, seed: number): number {
+  let value = Math.imul(x, 0x1f123bb5) ^ Math.imul(y, 0x5f356495) ^ seed;
+  value = Math.imul(value ^ (value >>> 16), 0x45d9f3b);
+  value = Math.imul(value ^ (value >>> 16), 0x45d9f3b);
+  return (value ^ (value >>> 16)) >>> 0;
 }
 
 function hashString(value: string): number {

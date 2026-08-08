@@ -3,6 +3,7 @@ import { useDeferredValue, useEffect, useRef, useState } from 'react';
 import { containsPoint, type Bounds } from '../geometry/bounds';
 import type { WordWarpDocument } from '../model/types';
 import { PreviewRenderer } from '../render/preview';
+import { ensureFontsForDocument } from '../text/fonts';
 
 interface DocumentCanvasProps {
   document: WordWarpDocument;
@@ -35,6 +36,23 @@ export function DocumentCanvas({
   const [bounds, setBounds] = useState<Record<string, Bounds>>({});
   const [backend, setBackend] = useState<'webgl2' | 'canvas2d'>('canvas2d');
   const [error, setError] = useState<string | null>(null);
+  // Bumped when a bundled font finishes loading, so the swap from fallback face to real face
+  // paints without waiting for the next document edit.
+  const [fontsReady, setFontsReady] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    void ensureFontsForDocument(deferredDocument).then((loadedSomething) => {
+      if (!cancelled && loadedSomething) setFontsReady((count) => count + 1);
+    }, (fontError: unknown) => {
+      // Individual font failures never reach here (loadBundledFont resolves false); this only
+      // fires for an unexpected error in the document traversal itself. Purely defensive.
+      if (!cancelled) console.warn('WordWarp font loading failed', fontError);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [deferredDocument]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -64,7 +82,7 @@ export function DocumentCanvas({
       }
     });
     return () => cancelAnimationFrame(frame);
-  }, [deferredDocument]);
+  }, [deferredDocument, fontsReady]);
 
   const selectedBounds = selectedElementId ? bounds[selectedElementId] : undefined;
 
