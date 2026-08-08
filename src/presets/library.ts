@@ -809,6 +809,11 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('comic-pow', 'Comic Pow!', 'nineties', ['#ffd400', '#111111', '#d00000', '#fff9c4'], [
     shadow('#d00000', 11, 0.5, 0.95), fill(gradient(['#fff36e', '#ffd400', '#f7a500'], 100)), stroke(8, '#111111'), post('halftone', { frequency: 6 }, 0.32),
   ], warp('textArchUp', 0.28), ['comic', 'pop-art', 'halftone']),
+  definePreset('molten-core', 'Molten Core', 'texture', ['#fcef50', '#ee7d30', '#ad2718', '#52140e'], [
+    shadow('#2b0a02', 10, 8, 0.6), glow('#ff5e00', 30, 0.7), fill(ramp('fire')), bevel(8, 'inner', 110), texture('grain', 0.18),
+  ], warp('textDeflateInflate', 0.45), ['lava', 'fire', 'animated'], [
+    { id: 'molten-flow', kind: 'specularSweep', enabled: true, duration: 6, params: {}, seed: 5 },
+  ]),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {
