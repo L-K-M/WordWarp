@@ -294,7 +294,8 @@ palette and the effect stack that reproduces it.
 Glitch (RGB split + block displacement), Halftone (dot screen, angle + frequency), Riso
 Misregistration (2–3 flat inks offset 2–4px, multiply), Scanlines (period, opacity, roll offset),
 CRT Bloom, Film Grain, Distressed (mask by noise threshold), Chromatic Aberration (radial RGB
-offset).
+offset). **Cross-Polar Crystal** adds seeded mineral cells with dark extinction boundaries over an
+interference-colour field, chisel relief and a faceted Stop warp.
 
 ---
 

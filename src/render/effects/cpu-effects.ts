@@ -412,6 +412,7 @@ function renderTexture(
   const sampleMottle = pattern === 'mottle'
     ? createMottleSampler(seed, Math.max(2, MOTTLE_CELL * effect.scale * options.scale))
     : null;
+  const logicalScale = Number.isFinite(options.scale) && options.scale > 0 ? options.scale : 1;
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const index = y * width + x;
@@ -447,6 +448,16 @@ function renderTexture(
         value = 0.35 + hashNoise(globalX, globalY, seed) * 0.3;
       } else if (sampleMottle) {
         value = sampleMottle(globalX, globalY);
+      } else if (pattern === 'crystal') {
+        // Cell size is quoted in logical document pixels, so undo the render scale before
+        // sampling: an export has to put the same facets in the same places as the preview.
+        value = sampleCrystalTexture(
+          globalX / logicalScale,
+          globalY / logicalScale,
+          seed,
+          26 * effect.scale,
+          effect.rotation,
+        );
       } else {
         value = hashNoise(globalX, globalY, seed);
       }
@@ -567,6 +578,68 @@ export function createMottleSampler(seed: number, cell: number): (x: number, y: 
  * that are not scanning a surface. */
 export function mottleValue(x: number, y: number, seed: number, cell: number): number {
   return createMottleSampler(seed, cell)(x, y);
+}
+
+/** Sample a deterministic field of irregular mineral cells in logical document pixels. */
+export function sampleCrystalTexture(
+  x: number,
+  y: number,
+  seed: number,
+  cellSize: number,
+  rotation: number,
+): number {
+  const safeSize = Math.max(4, cellSize);
+  const radians = (rotation * Math.PI) / 180;
+  const cosine = Math.cos(radians);
+  const sine = Math.sin(radians);
+  const sampleX = (x * cosine - y * sine) / safeSize;
+  const sampleY = (x * sine + y * cosine) / safeSize;
+  const gridX = Math.floor(sampleX);
+  const gridY = Math.floor(sampleY);
+  let nearest = Number.POSITIVE_INFINITY;
+  let secondNearest = Number.POSITIVE_INFINITY;
+  let nearestFeatureX = 0;
+  let nearestFeatureY = 0;
+  let nearestHash = 0;
+
+  for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+    for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+      const cellX = gridX + offsetX;
+      const cellY = gridY + offsetY;
+      const hash = crystalCellHash(cellX, cellY, seed);
+      const featureX = cellX + 0.14 + ((hash & 0x3ff) / 0x3ff) * 0.72;
+      const featureY = cellY + 0.14 + (((hash >>> 10) & 0x3ff) / 0x3ff) * 0.72;
+      const distance = Math.hypot(sampleX - featureX, sampleY - featureY);
+      if (distance < nearest) {
+        secondNearest = nearest;
+        nearest = distance;
+        nearestFeatureX = featureX;
+        nearestFeatureY = featureY;
+        nearestHash = hash;
+      } else if (distance < secondNearest) {
+        secondNearest = distance;
+      }
+    }
+  }
+
+  // Equal distances identify a Voronoi boundary. Widen it into a dark extinction seam, then put
+  // a hairline highlight just inside the facet so cells retain relief at thumbnail size.
+  const interior = clamp01((secondNearest - nearest) * 12);
+  const smoothInterior = interior * interior * (3 - 2 * interior);
+  const facetTone = 0.34 + (((nearestHash >>> 20) & 0xfff) / 0xfff) * 0.52;
+  const boundaryHighlight = Math.max(0, 1 - Math.abs(interior - 0.32) / 0.2) * 0.16;
+
+  // A single seeded cleavage line crosses some facets. It is deliberately subordinate to the
+  // grain boundary: microscopy reads as crystalline structure, not a generic cracked surface.
+  const cleavageAngle = ((nearestHash >>> 8) & 0xff) / 0xff * Math.PI;
+  const cleavageOffset = (((nearestHash >>> 16) & 0xff) / 0xff - 0.5) * 0.42;
+  const localX = sampleX - nearestFeatureX;
+  const localY = sampleY - nearestFeatureY;
+  const cleavageDistance = Math.abs(
+    -Math.sin(cleavageAngle) * localX + Math.cos(cleavageAngle) * localY - cleavageOffset,
+  );
+  const cleavage = cleavageDistance < 0.018 && nearest < 0.52 ? 0.58 : 1;
+  return clamp01((0.035 + (facetTone - 0.035) * smoothInterior + boundaryHighlight) * cleavage);
 }
 
 function drawReflection(output: CanvasSurface, offset: number, heightRatio: number, opacity: number): void {
@@ -1194,6 +1267,13 @@ function hashNoise(x: number, y: number, seed: number): number {
   let value = (Math.trunc(x) * 374761393 + Math.trunc(y) * 668265263 + seed * 1442695041) | 0;
   value = (value ^ (value >>> 13)) * 1274126177;
   return ((value ^ (value >>> 16)) >>> 0) / 0xffffffff;
+}
+
+function crystalCellHash(x: number, y: number, seed: number): number {
+  let value = Math.imul(x, 0x1f123bb5) ^ Math.imul(y, 0x5f356495) ^ seed;
+  value = Math.imul(value ^ (value >>> 16), 0x45d9f3b);
+  value = Math.imul(value ^ (value >>> 16), 0x45d9f3b);
+  return (value ^ (value >>> 16)) >>> 0;
 }
 
 function hashString(value: string): number {

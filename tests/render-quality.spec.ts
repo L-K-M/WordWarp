@@ -124,6 +124,39 @@ test.describe('render quality', () => {
     expect(total / counted).toBeLessThan(1.6);
   });
 
+  test('Cross-Polar Crystal prints internal mineral boundaries', async ({ page }) => {
+    await page.getByLabel('Content').fill('CRYSTAL');
+    await page.getByRole('button', { name: 'Cross-Polar Crystal' }).click();
+
+    const image = await exportAt(page, '2');
+    const radius = 5;
+    const alpha = (x: number, y: number) => Number(image.data[(y * image.width + x) * 4 + 3]);
+    const luma = (x: number, y: number) => {
+      const offset = (y * image.width + x) * 4;
+      return (Number(image.data[offset]) + Number(image.data[offset + 1]) + Number(image.data[offset + 2])) / 3;
+    };
+    let boundaryPixels = 0;
+    for (let y = radius; y < image.height - radius; y += 1) {
+      for (let x = radius; x < image.width - radius; x += 1) {
+        if (alpha(x, y) < 240 || luma(x, y) > 100) continue;
+        const crossesBrightHorizontal = alpha(x - radius, y) > 240
+          && alpha(x + radius, y) > 240
+          && luma(x - radius, y) > 140
+          && luma(x + radius, y) > 140;
+        const crossesBrightVertical = alpha(x, y - radius) > 240
+          && alpha(x, y + radius) > 240
+          && luma(x, y - radius) > 140
+          && luma(x, y + radius) > 140;
+        if (crossesBrightHorizontal || crossesBrightVertical) boundaryPixels += 1;
+      }
+    }
+
+    // These are dark pixels enclosed by a bright glyph face on opposing sides. The silhouette,
+    // counter holes, outer stroke and extrusion do not qualify, so the signal comes from the
+    // clipped crystal network rather than from ordinary text edges.
+    expect(boundaryPixels).toBeGreaterThan(120);
+  });
+
   test('transparent export keeps shadows free of grey fringing', async ({ page }) => {
     await page.getByLabel('Content').fill('ALPHA');
     await page.getByRole('button', { name: 'Deep Extrude' }).click();

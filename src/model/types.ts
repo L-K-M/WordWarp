@@ -163,7 +163,10 @@ export interface TextureOverlayEffect extends EffectBase {
   kind: 'textureOverlay';
   source:
     | { type: 'asset'; assetId: string }
-    | { type: 'procedural'; pattern: 'noise' | 'weave' | 'halftone' | 'grain' | 'topography' | 'mottle' };
+    | {
+        type: 'procedural';
+        pattern: 'noise' | 'weave' | 'halftone' | 'grain' | 'topography' | 'mottle' | 'crystal';
+      };
   scale: number;
   rotation: number;
   clipToShape: boolean;
