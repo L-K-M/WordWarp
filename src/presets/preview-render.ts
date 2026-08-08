@@ -60,7 +60,8 @@ function renderPresetPreview(doc: WordWarpDocument, presetId: string): string | 
  * like the sync renderer it replaces, a failure just keeps the swatch placeholder.
  */
 export async function renderPresetPreviewAsync(preset: Preset): Promise<string | undefined> {
-  if (cache.has(preset.id)) return cache.get(preset.id);
+  const hit = cache.get(preset.id);
+  if (hit) return hit;
   let render = inflight.get(preset.id);
   if (!render) {
     // Defer the body to a microtask: an async IIFE runs synchronously until its first await, so
