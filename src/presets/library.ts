@@ -257,6 +257,16 @@ function pillowBevel(size: number, depth: number, highlight: string): BevelEffec
   return effect;
 }
 
+/**
+ * Resolution reduction. `size` is the block edge in logical pixels; `crisp` rounds each block's
+ * coverage in or out, which is what gives a sprite its hard, unantialiased silhouette.
+ */
+function pixelate(size: number, crisp = true): PostEffect {
+  // Opacity stays at 1: blending a blocky layer back over the smooth one it came from would
+  // reintroduce exactly the detail the effect exists to throw away.
+  return post('pixelate', { size, crisp }, 1);
+}
+
 function sparkleTrack(): AnimationTrack {
   return { id: 'sparkle-track', kind: 'sparkle', enabled: true, duration: 2, params: { amount: 16 }, seed: 971 };
 }
@@ -495,6 +505,24 @@ export const BUILT_IN_PRESETS: Preset[] = [
     pillowBevel(22, 260, '#ffffff'), texture('noise', 0.22), innerGlow('#ffffff', 14, 0.6),
     stroke(1.5, '#e6f6ff'), dispersion(2, 0.35),
   ], none(), ['glass', 'ice', 'frost', 'winter']),
+  definePreset('pixel-arcade', 'Pixel Arcade', 'nineties', ['#ffe14d', '#ff5e00', '#d81159', '#1b0f2b'], [
+    // The stack ahead of the block pass is deliberately ordinary -- a ramp, an outline, a hard
+    // offset shadow. Quantising the whole finished thing at once is what makes it read as a
+    // sprite rather than as a smooth letter with a mosaic filter on top.
+    shadow('#1b0f2b', 10, 0, 1), fill(gradient(['#ffe14d', '#ff8a00', '#d81159'], 168)),
+    stroke(5, '#1b0f2b'), pixelate(6), post('scanlines', { amount: 0.3, period: 3 }, 0.45),
+  ], none(), ['pixel', '8-bit', 'sprite', 'arcade']),
+  definePreset('bitcrush', 'Bitcrush', 'nineties', ['#00ffc8', '#7a5cff', '#ff2bd6', '#05030f'], [
+    glow('#7a5cff', 26, 0.7), fill(gradient(['#00ffc8', '#3ea7ff', '#ff2bd6'], 140)),
+    bevel(14, 'inner', 200), stroke(3, '#120a2b'), pixelate(8),
+  ], warp('textSlantUp', 0.28), ['pixel', 'lo-fi', 'mosaic', 'glitch']),
+  definePreset('pixel-chrome', 'Pixel Chrome', 'nineties', ['#efefef', '#8c8e8c', '#2a2c29', '#0b0d12'], [
+    // Chrome is the library's signature look and it is built entirely out of smooth tonal
+    // transitions, so putting it through the block pass is the sharpest demonstration of what the
+    // effect does: the ramp survives as a stepped palette instead of a gradient.
+    shadow('#05070c', 9, 6, 0.8), fill(ramp('chrome')), bevel(9, 'inner', 150),
+    stroke(3, '#0b0d12'), pixelate(6),
+  ], none(), ['pixel', 'chrome', 'demoscene', 'retro']),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {

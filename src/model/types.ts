@@ -179,7 +179,7 @@ export interface ReflectionEffect extends EffectBase {
 
 export interface PostEffect extends EffectBase {
   kind: 'post';
-  type: 'glitch' | 'halftone' | 'scanlines' | 'grain' | 'aberration' | 'dither';
+  type: 'glitch' | 'halftone' | 'scanlines' | 'grain' | 'aberration' | 'dither' | 'pixelate';
   seed: number;
   params: Record<string, number | string | boolean>;
 }

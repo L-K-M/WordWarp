@@ -716,6 +716,17 @@ function applyPostEffect(
         if (hardEdge) transformed[offset + 3] = alpha / 255 + bias >= 0.5 ? 255 : 0;
       }
     }
+  } else if (effect.type === 'pixelate') {
+    // Resolution is part of the artwork, not of the screen showing it, so the block follows the
+    // render scale -- the same reasoning a bevel size does. Left in device pixels, a 4x export
+    // would quarter the block relative to the letterform and the sprite would dissolve.
+    const block = Math.max(1, Math.round(numericParam(effect, 'size', PIXELATE_DEFAULT_SIZE) * options.scale));
+    pixelateBlocks(source, transformed, width, height, {
+      originX: options.originX,
+      originY: options.originY,
+      block,
+      crisp: booleanParam(effect, 'crisp', true),
+    });
   } else if (effect.type === 'halftone') {
     const frequency = Math.max(3, Math.round(numericParam(effect, 'frequency', 8)));
     for (let y = 0; y < height; y += 1) {
@@ -1053,6 +1064,118 @@ function stringParam(effect: PostEffect, name: string, fallback: string): string
  */
 export function dispersionOffset(offsetFromCenter: number, shift: number, maxRadius: number): number {
   return Math.round((offsetFromCenter * shift) / maxRadius);
+}
+
+/**
+ * Block edge, in logical pixels, for a pixelate pass that does not state one.
+ *
+ * Shared with `effectReach`: the halo it reserves has to be computed from the same number the
+ * renderer will actually use, or a document that omits `size` gets a tile overlap sized for a
+ * different grid than the one it draws.
+ */
+export const PIXELATE_DEFAULT_SIZE = 8;
+
+interface PixelateOptions {
+  /** Where this surface sits inside the element's whole effect layer, in device pixels. */
+  originX: number;
+  originY: number;
+  /** Block edge, in device pixels. */
+  block: number;
+  /** Round each block's coverage in or out, rather than leaving a partly covered edge. */
+  crisp: boolean;
+}
+
+/**
+ * Quantise `source` onto a block grid, writing the result into `transformed`.
+ *
+ * Blocks are indexed in the layer's global coordinates, not the surface's, so a tiled export lands
+ * them on one grid rather than restarting it in every tile. Every *core* pixel's block is complete
+ * within its own tile because `effectReach` reserves a block of halo for exactly this; the partial
+ * blocks along a tile's rendered edge all fall in the halo and are discarded before the tile is
+ * copied out, so no seam reaches the output.
+ */
+export function pixelateBlocks(
+  source: Uint8ClampedArray,
+  transformed: Uint8ClampedArray,
+  width: number,
+  height: number,
+  { originX, originY, block, crisp }: PixelateOptions,
+): void {
+  const firstBlockX = Math.floor(originX / block);
+  const lastBlockX = Math.floor((originX + width - 1) / block);
+  const firstBlockY = Math.floor(originY / block);
+  const lastBlockY = Math.floor((originY + height - 1) / block);
+  for (let blockY = firstBlockY; blockY <= lastBlockY; blockY += 1) {
+    const top = Math.max(0, blockY * block - originY);
+    const bottom = Math.min(height, (blockY + 1) * block - originY);
+    for (let blockX = firstBlockX; blockX <= lastBlockX; blockX += 1) {
+      const left = Math.max(0, blockX * block - originX);
+      const right = Math.min(width, (blockX + 1) * block - originX);
+      const mean = averageBlock(source, width, left, top, right, bottom);
+      if (!mean) continue;
+      // Coverage decides the silhouette: a genuine low-resolution image has no partly filled
+      // pixels, so `crisp` rounds each block in or out instead of leaving a soft edge.
+      const covered = !crisp || mean[3] >= 128;
+      const alpha = crisp ? (covered ? 255 : 0) : Math.round(mean[3]);
+      // A block that rounds itself out of existence gets zeroed rather than keeping the colour it
+      // would have had. Nothing composites an RGB sitting under a zero alpha, but leaving one
+      // behind makes the buffer's empty regions non-canonical, and readback paths that
+      // un-premultiply have to special-case it.
+      const red = covered ? mean[0] : 0;
+      const green = covered ? mean[1] : 0;
+      const blue = covered ? mean[2] : 0;
+      for (let y = top; y < bottom; y += 1) {
+        for (let x = left; x < right; x += 1) {
+          const offset = (y * width + x) * 4;
+          transformed[offset] = red;
+          transformed[offset + 1] = green;
+          transformed[offset + 2] = blue;
+          transformed[offset + 3] = alpha;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Mean colour of a rectangle of `source`, as `[r, g, b, meanAlpha]`, or null for an empty rect.
+ *
+ * The colour is averaged in premultiplied space -- each channel weighted by its own pixel's alpha,
+ * then divided by the total alpha rather than the pixel count. Straight RGBA averaging would let
+ * the colour of fully transparent pixels into the result, and a transparent pixel's colour is
+ * arbitrary: it is whatever was last written under a zero alpha. Every block straddling the glyph
+ * edge would then drift toward that value, which is the classic dark or white halo around a
+ * naively downsampled sprite.
+ *
+ * Alpha itself comes back as a plain mean over the rectangle, because coverage is what it is.
+ */
+export function averageBlock(
+  source: Uint8ClampedArray,
+  width: number,
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
+): [number, number, number, number] | null {
+  let red = 0;
+  let green = 0;
+  let blue = 0;
+  let alpha = 0;
+  let count = 0;
+  for (let y = top; y < bottom; y += 1) {
+    for (let x = left; x < right; x += 1) {
+      const offset = (y * width + x) * 4;
+      const pixelAlpha = source[offset + 3]!;
+      red += source[offset]! * pixelAlpha;
+      green += source[offset + 1]! * pixelAlpha;
+      blue += source[offset + 2]! * pixelAlpha;
+      alpha += pixelAlpha;
+      count += 1;
+    }
+  }
+  if (count === 0) return null;
+  if (alpha === 0) return [0, 0, 0, 0];
+  return [Math.round(red / alpha), Math.round(green / alpha), Math.round(blue / alpha), alpha / count];
 }
 
 function sampleChannel(
