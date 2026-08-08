@@ -239,6 +239,10 @@ export function DocumentCanvas({
         height={document.canvas.height}
         aria-label={`Transparent ${document.canvas.width} by ${document.canvas.height} composition with ${document.elements.length} elements`}
         onPointerDown={(event) => {
+          // A gesture in flight owns the canvas. Capture only redirects the pointer that opened
+          // it, so a second finger still lands here -- and reselecting would unmount the handle
+          // holding that capture out from under the drag.
+          if (dragRef.current) return;
           const point = canvasPoint(event);
           const selected = [...document.elements].reverse().find((element) => {
             const frame = frames[element.id];

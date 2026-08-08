@@ -123,7 +123,9 @@ test('outlines the element box itself rather than a rectangle around it', async 
   // corner handles are the part of the overlay that takes the pointer, and unlike the secondary
   // ones they are never dropped, however little room the box has.
   await expect(overlay.locator('[data-handle="se"]')).toHaveCSS('pointer-events', 'all');
-  await expect(overlay.locator('.handle-scale')).not.toHaveCount(0);
+  for (const corner of ['nw', 'ne', 'se', 'sw']) {
+    await expect(overlay.locator(`[data-handle="${corner}"]`)).toHaveCount(1);
+  }
 });
 
 test('resizes, slants and rotates the selection from its handles', async ({ page }, testInfo) => {
@@ -174,6 +176,13 @@ test('resizes, slants and rotates the selection from its handles', async ({ page
   await page.keyboard.press('Control+Z');
   await page.keyboard.press('Control+Z');
   await expect.poll(readout).toEqual(start);
+
+  // Dragging a corner past its anchor mirrors an element, so mirroring needs a keyboard-reachable
+  // twin as well. The slider carries the magnitude and Flip carries the sign.
+  const flipX = page.getByRole('button', { name: 'Flip X' });
+  await flipX.click();
+  await expect(flipX).toHaveAttribute('aria-pressed', 'true');
+  await expect.poll(async () => Number((await readout())[1])).toBeLessThan(0);
 });
 
 test('moves the element by dragging its body, and locks the drag to an axis with Shift', async ({ page }, testInfo) => {

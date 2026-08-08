@@ -398,20 +398,38 @@ export function App() {
             <input
               className="goo-range"
               type="range"
-              // The floor the canvas clamps a resize to, so the thumb and the readout cannot
-              // disagree about how small an element has been dragged.
+              // Magnitude only, from the floor the canvas clamps a resize to. A handle dragged
+              // past its anchor mirrors the element, and running the track through the negatives
+              // to reach that would spend half of it on mirrored sizes and leave a dead zero in
+              // the middle -- so the sign stays where the drag left it, and Flip below is what
+              // changes it. The readout keeps showing the signed value either way.
               min="0.01"
               max="4"
               step="0.01"
-              value={element.transform[axis]}
+              value={Math.abs(element.transform[axis])}
               onChange={(event) => {
-                const scale = Number(event.target.value);
+                const magnitude = Number(event.target.value);
                 updateSelectedTransform('Resize element', axis, (transform) => {
-                  transform[axis] = scale;
+                  transform[axis] = transform[axis] < 0 ? -magnitude : magnitude;
                 });
               }}
             />
           </label>
+        ))}
+      </div>
+      <div className="field-row">
+        {(['scaleX', 'scaleY'] as const).map((axis) => (
+          <button
+            key={axis}
+            className="orb orb-xs orb-berry"
+            type="button"
+            aria-pressed={element.transform[axis] < 0}
+            onClick={() => updateSelectedTransform('Mirror element', `flip-${axis}`, (transform) => {
+              transform[axis] = -transform[axis];
+            })}
+          >
+            Flip {axis === 'scaleX' ? 'X' : 'Y'}
+          </button>
         ))}
       </div>
       <div className="field-row">
@@ -950,8 +968,9 @@ export function App() {
               disabled={!hasAnimations}
               title={hasAnimations ? undefined : 'Add an animated preset to preview motion'}
               onClick={() => {
-                // Rewind on pause so resuming picks up from the frame the canvas has been
-                // showing, rather than jumping back to the middle of the loop.
+                // Pausing shows frame zero rather than freezing where the loop stopped, so that
+                // a drag always reads the document's own transform. Rewinding here keeps the
+                // resume honest too: playback restarts from the frame that is on screen.
                 if (isPlaying) animationTimeRef.current = 0;
                 setPlayRequested(!isPlaying);
               }}
