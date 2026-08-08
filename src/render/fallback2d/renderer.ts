@@ -47,7 +47,7 @@ export function renderDocument2d(
     context.fillRect(0, 0, document.canvas.width, document.canvas.height);
   }
 
-  const result: RenderResult = { elementBounds: new Map(), diagnostics: [] };
+  const result: RenderResult = { elementFrames: new Map(), diagnostics: [] };
   for (const element of document.elements) {
     if (!element.visible || element.opacity <= 0) continue;
     if (element.type === 'text') {
@@ -92,12 +92,17 @@ function drawTextElement(
   const reach = effectStackReach(transformedBounds, element.effects, effectViewport);
   const fullRenderBounds = roundOutBounds(expandBounds(transformedBounds, reach));
   const renderBounds = intersectBounds(fullRenderBounds, viewport);
-  result.elementBounds.set(element.id, transformedBounds);
+  result.elementFrames.set(element.id, { local: warpedBounds, matrix });
   if (!renderBounds) return;
   // The glyph source must be rasterised at the export scale. Rendering it at logical size and
   // letting the scaled destination context enlarge it turns every high-resolution export into an
   // upscaled 1x bitmap, which is exactly the artefact supersampling is supposed to avoid.
-  const sourceScale = sourceRasterScale(layout.bounds, scale);
+  //
+  // The element's own magnification counts for the same reason: a word scaled up by dragging a
+  // handle is enlarged by the matrix below, and rasterising it at logical size would hand that
+  // matrix a bitmap with too few pixels in it. `sourceRasterScale` floors the result at 1, so an
+  // element scaled *down* still rasterises at logical size rather than losing detail early.
+  const sourceScale = sourceRasterScale(layout.bounds, scale * matrixMagnification(matrix));
   const sourceWidth = Math.max(1, Math.ceil(layout.bounds.width * sourceScale));
   const sourceHeight = Math.max(1, Math.ceil(layout.bounds.height * sourceScale));
   const source = createCanvasSurface(sourceWidth, sourceHeight);
@@ -251,7 +256,7 @@ function drawShapeElement(
   const reach = effectStackReach(transformedBounds, element.effects, effectViewport);
   const fullRenderBounds = roundOutBounds(expandBounds(transformedBounds, reach));
   const renderBounds = intersectBounds(fullRenderBounds, viewport);
-  result.elementBounds.set(element.id, transformedBounds);
+  result.elementFrames.set(element.id, { local: localBounds, matrix });
   if (!renderBounds) return;
 
   const face = createCanvasSurface(
@@ -381,6 +386,19 @@ export function sourceRasterScale(bounds: Bounds, scale: number): number {
   const area = Math.max(1, bounds.width * bounds.height);
   const affordable = Math.sqrt(MAX_SOURCE_PIXELS / area);
   return Math.max(1, Math.min(requested, affordable));
+}
+
+/**
+ * The most a matrix stretches any direction, as a factor.
+ *
+ * The column norms bound the true largest singular value from below and are never more than a
+ * factor of root two under it, which is the right side to err on: overstating the magnification
+ * would rasterise a wildly skewed word at a resolution nothing on screen can use.
+ */
+export function matrixMagnification(matrix: Matrix): number {
+  const [a, b, c, d] = matrix;
+  const magnification = Math.max(Math.hypot(a, b), Math.hypot(c, d));
+  return Number.isFinite(magnification) && magnification > 0 ? magnification : 1;
 }
 
 function configureLayoutContext(context: TextContext, layout: LaidOutText): void {

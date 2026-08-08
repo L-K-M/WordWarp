@@ -30,6 +30,7 @@
   --cyan: #48e4ff;
   --pink: #ff5fb0;
   --yellow: #ffd84a;
+  --lime: #b6ff5a;
 }
 
 * {
@@ -949,12 +950,18 @@ button:disabled {
   transition: transform 120ms ease-out;
 }
 
+/* The frame deliberately does not hide its overflow. Handles stand off the element box, so a word
+   near the edge of the canvas would have half of them clipped away -- and a clipped handle is one
+   that cannot be grabbed at all, not merely one that looks cut off. The canvas rounds off its own
+   corners below instead, which is the only thing the hidden overflow was ever doing. */
 .artboard {
+  --artboard-radius: 24px;
+  --artboard-border: 3px;
+
   position: relative;
-  overflow: hidden;
   width: 100%;
-  border: 3px solid #0e6b72;
-  border-radius: 24px;
+  border: var(--artboard-border) solid #0e6b72;
+  border-radius: var(--artboard-radius);
   container-type: inline-size;
   background-color: white;
   background-image:
@@ -980,6 +987,8 @@ button:disabled {
 
 .render-artboard canvas {
   z-index: 1;
+  /* The frame's inner corner: the canvas fills the padding box, inside the border. */
+  border-radius: calc(var(--artboard-radius) - var(--artboard-border));
   cursor: grab;
   touch-action: none;
 }
@@ -994,7 +1003,7 @@ button:disabled {
   pointer-events: none;
 }
 
-.selection-overlay rect {
+.selection-overlay polygon {
   fill: transparent;
   vector-effect: non-scaling-stroke;
 }
@@ -1008,6 +1017,53 @@ button:disabled {
   stroke: var(--cyan);
   stroke-dasharray: 8 5;
   stroke-width: 2;
+}
+
+/* The handles are the one part of the overlay that takes the pointer; the outline stays inert so
+   a click on the element's edge still selects and drags the element itself. */
+.selection-handles {
+  pointer-events: none;
+}
+
+.selection-handle {
+  pointer-events: all;
+  touch-action: none;
+}
+
+.selection-overlay .handle-stalk {
+  stroke: var(--cyan);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.selection-overlay .handle-hit {
+  fill: transparent;
+  stroke: none;
+}
+
+.selection-overlay .handle-glyph {
+  stroke: #071018;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+/* Three jobs, three shapes, three colours: cyan squares resize, a lime disc rotates, magenta
+   diamonds slant. Yellow diamonds stay reserved for the warp adjustment handles. */
+.handle-scale .handle-glyph {
+  fill: var(--cyan);
+}
+
+.handle-rotate .handle-glyph {
+  fill: var(--lime);
+}
+
+.handle-skew .handle-glyph {
+  fill: var(--pink);
+}
+
+.selection-handle:hover .handle-glyph {
+  fill: #fff;
 }
 
 .renderer-badge,

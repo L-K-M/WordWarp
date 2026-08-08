@@ -1377,9 +1377,27 @@ No modal, no signup, no tour. The preset gallery *is* the tutorial.
 
 ### 16.3 Direct manipulation
 
-Everything adjustable by dragging on the canvas, not only by slider:
+Everything adjustable by dragging on the canvas, not only by slider. Modeless throughout: the
+widget for every gesture is on screen at once, so nothing is reached by first picking a tool.
 
-- Drag the element to move; handles to scale; corner to rotate.
+Shipped — the element transform, all five degrees of freedom:
+
+- Drag the element itself to move it. Shift locks the move to one axis.
+- **Resize** — cyan squares, four on the corners and four on the edge midpoints. The opposite
+  corner or edge is the anchor and stays exactly where it is; Shift holds the aspect ratio, and
+  dragging past the anchor mirrors rather than collapsing.
+- **Rotate** — a lime disc on a stalk above the top edge, turning about the transform origin.
+  Shift snaps to 15°.
+- **Slant** — magenta diamonds below the bottom edge and beside the right edge, one per shear
+  axis, each sitting on the edge whose motion it describes. Shift snaps to 5°.
+
+The selection outline is the element's own box carried through its matrix, not the bounding
+rectangle around it, so the handles sit on the artwork however it has been turned or sheared. Hit
+testing uses the same box. Handles hold one size on screen at any zoom, and the secondary ones give
+way on a box too small to hold them, leaving the four corners.
+
+Still to come:
+
 - **Warp handles** — yellow diamonds, exactly like the Office adjustment handles they descend from.
 - **Shadow/glow**: drag the shadow itself to set angle and distance.
 - **Extrusion**: drag the vanishing point.

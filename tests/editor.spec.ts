@@ -123,19 +123,23 @@ test('groups the stamp menu by theme and places a pierced figure at its own prop
   await expect(page.locator('.render-error')).toHaveCount(0);
 });
 
-test('renders a non-interactive dual-stroke selection outline', async ({ page }) => {
+test('outlines the element box itself rather than a rectangle around it', async ({ page }) => {
   await page.goto('./');
 
   const overlay = page.locator('.selection-overlay');
   await expect(overlay).toHaveAttribute('aria-hidden', 'true');
   await expect(overlay).toHaveCSS('pointer-events', 'none');
 
-  const layers = overlay.locator('rect');
+  const layers = overlay.locator('polygon');
   await expect(layers).toHaveClass(['selection-underlay', 'selection-outline']);
-  const bounds = await layers.evaluateAll((rectangles) => rectangles.map((rectangle) => (
-    ['x', 'y', 'width', 'height'].map((attribute) => rectangle.getAttribute(attribute))
-  )));
-  expect(bounds[0]).toEqual(bounds[1]);
+  const outlines = await layers.evaluateAll((shapes) => shapes.map((shape) => shape.getAttribute('points')));
+  expect(outlines[0]).toEqual(outlines[1]);
+
+  // The default word is rotated and slanted, so its box is a turned quad. An axis-aligned outline
+  // would sit off the artwork, and the handles hung on its corners would sit off it with it.
+  const corners = outlines[0]!.split(' ').map((pair) => pair.split(',').map(Number));
+  expect(new Set(corners.map((corner) => corner[0])).size).toBe(4);
+  expect(new Set(corners.map((corner) => corner[1])).size).toBe(4);
 
   await expect(layers.nth(0)).toHaveCSS('stroke', 'rgb(7, 16, 24)');
   await expect(layers.nth(0)).toHaveCSS('stroke-dasharray', 'none');
@@ -145,6 +149,144 @@ test('renders a non-interactive dual-stroke selection outline', async ({ page })
   await expect(layers.nth(1)).toHaveCSS('stroke-dasharray', /8px.*5px/);
   await expect(layers.nth(1)).toHaveCSS('stroke-width', '2px');
   await expect(layers.nth(1)).toHaveCSS('vector-effect', 'non-scaling-stroke');
+
+  // The outline itself stays inert, so a drag on the element's edge still moves the element. The
+  // corner handles are the part of the overlay that takes the pointer, and unlike the secondary
+  // ones they are never dropped, however little room the box has.
+  await expect(overlay.locator('[data-handle="se"]')).toHaveCSS('pointer-events', 'all');
+  for (const corner of ['nw', 'ne', 'se', 'sw']) {
+    await expect(overlay.locator(`[data-handle="${corner}"]`)).toHaveCount(1);
+  }
+});
+
+test('resizes, slants and rotates the selection from its handles', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('./');
+  await expect(page.getByRole('button', { name: 'WordWarp GOO TYPE LAB' })).toBeVisible();
+
+  // Eight resize handles, one rotate knob and the two slants -- one per degree of freedom the
+  // transform has, all of them on screen at once rather than behind a mode.
+  await expect(page.locator('.selection-handle')).toHaveCount(11);
+  await expect(page.locator('[data-handle="rotate"] .handle-glyph')).toHaveCSS('fill', 'rgb(182, 255, 90)');
+  await expect(page.locator('[data-handle="skew-x"] .handle-glyph')).toHaveCSS('fill', 'rgb(255, 95, 176)');
+
+  // Rotation, Scale X, Scale Y, Slant X, Slant Y -- the numeric twins of the handles, and the
+  // only place a gesture's result can be read exactly.
+  const readout = () => page.locator('.transform-section output').allTextContents();
+  const dragHandle = async (id: string, byX: number, byY: number) => {
+    const box = (await page.locator(`[data-handle="${id}"]`).boundingBox())!;
+    const fromX = box.x + box.width / 2;
+    const fromY = box.y + box.height / 2;
+    await page.mouse.move(fromX, fromY);
+    await page.mouse.down();
+    await page.mouse.move(fromX + byX, fromY + byY, { steps: 8 });
+    await page.mouse.up();
+  };
+
+  const start = await readout();
+  expect(start).toHaveLength(5);
+
+  // Dragging the bottom-right corner away from the top-left one grows both axes.
+  await dragHandle('se', 90, 50);
+  const resized = await readout();
+  expect(Number(resized[1])).toBeGreaterThan(Number(start[1]));
+  expect(Number(resized[2])).toBeGreaterThan(Number(start[2]));
+
+  // Sliding the bottom edge to the right is exactly what a horizontal slant does to the geometry.
+  await dragHandle('skew-x', 60, 0);
+  const slanted = await readout();
+  expect(Number(slanted[3])).toBeGreaterThan(Number(resized[3]));
+
+  await dragHandle('rotate', 70, 40);
+  const rotated = await readout();
+  expect(Number(rotated[0])).not.toBe(Number(slanted[0]));
+
+  // One transaction per gesture: three drags of many pointer moves each undo in three presses.
+  await page.keyboard.press('Control+Z');
+  await page.keyboard.press('Control+Z');
+  await page.keyboard.press('Control+Z');
+  await expect.poll(readout).toEqual(start);
+
+  // Dragging a corner past its anchor mirrors an element, so mirroring needs a keyboard-reachable
+  // twin as well. The slider carries the magnitude and Flip carries the sign.
+  const flipX = page.getByRole('button', { name: 'Flip X' });
+  await flipX.click();
+  await expect(flipX).toHaveAttribute('aria-pressed', 'true');
+  await expect.poll(async () => Number((await readout())[1])).toBeLessThan(0);
+});
+
+test('keeps hold of a gesture whose handle is dropped under the pointer', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('./');
+  await expect(page.locator('[data-handle="n"]')).toHaveCount(1);
+
+  const artboard = (await page.locator('.render-artboard').boundingBox())!;
+  const outline = () => page.locator('.selection-outline').getAttribute('points');
+  const before = await outline();
+
+  // Squashing the box far enough takes the edge handles away with it, including the one being
+  // dragged. Releasing clear of the artboard then leaves nothing under the pointer to notice --
+  // unless the capture is held somewhere that outlives the handle.
+  const top = (await page.locator('[data-handle="n"]').boundingBox())!;
+  const bottom = (await page.locator('[data-handle="s"]').boundingBox())!;
+  await page.mouse.move(top.x + top.width / 2, top.y + top.height / 2);
+  await page.mouse.down();
+  // Stop just short of the bottom edge, which is this handle's anchor. Going past it would mirror
+  // the element and make the box tall enough to hold its handles again.
+  await page.mouse.move(top.x + top.width / 2, bottom.y + bottom.height / 2 - 3, { steps: 10 });
+  await expect(page.locator('[data-handle="n"]')).toHaveCount(0);
+  await page.mouse.move(top.x + top.width / 2, artboard.y + artboard.height + 90, { steps: 6 });
+  await page.mouse.up();
+
+  // Undo is refused outright while a transaction is open, so getting the box back proves the
+  // gesture closed. A fresh drag afterwards proves the drag state cleared with it.
+  await page.keyboard.press('Control+Z');
+  await expect.poll(outline).toBe(before);
+
+  const centreX = artboard.x + artboard.width / 2;
+  const centreY = artboard.y + artboard.height / 2;
+  await page.mouse.move(centreX, centreY);
+  await page.mouse.down();
+  await page.mouse.move(centreX + 50, centreY, { steps: 6 });
+  await page.mouse.up();
+  await expect.poll(outline).not.toBe(before);
+});
+
+test('moves the element by dragging its body, and locks the drag to an axis with Shift', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('./');
+  await expect(page.locator('.selection-outline')).toBeVisible();
+
+  const box = (await page.locator('.render-artboard canvas').boundingBox())!;
+  const centreX = box.x + box.width / 2;
+  const centreY = box.y + box.height / 2;
+  const topLeft = async () => {
+    const points = (await page.locator('.selection-outline').getAttribute('points'))!;
+    return points.split(' ')[0].split(',').map(Number) as [number, number];
+  };
+  const drag = async (fromX: number, byX: number, byY: number) => {
+    await page.mouse.move(fromX, centreY);
+    await page.mouse.down();
+    await page.mouse.move(fromX + byX, centreY + byY, { steps: 6 });
+    await page.mouse.up();
+  };
+
+  const before = await topLeft();
+  await drag(centreX, 60, 0);
+  const moved = await topLeft();
+  expect(moved[0]).toBeGreaterThan(before[0]);
+
+  // Shift keeps a move on the axis the pointer travelled furthest along, so this one changes x
+  // and leaves y exactly where it was.
+  await page.keyboard.down('Shift');
+  await drag(centreX + 60, 60, 40);
+  await page.keyboard.up('Shift');
+  const locked = await topLeft();
+  expect(locked[0]).toBeGreaterThan(moved[0]);
+  expect(locked[1]).toBeCloseTo(moved[1], 3);
 });
 
 test('evaluates the initial animated preview at frame zero', async ({ page }, testInfo) => {
@@ -465,12 +607,12 @@ test('the style rack opens three across and resizes by pointer and keyboard', as
 
   // Arrow keys drive the splitter. They must not also reach the canvas, where they nudge the
   // selected element: the shortcut handler treats a focusable separator as its own control.
-  const selectionBefore = await page.locator('.selection-overlay rect').first().getAttribute('x');
+  const selectionBefore = await page.locator('.selection-outline').getAttribute('points');
   await handle.focus();
   await page.keyboard.press('ArrowLeft');
   await page.keyboard.press('ArrowLeft');
   await expect.poll(rackWidth).toBe(812);
-  expect(await page.locator('.selection-overlay rect').first().getAttribute('x')).toBe(selectionBefore);
+  expect(await page.locator('.selection-outline').getAttribute('points')).toBe(selectionBefore);
 
   // The width outlives a reload, and double-clicking the handle puts it back.
   await page.reload();

@@ -59,6 +59,21 @@ describe('document store history', () => {
     expect(store.getState().document.elements[0]!.transform.x).toBe(600);
   });
 
+  /**
+   * A click on the canvas opens a gesture and closes it again without moving anything, because
+   * selecting and dragging are the same pointer press. Nothing may reach the history from that,
+   * or every click would cost the user an extra undo to get back past.
+   */
+  it('keeps a transaction that changed nothing out of the history', () => {
+    const store = createDocumentStore(createFixture());
+
+    store.getState().beginTransaction('Move element', 'move:element-1');
+    store.getState().commitTransaction();
+
+    expect(store.getState().past).toHaveLength(0);
+    expect(store.getState().transaction).toBeNull();
+  });
+
   it('can cancel a transaction without changing history', () => {
     const store = createDocumentStore(createFixture());
 

@@ -10,6 +10,7 @@ import { createId } from '../lib/id';
 import {
   PRESET_WARP_IDS, STAMP_GROUPS, STAMP_IDS_BY_GROUP,
   type Effect, type Paint, type Point, type Rgba, type ShapeElement, type StampId, type TextElement,
+  type Transform,
 } from '../model/types';
 import { stampAspect, stampOutline } from '../geometry/stamps';
 import { startAutosave, type AutosaveController } from '../persistence/autosave';
@@ -23,7 +24,7 @@ import { documentStore, useDocumentStore } from '../state/document-store';
 import { PRESET_SIZE_LABELS, PRESET_SIZES, useEditorStore } from '../state/editor-store';
 import { holdToast, resumeToast, useUiStore } from '../state/ui-store';
 import { type FontCatalogEntry } from '../text/fonts';
-import { DocumentCanvas } from '../ui/DocumentCanvas';
+import { DocumentCanvas, type GestureKind } from '../ui/DocumentCanvas';
 import { FontPicker } from '../ui/FontPicker';
 import { PresetPreview } from '../ui/PresetPreview';
 import { RackResizer } from '../ui/RackResizer';
@@ -34,6 +35,19 @@ const presetCategories = PRESET_CATEGORY_TABS;
 
 /* Jellybean flavours come in bean-0 .. bean-6 in styles.css; cycle chips through them. */
 const BEAN_COLOR_COUNT = 7;
+
+/**
+ * What an on-canvas drag calls itself in the history.
+ *
+ * Each gesture opens one transaction under its own merge key, so a resize that took forty pointer
+ * moves is a single undo step, and undoing a rotation does not also undo the move before it.
+ */
+const GESTURE_LABELS: Record<GestureKind, string> = {
+  move: 'Move element',
+  scale: 'Resize element',
+  rotate: 'Rotate element',
+  skew: 'Slant element',
+};
 
 type ExportFormat = 'png' | 'apng' | 'gif';
 
@@ -333,6 +347,135 @@ export function App() {
     });
   };
 
+  /**
+   * `mergeKey` is for controls that emit a stream: a slider dragged across its track is one edit,
+   * not forty. A button press is already one edit, so it passes `undefined` -- sharing a key would
+   * fold two deliberate presses inside the merge window into a single history entry.
+   */
+  const updateSelectedTransform = (
+    label: string,
+    mergeKey: string | undefined,
+    change: (transform: Transform) => void,
+  ) => {
+    if (!selectedElement) return;
+    updateDocument(label, (draft) => {
+      const element = draft.elements.find((candidate) => candidate.id === selectedElement.id);
+      if (element && !element.locked) change(element.transform);
+    }, mergeKey === undefined ? undefined : `${mergeKey}:${selectedElement.id}`);
+  };
+
+  /**
+   * Numeric twins for the on-canvas handles, shared by every element that has a transform.
+   *
+   * The handles are the fast way to do this and the reason the section exists at all, but they are
+   * pointer-only and inexact. These controls are what a keyboard reaches, and what someone typing
+   * an exact angle uses; both write the same five numbers, so neither can drift from the canvas.
+   */
+  const renderTransformSection = (element: TextElement | ShapeElement) => (
+    <section className="inspector-section transform-section">
+      <h2>Transform <span>{Math.round(element.transform.rotation)} DEG</span></h2>
+      <p className="foundation-note">
+        Drag the shape itself to move it, the square handles to resize, the round handle to rotate
+        and the diamonds to slant. Hold Shift to snap angles and hold a corner's proportions.
+      </p>
+      <label className="range-field">
+        <span>Rotation <output>{Math.round(element.transform.rotation)}</output></span>
+        <input
+          className="goo-range"
+          type="range"
+          min="-180"
+          max="180"
+          value={element.transform.rotation}
+          onChange={(event) => {
+            const rotation = Number(event.target.value);
+            updateSelectedTransform('Rotate element', 'rotation', (transform) => {
+              transform.rotation = rotation;
+            });
+          }}
+        />
+      </label>
+      <div className="field-row">
+        {(['scaleX', 'scaleY'] as const).map((axis) => (
+          <label className="range-field" key={axis}>
+            <span>
+              {axis === 'scaleX' ? 'Scale X' : 'Scale Y'} <output>{element.transform[axis].toFixed(2)}</output>
+            </span>
+            <input
+              className="goo-range"
+              type="range"
+              // Magnitude only, from the floor the canvas clamps a resize to. A handle dragged
+              // past its anchor mirrors the element, and running the track through the negatives
+              // to reach that would spend half of it on mirrored sizes and leave a dead zero in
+              // the middle -- so the sign stays where the drag left it, and Flip below is what
+              // changes it. The readout keeps showing the signed value either way.
+              min="0.01"
+              max="4"
+              step="0.01"
+              value={Math.abs(element.transform[axis])}
+              onChange={(event) => {
+                const magnitude = Number(event.target.value);
+                updateSelectedTransform('Resize element', axis, (transform) => {
+                  transform[axis] = transform[axis] < 0 ? -magnitude : magnitude;
+                });
+              }}
+            />
+          </label>
+        ))}
+      </div>
+      <div className="field-row">
+        {(['scaleX', 'scaleY'] as const).map((axis) => (
+          <button
+            key={axis}
+            className="orb orb-xs orb-berry"
+            type="button"
+            aria-pressed={element.transform[axis] < 0}
+            onClick={() => updateSelectedTransform('Mirror element', undefined, (transform) => {
+              transform[axis] = -transform[axis];
+            })}
+          >
+            Flip {axis === 'scaleX' ? 'X' : 'Y'}
+          </button>
+        ))}
+      </div>
+      <div className="field-row">
+        {(['skewX', 'skewY'] as const).map((axis) => (
+          <label className="range-field" key={axis}>
+            <span>
+              {axis === 'skewX' ? 'Slant X' : 'Slant Y'} <output>{Math.round(element.transform[axis])}</output>
+            </span>
+            <input
+              className="goo-range"
+              type="range"
+              min="-80"
+              max="80"
+              value={element.transform[axis]}
+              onChange={(event) => {
+                const angle = Number(event.target.value);
+                updateSelectedTransform('Slant element', axis, (transform) => {
+                  transform[axis] = angle;
+                });
+              }}
+            />
+          </label>
+        ))}
+      </div>
+      <button
+        className="orb orb-xs orb-grape"
+        type="button"
+        onClick={() => updateSelectedTransform('Reset transform', undefined, (transform) => {
+          // Position is deliberately left alone: this undoes the shaping, not the placement.
+          transform.rotation = 0;
+          transform.scaleX = 1;
+          transform.scaleY = 1;
+          transform.skewX = 0;
+          transform.skewY = 0;
+        })}
+      >
+        Reset shape
+      </button>
+    </section>
+  );
+
   const setBackground = (paint: Paint | null) => {
     updateDocument(paint ? 'Set background' : 'Clear background', (draft) => {
       draft.canvas.background = paint;
@@ -559,7 +702,11 @@ export function App() {
     }
   };
 
-  const previewDocument = evaluateDocumentAtTime(document, animationTime);
+  // Paused means frame zero, not wherever the loop happened to stop. The canvas is what a drag
+  // reads an element's starting transform from, and every track evaluates to the document's own
+  // values at zero -- so this is what stops a gesture on a paused bounce from writing the bounce's
+  // own offset back into the document as if the user had put it there.
+  const previewDocument = evaluateDocumentAtTime(document, isPlaying ? animationTime : 0);
   const fitZoomToViewport = () => {
     const viewport = window.document.querySelector('.canvas-viewport');
     const wrap = window.document.querySelector<HTMLElement>('.artboard-wrap');
@@ -805,18 +952,18 @@ export function App() {
               <DocumentCanvas
                 document={previewDocument}
                 selectedElementId={selectedElementId}
+                zoom={zoom}
                 onSelect={selectElement}
-                onMoveStart={isPlaying ? undefined : (id) => beginTransaction(`Move ${id}`, `move:${id}`)}
-                onMove={isPlaying ? undefined : (id, x, y) => {
-                  updateDocument('Move element', (draft) => {
+                onTransformStart={isPlaying ? undefined : (id, gesture) => {
+                  beginTransaction(GESTURE_LABELS[gesture], `${gesture}:${id}`);
+                }}
+                onTransform={isPlaying ? undefined : (id, transform) => {
+                  updateDocument('Transform element', (draft) => {
                     const element = draft.elements.find((candidate) => candidate.id === id);
-                    if (element && !element.locked) {
-                      element.transform.x = x;
-                      element.transform.y = y;
-                    }
+                    if (element && !element.locked) element.transform = transform;
                   });
                 }}
-                onMoveEnd={isPlaying ? undefined : commitTransaction}
+                onTransformEnd={isPlaying ? undefined : commitTransaction}
               />
             </div>
           </div>
@@ -832,7 +979,13 @@ export function App() {
               className={`orb orb-xs orb-lime ${isPlaying ? 'playing' : ''}`}
               disabled={!hasAnimations}
               title={hasAnimations ? undefined : 'Add an animated preset to preview motion'}
-              onClick={() => setPlayRequested((playing) => !playing)}
+              onClick={() => {
+                // Pausing shows frame zero rather than freezing where the loop stopped, so that
+                // a drag always reads the document's own transform. Rewinding here keeps the
+                // resume honest too: playback restarts from the frame that is on screen.
+                if (isPlaying) animationTimeRef.current = 0;
+                setPlayRequested(!isPlaying);
+              }}
               aria-pressed={isPlaying}
             >
               {isPlaying ? 'Pause' : 'Play'}
@@ -988,6 +1141,8 @@ export function App() {
                 )}
               </section>
 
+              {renderTransformSection(selectedText)}
+
               {renderEffectsSection(selectedText.effects)}
 
               <section className="inspector-section light-section">
@@ -1085,25 +1240,12 @@ export function App() {
                     }}
                   />
                 </label>
-                <label className="range-field">
-                  <span>Rotation <output>{Math.round(selectedShape.transform.rotation)}</output></span>
-                  <input
-                    className="goo-range"
-                    type="range"
-                    min="-180"
-                    max="180"
-                    value={selectedShape.transform.rotation}
-                    onChange={(event) => {
-                      const rotation = Number(event.target.value);
-                      updateStamp((element) => { element.transform.rotation = rotation; });
-                    }}
-                  />
-                </label>
                 <p className="foundation-note">
                   Stamps take the whole effect stack and every style in the rack, so a decoration
                   can be chromed, bevelled or sprayed exactly like a word.
                 </p>
               </section>
+              {renderTransformSection(selectedShape)}
               {renderEffectsSection(selectedShape.effects)}
             </>
           ) : (
