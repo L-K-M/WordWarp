@@ -56,6 +56,49 @@ export function applyMatrix(matrix: Matrix, [x, y]: Point): Point {
   ];
 }
 
+/**
+ * Carry a *direction* through a matrix, leaving the translation behind.
+ *
+ * Handle geometry is full of differences between two points -- the span of an edge, how far a
+ * pointer travelled -- and a difference has no position to translate. Subtracting two
+ * `applyMatrix` results would cancel the translation anyway; this says so directly.
+ */
+export function applyMatrixVector(matrix: Matrix, [x, y]: Point): Point {
+  return [matrix[0] * x + matrix[2] * y, matrix[1] * x + matrix[3] * y];
+}
+
+/** The inverse mapping, or `null` for a matrix that has collapsed the plane onto a line. */
+export function invertMatrix(matrix: Matrix): Matrix | null {
+  const [a, b, c, d, e, f] = matrix;
+  const determinant = a * d - b * c;
+  if (!Number.isFinite(determinant) || determinant === 0) return null;
+  return [
+    d / determinant,
+    -b / determinant,
+    -c / determinant,
+    a / determinant,
+    (c * f - d * e) / determinant,
+    (b * e - a * f) / determinant,
+  ];
+}
+
+/**
+ * The element matrix without its translation: rotation, then scale, then skew.
+ *
+ * `elementMatrix` sandwiches this between the two translations that move the transform origin to
+ * the position on the canvas. Direct manipulation needs the middle on its own, because solving for
+ * a new scale or skew means undoing the parts of it that are staying put.
+ */
+export function elementLinearMatrix(transform: Transform): Matrix {
+  return multiplyMatrix(
+    rotationMatrix(transform.rotation),
+    multiplyMatrix(
+      scaleMatrix(transform.scaleX, transform.scaleY),
+      skewMatrix(transform.skewX, transform.skewY),
+    ),
+  );
+}
+
 export function transformBounds(bounds: Bounds, matrix: Matrix): Bounds {
   return boundsFromPoints([
     applyMatrix(matrix, [bounds.x, bounds.y]),
