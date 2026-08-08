@@ -114,7 +114,9 @@ describe('stamp outlines', () => {
     }
   });
 
-  it('never winds a region negative, where a hole would fill itself back in', () => {
+  // The winding sweeps sample every stamp on a fine grid, so they run in seconds rather than
+  // milliseconds and keep scaling with the catalogue; the 5s default is not enough headroom.
+  it('never winds a region negative, where a hole would fill itself back in', { timeout: 120_000 }, () => {
     // Nonzero fills anything that is not zero, so a region wound to -1 comes out solid -- and a
     // hole is the only thing that can wind a region negative. Two ways in, both of which this
     // caught while the catalogue was being drawn:
@@ -131,16 +133,16 @@ describe('stamp outlines', () => {
     for (const shape of STAMP_IDS) {
       expect(Math.min(...sampleWindings(shape)), shape).toBeGreaterThanOrEqual(0);
     }
-  }, 120_000);
+  });
 
-  it('draws the figures that are meant to be pierced with their holes showing', () => {
+  it('draws the figures that are meant to be pierced with their holes showing', { timeout: 120_000 }, () => {
     // The complement of the test above. A hole can also fail by being drawn the same way round as
     // its outline, or by sitting outside the fill entirely, and in both cases the figure renders as
     // a solid blob -- a smiley with no face, a cassette with no reels.
     const pierced = [
       'smiley', 'shades', 'cassette', 'floppy', 'boombox', 'pizza', 'daisy', 'peace', 'disc',
       'gamepad', 'pumpkin', 'ghost', 'skull', 'tombstone', 'coffin', 'rocket', 'saucer',
-      'satellite', 'donut', 'lolly', 'sun', 'gem', 'butterfly',
+      'satellite', 'donut', 'lolly', 'sun', 'gem', 'butterfly', 'ring',
     ] as const;
 
     for (const shape of pierced) {
@@ -154,7 +156,7 @@ describe('stamp outlines', () => {
       expect(filled / windings.length, shape).toBeGreaterThan(0.3);
       expect(bounds.width * bounds.height, shape).toBeGreaterThan(0);
     }
-  }, 120_000);
+  });
 
   it('rebuilds geometry at the requested size rather than scaling a fixed copy', () => {
     const small = pathBounds(flattenPath(stampOutline('star', 100, 100)));
@@ -216,7 +218,7 @@ describe('stamp proportions', () => {
     expect(stampAspect('gamepad')).toBeGreaterThan(1.2);
     expect(stampAspect('coffin')).toBeLessThan(0.9);
     expect(stampAspect('satellite')).toBeGreaterThan(1.2);
-    expect(stampAspect('wrappedCandy')).toBeGreaterThan(1.3);
+    expect(stampAspect('candy')).toBeGreaterThan(1.3);
 
     for (const shape of STAMP_IDS) {
       expect(stampAspect(shape), shape).toBeGreaterThan(0.2);
@@ -240,7 +242,7 @@ describe('the stamp catalogue', () => {
 
     expect(new Set(grouped).size).toBe(grouped.length);
     expect(grouped).toEqual([...STAMP_IDS]);
-    expect(grouped).toHaveLength(52);
+    expect(grouped).toHaveLength(60);
   });
 
   it('gives every group at least one stamp', () => {
