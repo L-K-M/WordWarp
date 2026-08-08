@@ -806,6 +806,9 @@ export const BUILT_IN_PRESETS: Preset[] = [
     heatBand('#37e46a', 12), heatBand('#0c5c23', 5),
     post('scanlines', { amount: 0.32, period: 3 }, 0.55), post('grain', { amount: 0.5 }, 0.6),
   ], none(), ['thermal', 'phosphor', 'optics', 'green']),
+  definePreset('comic-pow', 'Comic Pow!', 'nineties', ['#ffd400', '#111111', '#d00000', '#fff9c4'], [
+    shadow('#d00000', 11, 0.5, 0.95), fill(gradient(['#fff36e', '#ffd400', '#f7a500'], 100)), stroke(8, '#111111'), post('halftone', { frequency: 6 }, 0.32),
+  ], warp('textArchUp', 0.28), ['comic', 'pop-art', 'halftone']),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {
