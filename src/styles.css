@@ -252,6 +252,13 @@ button:disabled {
     0 10px 16px rgb(0 0 0 / 34%);
 }
 
+/* `:hover:not(:disabled)` outranks `.active` on specificity, so without this the selected chip
+   visibly "deactivates" (drops 1px, loses saturation) whenever the pointer passes over it. */
+.bean.active:hover:not(:disabled) {
+  filter: brightness(1.22) saturate(1.25);
+  transform: translateY(-3px);
+}
+
 .bean-0 { --bean-hi: #d9baff; --bean: #a06bff; --bean-lo: #7440d6; --bean-edge: #4a21a0; }
 .bean-1 { --bean-hi: #ffb3de; --bean: #ff5fb0; --bean-lo: #d92f8f; --bean-edge: #8f1660; }
 .bean-2 { --bean-hi: #aef6ff; --bean: #4fdcf2; --bean-lo: #1fabc4; --bean-edge: #0b7285; }

@@ -10,7 +10,7 @@ import {
   renderDocument2d,
 } from '../render/fallback2d/renderer';
 import { get2dContext } from '../render/surface';
-import { ensureFontsForDocument } from '../text/fonts';
+import { ensureFontsForDocument, missingBundledFonts } from '../text/fonts';
 
 export interface RenderedPng {
   bytes: Uint8Array;
@@ -54,6 +54,11 @@ export function renderRgbaOnSurface(
   createSurface: () => ExportSurface,
   fixedBounds?: Bounds,
 ): RenderedRgba {
+  // The precondition from the docstring, enforced as a signal rather than a silent wrong render.
+  const missingFonts = missingBundledFonts(document);
+  if (missingFonts.length > 0) {
+    console.warn(`WordWarp is rendering with unloaded bundled fonts (${missingFonts.join(', ')}); call ensureFontsForDocument first`);
+  }
   const surface = createSurface();
   const context = get2dContext(surface, true);
   const bounds = fixedBounds ?? getExportBounds(document, context);

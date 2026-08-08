@@ -88,6 +88,17 @@ export function isFontReady(family: string): boolean {
   return ready.has(family);
 }
 
+/** Bundled families a document uses that have not finished loading; [] when it is safe to render. */
+export function missingBundledFonts(document: WordWarpDocument): string[] {
+  const missing = new Set<string>();
+  for (const element of document.elements) {
+    if (element.type !== 'text') continue;
+    const entry = getFontCatalogEntry(element.font.family);
+    if (entry?.source === 'bundled' && !ready.has(entry.family)) missing.add(entry.family);
+  }
+  return [...missing];
+}
+
 /**
  * Register and load a bundled font face. System fonts and unknown families resolve immediately --
  * the renderer matches those itself. A failed load resolves `false` rather than rejecting, so a
