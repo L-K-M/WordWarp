@@ -17,6 +17,7 @@ import type {
   ReflectionEffect,
   Rgba,
   SatinEffect,
+  ShapeElement,
   StrokeEffect,
   TextElement,
   TextureOverlayEffect,
@@ -1002,10 +1003,24 @@ export const BUILT_IN_PRESETS: Preset[] = [
   ], warp('textInflate', 0.7, 0.65), ['sticker', 'puffy', 'glossy', 'die-cut', 'scrapbook']),
 ];
 
-export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {
+/**
+ * Restyle an element with a preset.
+ *
+ * A style is mostly an effect stack, and an effect stack is the one thing every drawable element
+ * has, so a stamp can wear any of these. What a stamp cannot wear is the warp or the font: it has
+ * geometry rather than an envelope and no glyphs to set. Those parts are skipped rather than
+ * refused, so applying `Memphis Confetti` to a zigzag gives its colours, keyline and halftone
+ * without the wave the same preset would put through a word.
+ */
+export function applyPresetToElement(
+  element: TextElement | ShapeElement,
+  preset: Preset,
+  replaceFont = false,
+): void {
   element.effects = structuredClone(preset.apply.effects).map((effect) => ({ ...effect, id: createId() }));
-  element.warp = structuredClone(preset.apply.warp);
   element.animations = structuredClone(preset.apply.animations ?? []).map((track) => ({ ...track, id: createId() }));
+  if (element.type !== 'text') return;
+  element.warp = structuredClone(preset.apply.warp);
   if (replaceFont && preset.apply.font) element.font = { ...element.font, ...preset.apply.font };
 }
 

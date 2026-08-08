@@ -302,6 +302,37 @@ drawn over the inside of it, so a shape reads as cut out and laid down rather th
 | N19 | **Trapper Keeper** | `#ff2f86 #12bcd8` | Soft shadow → hard-edged diagonal colour panels → white satin sheen → inner bevel → dark keyline + white piping → reflection |
 | N20 | **Puffy Sticker** | `#fff3c2 #ffb03a #ff2f86` | Soft contact shadow → gloss gradient → deep pillow bevel → white inner glow → satin → 13px dark rim under a 10px white die-cut border → inflate warp |
 
+### 4.4.1 Decorations
+
+Type is only half of a 1990s composition. The other half is the confetti around it -- the triangles,
+squiggles and zigzags a Memphis sheet scattered between the words -- so the decade's styles need
+something to decorate.
+
+A **stamp** is a named outline generator: `shape` plus a `width` and `height` produce a path at draw
+time rather than geometry being stored. Resizing rebuilds the outline at the new size instead of
+scaling a rounded copy of the old one, and improving a generator improves every document that used
+it. The catalogue is `rectangle`, `ellipse`, `star`, `splat`, `triangle`, `zigzag`, `squiggle`,
+`bolt`, `starburst`, `arch`, `chevron`, `crown`, `heart`.
+
+Two properties make the feature much smaller than it looks:
+
+- **Stamps reuse the whole effect library.** The effect stack works from a face's alpha channel and
+  knows nothing about what drew it, so handing it a filled outline instead of a warped word gives a
+  decoration every fill, stroke, bevel, glow, shadow, texture and post pass -- and therefore every
+  style in §4. A preset applied to a stamp takes its effects and animations; the warp and the font
+  are skipped, because a stamp has geometry rather than an envelope and no glyphs to set.
+- **Every generated outline is normalised to fill its box.** The selection outline and the hit test
+  both come straight from `width`/`height`, so a shape that underfilled its box would have dead
+  space around it and one that overshot would draw outside its own selection. Generators are
+  measured after flattening and fitted, which also means a generator author never has to hand-tune
+  coordinates to reach all four edges.
+
+`path` is the upgrade path to an editor. Setting it detaches the element from its generator: the
+renderer draws those commands verbatim and `shape` survives only as a record of where the geometry
+came from. Both forms live in the same element-local box, so bounds, hit testing and the effect
+stack never learn which of the two they are looking at -- a path editor is then a new UI over an
+existing field rather than a second kind of element.
+
 ### 4.5 Dimensional
 
 | # | Style | Palette | Stack |
@@ -391,6 +422,14 @@ export interface CanvasSpec {
 }
 
 export type Element = TextElement | ShapeElement | ImageElement | GroupElement;
+
+interface ShapeElement extends ElementBase {
+  type: 'shape';
+  shape: StampId;               // the generator this outline comes from
+  width: number;
+  height: number;
+  path: PathData | null;        // null = generate from `shape`; set = detached, edited geometry
+}
 
 interface ElementBase {
   id: string;
