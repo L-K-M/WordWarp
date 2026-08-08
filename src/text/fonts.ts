@@ -147,8 +147,11 @@ export async function ensureUiFonts(): Promise<void> {
 async function loadBundledFont(entry: FontCatalogEntry): Promise<boolean> {
   if (typeof FontFace === 'undefined') return false;
   const set = fontFaceSet();
-  if (!set) return false;
-  const url = bundledFontUrl(entry.file!);
+  const file = entry.file;
+  if (!set || !file) return false;
+  // Vite asset URLs are content-hashed path segments that cannot contain quotes, so the CSS
+  // source string is safe to interpolate directly.
+  const url = bundledFontUrl(file);
   if (!url) return false;
   try {
     const face = new FontFace(entry.family, `url("${url}") format("woff2")`, {
