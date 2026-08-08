@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { flattenPath, pathBounds } from './path';
+import { exactPathBounds, flattenPath, pathBounds } from './path';
 import { shapeOutline, stampAspect, stampOutline } from './stamps';
 import { STAMP_GROUPS, STAMP_IDS, STAMP_IDS_BY_GROUP, type Point, type ShapeElement } from '../model/types';
 
@@ -48,7 +48,12 @@ function windingAt(contours: readonly (readonly Point[])[], [x, y]: Point): numb
 }
 
 /** Every stamp's winding, sampled on a grid fine enough to land inside its smallest feature. */
+const windingCache = new Map<string, number[]>();
+
 function sampleWindings(shape: (typeof STAMP_IDS)[number], steps = 111): number[] {
+  const cacheKey = `${shape}:${steps}`;
+  const cached = windingCache.get(cacheKey);
+  if (cached) return cached;
   const contours = flattenPath(stampOutline(shape, 240, 240));
   const outward = Math.sign(contours.reduce(
     (total, contour) => total + contour.reduce(
@@ -69,6 +74,7 @@ function sampleWindings(shape: (typeof STAMP_IDS)[number], steps = 111): number[
       samples.push(windingAt(contours, point) * outward);
     }
   }
+  windingCache.set(cacheKey, samples);
   return samples;
 }
 
@@ -95,7 +101,7 @@ describe('stamp outlines', () => {
     // Stamps are placed and resized by their box, so geometry that overflowed would put the drawn
     // shape somewhere other than the selection outline and the hit test both say it is.
     for (const shape of STAMP_IDS) {
-      const bounds = pathBounds(flattenPath(stampOutline(shape, 200, 120)));
+      const bounds = exactPathBounds(stampOutline(shape, 200, 120));
 
       expect(bounds.x, shape).toBeGreaterThanOrEqual(-0.01);
       expect(bounds.y, shape).toBeGreaterThanOrEqual(-0.01);
@@ -108,7 +114,9 @@ describe('stamp outlines', () => {
     }
   });
 
-  it('never winds a region negative, where a hole would fill itself back in', () => {
+  // The winding sweeps sample every stamp on a fine grid, so they run in seconds rather than
+  // milliseconds and keep scaling with the catalogue; the 5s default is not enough headroom.
+  it('never winds a region negative, where a hole would fill itself back in', { timeout: 120_000 }, () => {
     // Nonzero fills anything that is not zero, so a region wound to -1 comes out solid -- and a
     // hole is the only thing that can wind a region negative. Two ways in, both of which this
     // caught while the catalogue was being drawn:
@@ -122,18 +130,23 @@ describe('stamp outlines', () => {
     // Neither shows up in bounds, command counts or contour counts; only the winding says so. A
     // count above one is fine and common -- that is two filled shapes unioning, which is how most
     // of these figures are built.
+    //
+    // The grid is the expensive part of this test -- a full winding sample of every stamp on a
+    // fine mesh -- and the catalogue has grown since it was written, so it gets a budget of its own
+    // rather than the file's default.
     for (const shape of STAMP_IDS) {
       expect(Math.min(...sampleWindings(shape)), shape).toBeGreaterThanOrEqual(0);
     }
   });
 
-  it('draws the figures that are meant to be pierced with their holes showing', () => {
+  it('draws the figures that are meant to be pierced with their holes showing', { timeout: 120_000 }, () => {
     // The complement of the test above. A hole can also fail by being drawn the same way round as
     // its outline, or by sitting outside the fill entirely, and in both cases the figure renders as
     // a solid blob -- a smiley with no face, a cassette with no reels.
     const pierced = [
       'smiley', 'shades', 'cassette', 'floppy', 'boombox', 'pizza', 'daisy', 'peace', 'disc',
-      'pumpkin', 'ghost', 'skull', 'tombstone', 'rocket', 'saucer', 'donut', 'lolly', 'sun', 'gem',
+      'gamepad', 'pumpkin', 'ghost', 'skull', 'tombstone', 'coffin', 'rocket', 'saucer',
+      'satellite', 'donut', 'lolly', 'sun', 'gem', 'butterfly', 'ring', 'gear', 'crosshair',
     ] as const;
 
     for (const shape of pierced) {
@@ -156,6 +169,22 @@ describe('stamp outlines', () => {
     expect(small.width).toBeCloseTo(100, 1);
     expect(large.width).toBeCloseTo(400, 1);
     expect(large.height).toBeCloseTo(250, 1);
+  });
+
+  it('fits the most extreme editor aspect ratios without scale-dependent overshoot', () => {
+    for (const [width, height] of [[16, 900], [900, 16]] as const) {
+      const bounds = exactPathBounds(stampOutline('gamepad', width, height));
+
+      expect(bounds.x).toBeGreaterThanOrEqual(-1e-8);
+      expect(bounds.y).toBeGreaterThanOrEqual(-1e-8);
+      expect(bounds.x + bounds.width).toBeLessThanOrEqual(width + 1e-8);
+      expect(bounds.y + bounds.height).toBeLessThanOrEqual(height + 1e-8);
+    }
+  });
+
+  it('rejects dimensions that cannot describe finite geometry', () => {
+    expect(() => stampOutline('star', 0, 100)).toThrow('finite positive');
+    expect(() => stampOutline('star', 100, Number.POSITIVE_INFINITY)).toThrow('finite positive');
   });
 
   it('prefers detached geometry over the generator', () => {
@@ -190,6 +219,10 @@ describe('stamp proportions', () => {
     expect(stampAspect('planet')).toBeGreaterThan(1.3);
     expect(stampAspect('shades')).toBeGreaterThan(1.4);
     expect(stampAspect('lolly')).toBeLessThan(0.8);
+    expect(stampAspect('gamepad')).toBeGreaterThan(1.2);
+    expect(stampAspect('coffin')).toBeLessThan(0.9);
+    expect(stampAspect('satellite')).toBeGreaterThan(1.2);
+    expect(stampAspect('candy')).toBeGreaterThan(1.3);
 
     for (const shape of STAMP_IDS) {
       expect(stampAspect(shape), shape).toBeGreaterThan(0.2);
@@ -213,6 +246,7 @@ describe('the stamp catalogue', () => {
 
     expect(new Set(grouped).size).toBe(grouped.length);
     expect(grouped).toEqual([...STAMP_IDS]);
+    expect(grouped).toHaveLength(65);
   });
 
   it('gives every group at least one stamp', () => {

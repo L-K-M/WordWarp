@@ -361,7 +361,7 @@ export interface TextElement extends ElementBase {
 /**
  * Themed sections of the stamp catalogue, in the order the stamp menu shows them.
  *
- * The catalogue is grouped because it is no longer small enough to scan: a flat run of forty-five
+ * The catalogue is grouped because it is no longer small enough to scan: a flat run of fifty-two
  * icons is a wall, and someone reaching for a pumpkin should not have to read past a cassette to
  * find it. The sections deliberately echo the style rack's category tabs -- a scene built from the
  * Spooky styles wants the Spooky stamps -- without being tied to them, since a cloud belongs beside
@@ -392,17 +392,17 @@ export type StampGroupId = (typeof STAMP_GROUPS)[number]['id'];
  */
 export const STAMP_IDS_BY_GROUP = {
   basics: ['rectangle', 'ellipse', 'triangle', 'arch', 'chevron', 'heart', 'speech', 'banner'],
-  marks: ['star', 'starburst', 'sparkle', 'splat', 'zigzag', 'squiggle', 'bolt', 'crown', 'gem'],
-  nineties: ['smiley', 'shades', 'bottle', 'cassette', 'floppy', 'boombox', 'pizza', 'daisy', 'peace', 'disc'],
-  spooky: ['pumpkin', 'ghost', 'bat', 'skull', 'tombstone', 'web'],
-  cosmic: ['rocket', 'planet', 'moon', 'comet', 'saucer'],
-  sweets: ['cone', 'donut', 'lolly'],
-  scene: ['sun', 'palm', 'cloud', 'flame'],
+  marks: ['star', 'starburst', 'sparkle', 'splat', 'zigzag', 'squiggle', 'bolt', 'crown', 'gem', 'diamond', 'plus', 'ring', 'blob', 'gear', 'crosshair'],
+  nineties: ['smiley', 'shades', 'bottle', 'cassette', 'floppy', 'boombox', 'pizza', 'daisy', 'peace', 'disc', 'gamepad', 'music-note', 'spiral', 'drips'],
+  spooky: ['pumpkin', 'ghost', 'bat', 'skull', 'tombstone', 'web', 'coffin', 'witch-hat', 'spider', 'bone'],
+  cosmic: ['rocket', 'planet', 'moon', 'comet', 'saucer', 'satellite'],
+  sweets: ['cone', 'donut', 'lolly', 'candy', 'candy-cane', 'cupcake', 'cherry'],
+  scene: ['sun', 'palm', 'cloud', 'flame', 'butterfly'],
 } as const satisfies Record<StampGroupId, readonly string[]>;
 
-export const STAMP_IDS = STAMP_GROUPS.flatMap((group) => STAMP_IDS_BY_GROUP[group.id]);
-
 export type StampId = (typeof STAMP_IDS_BY_GROUP)[StampGroupId][number];
+
+export const STAMP_IDS: StampId[] = STAMP_GROUPS.flatMap((group) => STAMP_IDS_BY_GROUP[group.id]);
 
 export interface ShapeElement extends ElementBase {
   type: 'shape';

@@ -313,7 +313,7 @@ time rather than geometry being stored. Resizing rebuilds the outline at the new
 scaling a rounded copy of the old one, and improving a generator improves every document that used
 it.
 
-The catalogue is 45 stamps in seven themed sections, and the sections are the menu's order. Themes
+The catalogue is 65 stamps in seven themed sections, and the sections are the menu's order. Themes
 follow the style rack, because a scene assembled from the Spooky styles wants the Spooky
 decorations, without being bound to it -- a cloud belongs beside a speech bubble whatever style
 lands on it.
@@ -321,12 +321,16 @@ lands on it.
 | Section | Stamps |
 |---|---|
 | Basics | `rectangle` `ellipse` `triangle` `arch` `chevron` `heart` `speech` `banner` |
-| Marks | `star` `starburst` `sparkle` `splat` `zigzag` `squiggle` `bolt` `crown` `gem` |
-| 90s | `smiley` `shades` `bottle` `cassette` `floppy` `boombox` `pizza` `daisy` `peace` `disc` |
-| Spooky | `pumpkin` `ghost` `bat` `skull` `tombstone` `web` |
-| Cosmic | `rocket` `planet` `moon` `comet` `saucer` |
-| Sweets | `cone` `donut` `lolly` |
-| Scene | `sun` `palm` `cloud` `flame` |
+| Marks | `star` `starburst` `sparkle` `splat` `zigzag` `squiggle` `bolt` `crown` `gem` `diamond` `plus` `ring` `blob` `gear` `crosshair` |
+| 90s | `smiley` `shades` `bottle` `cassette` `floppy` `boombox` `pizza` `daisy` `peace` `disc` `gamepad` `music-note` `spiral` `drips` |
+| Spooky | `pumpkin` `ghost` `bat` `skull` `tombstone` `web` `coffin` `witch-hat` `spider` `bone` |
+| Cosmic | `rocket` `planet` `moon` `comet` `saucer` `satellite` |
+| Sweets | `cone` `donut` `lolly` `candy` `candy-cane` `cupcake` `cherry` |
+| Scene | `sun` `palm` `cloud` `flame` `butterfly` |
+
+All catalogue geometry lives as procedural path code in `src/geometry/`; no third-party icon assets
+are bundled or fetched. The motifs stay generic and avoid logos, named characters and recognisable
+product silhouettes.
 
 The catalogue splits in two by how a shape is defined. The **abstract marks** are parametric -- a
 star is however many points at whatever radii, and reads as itself at any proportion. The
@@ -347,7 +351,8 @@ Three properties make the feature much smaller than it looks:
   space around it and one that overshot would draw outside its own selection. Generators are
   measured after flattening and fitted, which also means a generator author never has to hand-tune
   coordinates to reach all four edges. Placement therefore has to supply a box of the right
-  proportion, or a stamp arrives squashed rather than cropped: the natural aspect is measured from
+  proportion, or a stamp arrives squashed rather than cropped: exact curve extrema are fitted rather
+  than scale-dependent samples, and the natural aspect is measured from
   the generator at placement time rather than declared beside it, so a figure redrawn wider lands
   wider with no table to keep in step.
 - **Holes come from winding, not from a second pass.** A face is filled with the nonzero rule, so a

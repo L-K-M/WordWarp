@@ -68,6 +68,53 @@ export function pathBounds(contours: readonly (readonly Point[])[]): Bounds {
   return boundsFromPoints(contours.flatMap((contour) => contour));
 }
 
+/** Exact axis-aligned bounds, including quadratic and cubic extrema between command endpoints. */
+export function exactPathBounds(path: PathData): Bounds {
+  const extrema: Point[] = [];
+  let current: Point = [0, 0];
+  let start: Point = [0, 0];
+
+  for (const command of path.commands) {
+    if (command.type === 'M') {
+      current = [...command.point];
+      start = [...command.point];
+      extrema.push([...current]);
+      continue;
+    }
+    if (command.type === 'L') {
+      current = [...command.point];
+      extrema.push([...current]);
+      continue;
+    }
+    if (command.type === 'Q') {
+      extrema.push([...command.point]);
+      for (const axis of [0, 1] as const) {
+        const denominator = current[axis] - 2 * command.control[axis] + command.point[axis];
+        if (denominator === 0) continue;
+        const t = (current[axis] - command.control[axis]) / denominator;
+        if (t > 0 && t < 1) extrema.push(quadraticPoint(current, command.control, command.point, t));
+      }
+      current = [...command.point];
+      continue;
+    }
+    if (command.type === 'C') {
+      extrema.push([...command.point]);
+      for (const axis of [0, 1] as const) {
+        for (const t of cubicDerivativeRoots(
+          current[axis], command.control1[axis], command.control2[axis], command.point[axis],
+        )) {
+          extrema.push(cubicPoint(current, command.control1, command.control2, command.point, t));
+        }
+      }
+      current = [...command.point];
+      continue;
+    }
+    current = [...start];
+  }
+
+  return boundsFromPoints(extrema);
+}
+
 function flattenQuadratic(
   start: Point,
   control: Point,
@@ -116,6 +163,46 @@ function flattenCubic(
 
 function midpoint(a: Point, b: Point): Point {
   return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+}
+
+function quadraticPoint(start: Point, control: Point, end: Point, t: number): Point {
+  const inverse = 1 - t;
+  return [
+    inverse * inverse * start[0] + 2 * inverse * t * control[0] + t * t * end[0],
+    inverse * inverse * start[1] + 2 * inverse * t * control[1] + t * t * end[1],
+  ];
+}
+
+function cubicPoint(start: Point, control1: Point, control2: Point, end: Point, t: number): Point {
+  const inverse = 1 - t;
+  return [
+    inverse ** 3 * start[0] + 3 * inverse ** 2 * t * control1[0] +
+      3 * inverse * t * t * control2[0] + t ** 3 * end[0],
+    inverse ** 3 * start[1] + 3 * inverse ** 2 * t * control1[1] +
+      3 * inverse * t * t * control2[1] + t ** 3 * end[1],
+  ];
+}
+
+function cubicDerivativeRoots(start: number, control1: number, control2: number, end: number): number[] {
+  // The derivative divided by three is A*t^2 + B*t + C.
+  const a = -start + 3 * control1 - 3 * control2 + end;
+  const b = 2 * (start - 2 * control1 + control2);
+  const c = control1 - start;
+  const epsilon = Number.EPSILON * 16 * Math.max(1, Math.abs(a), Math.abs(b), Math.abs(c));
+  if (Math.abs(a) <= epsilon) {
+    if (Math.abs(b) <= epsilon) return [];
+    const root = -c / b;
+    return root > 0 && root < 1 ? [root] : [];
+  }
+  const discriminant = b * b - 4 * a * c;
+  if (discriminant < 0) return [];
+  if (discriminant === 0) {
+    const root = -b / (2 * a);
+    return root > 0 && root < 1 ? [root] : [];
+  }
+  const squareRoot = Math.sqrt(discriminant);
+  return [(-b + squareRoot) / (2 * a), (-b - squareRoot) / (2 * a)]
+    .filter((root) => root > 0 && root < 1);
 }
 
 function pointLineDistance(point: Point, start: Point, end: Point): number {
