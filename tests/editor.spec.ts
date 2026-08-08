@@ -334,6 +334,103 @@ test('style library scrolls to every preset and previews the real render', async
   expect(distinct).toBeGreaterThan(4);
 });
 
+test('the style rack opens three across and resizes by pointer and keyboard', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.goto('./');
+
+  const columnCount = () => page.locator('.preset-grid').evaluate((node) =>
+    getComputedStyle(node).gridTemplateColumns.split(' ').length);
+  const rackWidth = () => page.locator('.preset-panel').evaluate((node) =>
+    Math.round(node.getBoundingClientRect().width));
+  const noOverflow = () => page.evaluate(() =>
+    document.documentElement.scrollWidth <= document.documentElement.clientWidth);
+
+  expect(await columnCount()).toBe(3);
+  const defaultWidth = await rackWidth();
+
+  // Dragging the splitter widens the rack, and the extra room becomes another column rather than
+  // wider cards -- the size stepper owns card width, the handle owns how many fit.
+  const handle = page.locator('.rack-resizer');
+  const grip = (await handle.boundingBox())!;
+  await page.mouse.move(grip.x + grip.width / 2, 400);
+  await page.mouse.down();
+  await page.mouse.move(860, 400, { steps: 10 });
+  await page.mouse.up();
+  await expect.poll(rackWidth).toBe(860);
+  expect(await columnCount()).toBe(4);
+  expect(await noOverflow()).toBe(true);
+
+  // Arrow keys drive the splitter. They must not also reach the canvas, where they nudge the
+  // selected element: the shortcut handler treats a focusable separator as its own control.
+  const selectionBefore = await page.locator('.selection-overlay rect').first().getAttribute('x');
+  await handle.focus();
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowLeft');
+  await expect.poll(rackWidth).toBe(812);
+  expect(await page.locator('.selection-overlay rect').first().getAttribute('x')).toBe(selectionBefore);
+
+  // The width outlives a reload, and double-clicking the handle puts it back.
+  await page.reload();
+  await expect(page.locator('.preset-card').first()).toBeVisible();
+  expect(await rackWidth()).toBe(812);
+  await handle.dblclick();
+  await expect.poll(rackWidth).toBe(defaultWidth);
+});
+
+test('the first arrow key moves a rack carried over from a wider display', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  // A width set on a big monitor, reopened on a laptop. CSS draws what fits, and the stored
+  // preference survives for the next wide window -- but stepping from the remembered width spent
+  // the first keypress travelling back down to what was already on screen, moving nothing.
+  await page.addInitScript(() => localStorage.setItem('wordwarp:rack-width', '900'));
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('./');
+
+  const rackWidth = () => page.locator('.preset-panel').evaluate((node) =>
+    Math.round(node.getBoundingClientRect().width));
+  const drawn = await rackWidth();
+  expect(drawn).toBe(1280 - 712);
+
+  await page.locator('.rack-resizer').focus();
+  await page.keyboard.press('ArrowLeft');
+  await expect.poll(rackWidth).toBe(drawn - 24);
+});
+
+test('the preview size stepper resizes style cards and stops at both ends', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.goto('./');
+
+  const cardWidth = () => page.locator('.preset-card').first().evaluate((node) =>
+    Math.round(node.getBoundingClientRect().width));
+  const smaller = page.getByRole('button', { name: 'Smaller previews' });
+  const larger = page.getByRole('button', { name: 'Larger previews' });
+  const readout = page.locator('.preset-size-controls output');
+
+  await expect(readout).toHaveText('M');
+  const defaultCard = await cardWidth();
+  // 40% wider than the 133px card the old two-across rack showed at a fixed 312px.
+  expect(defaultCard).toBeGreaterThanOrEqual(186);
+
+  await larger.click();
+  await expect(readout).toHaveText('L');
+  expect(await cardWidth()).toBeGreaterThan(defaultCard);
+
+  await smaller.click();
+  await smaller.click();
+  await expect(readout).toHaveText('S');
+  expect(await cardWidth()).toBeLessThan(defaultCard);
+
+  await smaller.click();
+  await expect(readout).toHaveText('XS');
+  await expect(smaller).toBeDisabled();
+
+  // The choice is a preference, so it survives a reload.
+  await page.reload();
+  await expect(page.locator('.preset-size-controls output')).toHaveText('XS');
+});
+
 test('Fit zoom fits the artboard and is idempotent', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium');
   await page.setViewportSize({ width: 1440, height: 900 });
