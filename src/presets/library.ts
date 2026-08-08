@@ -739,6 +739,13 @@ export const BUILT_IN_PRESETS: Preset[] = [
     fill(gradient(['#3d1505', '#1a0a05', '#0a0302'])), innerGlow('#ff7a00', 16, 0.9),
     satin('#ff4500', 0.4), texture('grain', 0.22),
   ], warp('textDeflate', 0.42), ['molten', 'lava', 'magma']),
+  definePreset('thermal-camera', 'Thermal Camera', 'texture', ['#fb9a06', '#cf4446', '#4a0c6b', '#fcffa4'], [
+    glow('#fb9a06', 14, 0.35),
+    fill(gradient(['#000004', '#1b0c41', '#4a0c6b', '#781c6d', '#a52c60', '#cf4446', '#ed6925', '#fb9a06', '#f7d13d', '#fcffa4'])),
+    bevel(4, 'inner', 80),
+    post('scanlines', { amount: 0.18, period: 5 }, 0.4),
+    post('grain', { amount: 0.1 }, 0.3),
+  ], none(), ['thermal', 'heatmap', 'inferno']),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {
