@@ -117,6 +117,10 @@ function budgetError(size: FrameSize, frameCount: number): Error {
  * whole numbers, so a 2.5 s loop at 12 fps samples 30 frames and hits 12 fps exactly while a 2.1 s
  * loop samples 25 and lands just under. One decimal is enough to show a real reduction without
  * reporting rounding noise as one.
+ *
+ * It can also land well *above* the request when the two-frame minimum dominates -- 1 fps over a
+ * 0.05 s loop is two frames, which really is 40 fps. Either way this is a measurement, not a
+ * verdict: `reduced` is the only thing that says whether the budget took something away.
  */
 function effectiveFps(frameCount: number, duration: number): number {
   return Math.round((frameCount / duration) * 10) / 10;

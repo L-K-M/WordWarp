@@ -21,6 +21,10 @@ export interface RenderedPng {
 export interface RenderedRgba {
   // Pinned to a plain `ArrayBuffer` rather than the default `ArrayBufferLike` so callers can hand
   // the buffer straight to a worker: `postMessage` refuses to transfer a `SharedArrayBuffer`.
+  // The view must also start at byte zero and fill its buffer exactly, because callers transfer
+  // `.buffer` and not the view -- a subarray of something larger would send the slack bytes too.
+  // `validateFrames` in the animation codec rejects a buffer whose length is not `width * height
+  // * 4`, so breaking this fails the encode rather than corrupting it, but it is still a contract.
   pixels: Uint8ClampedArray<ArrayBuffer>;
   width: number;
   height: number;

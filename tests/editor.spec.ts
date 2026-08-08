@@ -243,9 +243,11 @@ test('exports APNG and GIF through the animation worker', async ({ page }, testI
 });
 
 // The test above shrinks the text to a single 48px glyph, which is what let the frame budget ship
-// too small to pay for the app's own defaults: an untouched document exports at 1776 x 676 at the
-// default 2x resolution, and 24 frames of that came to 110 MB against a 64 MB ceiling. Every
-// animated export failed on the first press of the button. This one touches no export control.
+// too small to pay for the app's own defaults. A new document already carries one text layer and
+// exports at 1776 x 676 at the default 2x resolution; 24 frames of that came to 110 MB against a
+// 64 MB ceiling, so every animated export failed on the first press of the button. The second
+// layer here is the shape the bug was reported in and pushes it to 1776 x 720 -- both sizes were
+// over. What matters is that no export control is touched beyond picking the format.
 test('exports an animation of the default document at the default resolution', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium');
   // 24 frames at 1776 x 676 measures ~33 s locally, so this is roughly a 3x margin rather than a
