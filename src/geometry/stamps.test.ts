@@ -108,7 +108,9 @@ describe('stamp outlines', () => {
     }
   });
 
-  it('never winds a region negative, where a hole would fill itself back in', () => {
+  // The winding sweeps sample every stamp on a fine grid, so they run in seconds rather than
+  // milliseconds and keep scaling with the catalogue; the 5s default is not enough headroom.
+  it('never winds a region negative, where a hole would fill itself back in', { timeout: 30_000 }, () => {
     // Nonzero fills anything that is not zero, so a region wound to -1 comes out solid -- and a
     // hole is the only thing that can wind a region negative. Two ways in, both of which this
     // caught while the catalogue was being drawn:
@@ -127,13 +129,14 @@ describe('stamp outlines', () => {
     }
   });
 
-  it('draws the figures that are meant to be pierced with their holes showing', () => {
+  it('draws the figures that are meant to be pierced with their holes showing', { timeout: 30_000 }, () => {
     // The complement of the test above. A hole can also fail by being drawn the same way round as
     // its outline, or by sitting outside the fill entirely, and in both cases the figure renders as
     // a solid blob -- a smiley with no face, a cassette with no reels.
     const pierced = [
       'smiley', 'shades', 'cassette', 'floppy', 'boombox', 'pizza', 'daisy', 'peace', 'disc',
       'pumpkin', 'ghost', 'skull', 'tombstone', 'rocket', 'saucer', 'donut', 'lolly', 'sun', 'gem',
+      'ring',
     ] as const;
 
     for (const shape of pierced) {

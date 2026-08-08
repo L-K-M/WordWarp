@@ -1,7 +1,8 @@
 import { flattenPath, pathBounds } from './path';
 import { STAMP_FIGURES } from './stamp-figures';
 import {
-  KAPPA, ellipse, mapPath, polygon, radialPoints, scalePath, smoothClosedPath, pathBuilder,
+  KAPPA, ellipse, ellipseAt, mapPath, polygon, radialPoints, scalePath, smoothClosedPath,
+  pathBuilder, strokeRibbon, withHoles,
 } from './stamp-toolkit';
 import type { PathData, Point, ShapeElement, StampId } from '../model/types';
 
@@ -109,6 +110,11 @@ function generate(shape: StampId, width: number, height: number): PathData {
     case 'arch': return arch(width, height);
     case 'chevron': return chevron(width, height);
     case 'heart': return heart(width, height);
+    case 'diamond': return normalizedPolygon(DIAMOND, width, height);
+    case 'plus': return normalizedPolygon(PLUS, width, height);
+    case 'ring': return ring(width, height);
+    case 'spiral': return spiral(width, height);
+    case 'blob': return blob(width, height);
     default: return scalePath(STAMP_FIGURES[shape](), width, height);
   }
 }
@@ -126,6 +132,64 @@ const BOLT: readonly Point[] = [
 const CROWN: readonly Point[] = [
   [0, 1], [0, 0.28], [0.22, 0.6], [0.5, 0.1], [0.78, 0.6], [1, 0.28], [1, 1],
 ];
+
+/** Memphis rhombus. */
+const DIAMOND: readonly Point[] = [[0.5, 0], [1, 0.5], [0.5, 1], [0, 0.5]];
+
+/** Bold Memphis plus: arms a third of the box wide. */
+const PLUS: readonly Point[] = [
+  [0.33, 0], [0.67, 0], [0.67, 0.33], [1, 0.33], [1, 0.67], [0.67, 0.67],
+  [0.67, 1], [0.33, 1], [0.33, 0.67], [0, 0.67], [0, 0.33], [0.33, 0.33],
+];
+
+/**
+ * A plain donut ring. The disc figure is a record with grooves and the donut is iced; the sheet
+ * also wants the bare outline, and this is it.
+ */
+function ring(width: number, height: number): PathData {
+  return withHoles(ellipse(width, height), ellipseAt(width / 2, height / 2, width * 0.27, height * 0.27));
+}
+
+/**
+ * A 1990s swirl: an Archimedean spiral ribbon, two turns and a quarter.
+ *
+ * Drawn with the normal-offset ribbon rather than the vertical one the zigzag and squiggle use: a
+ * spiral's tangent sweeps the full circle, and a vertical offset would pinch the band to nothing
+ * wherever the curve turns vertical.
+ */
+function spiral(width: number, height: number): PathData {
+  const turns = 2.25;
+  const startRadius = 0.1;
+  const centres: Point[] = [];
+  for (let index = 0; index <= RIBBON_SAMPLES; index += 1) {
+    const t = index / RIBBON_SAMPLES;
+    const angle = t * turns * Math.PI * 2;
+    const radius = startRadius + (1 - startRadius) * t;
+    centres.push([
+      (width / 2) * (1 + Math.cos(angle) * radius),
+      (height / 2) * (1 + Math.sin(angle) * radius),
+    ]);
+  }
+  return strokeRibbon(centres, Math.min(width, height) * 0.13);
+}
+
+/**
+ * Lobe radii for the blob, as a fraction of the full radius.
+ *
+ * The same radii-table construction as the splat, but the lobes stay plump instead of spiking:
+ * fewer, fatter undulations are what separate a y2k amoeba from a splash of paint.
+ */
+const BLOB_RADII = [1, 0.8, 0.94, 0.72, 0.96, 0.84, 0.9, 0.78, 0.98, 0.86];
+
+function blob(width: number, height: number): PathData {
+  const cx = width / 2;
+  const cy = height / 2;
+  const points = BLOB_RADII.map((radius, index): Point => {
+    const angle = (index / BLOB_RADII.length) * Math.PI * 2 - Math.PI / 2;
+    return [cx + Math.cos(angle) * cx * radius, cy + Math.sin(angle) * cy * radius];
+  });
+  return smoothClosedPath(points);
+}
 
 /**
  * Lobe radii for the splat, as a fraction of the full radius.

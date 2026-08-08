@@ -392,12 +392,12 @@ export type StampGroupId = (typeof STAMP_GROUPS)[number]['id'];
  */
 export const STAMP_IDS_BY_GROUP = {
   basics: ['rectangle', 'ellipse', 'triangle', 'arch', 'chevron', 'heart', 'speech', 'banner'],
-  marks: ['star', 'starburst', 'sparkle', 'splat', 'zigzag', 'squiggle', 'bolt', 'crown', 'gem'],
-  nineties: ['smiley', 'shades', 'bottle', 'cassette', 'floppy', 'boombox', 'pizza', 'daisy', 'peace', 'disc'],
-  spooky: ['pumpkin', 'ghost', 'bat', 'skull', 'tombstone', 'web'],
+  marks: ['star', 'starburst', 'sparkle', 'splat', 'zigzag', 'squiggle', 'bolt', 'crown', 'gem', 'diamond', 'plus', 'ring', 'blob'],
+  nineties: ['smiley', 'shades', 'bottle', 'cassette', 'floppy', 'boombox', 'pizza', 'daisy', 'peace', 'disc', 'spiral', 'drips'],
+  spooky: ['pumpkin', 'ghost', 'bat', 'skull', 'tombstone', 'web', 'hat', 'bone'],
   cosmic: ['rocket', 'planet', 'moon', 'comet', 'saucer'],
-  sweets: ['cone', 'donut', 'lolly'],
-  scene: ['sun', 'palm', 'cloud', 'flame'],
+  sweets: ['cone', 'donut', 'lolly', 'candy', 'cupcake', 'cherry'],
+  scene: ['sun', 'palm', 'cloud', 'flame', 'butterfly'],
 } as const satisfies Record<StampGroupId, readonly string[]>;
 
 export const STAMP_IDS = STAMP_GROUPS.flatMap((group) => STAMP_IDS_BY_GROUP[group.id]);

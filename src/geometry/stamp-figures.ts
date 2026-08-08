@@ -261,6 +261,30 @@ function disc(): PathData {
   );
 }
 
+/** Slime hanging off an invisible ledge: a flat top with four rounded fingers of varying reach. */
+function drips(): PathData {
+  const hem = 0.42;
+  const path = pathBuilder();
+  path.move(0, 0);
+  path.line(1, 0);
+  path.line(1, hem);
+  path.line(0.94, hem);
+  path.cubic(0.95, 0.6, 0.91, 0.74, 0.87, 0.74);
+  path.cubic(0.83, 0.74, 0.8, 0.6, 0.8, hem);
+  path.line(0.69, hem);
+  path.cubic(0.71, 0.72, 0.65, 0.92, 0.61, 0.92);
+  path.cubic(0.57, 0.92, 0.53, 0.72, 0.53, hem);
+  path.line(0.43, hem);
+  path.cubic(0.44, 0.58, 0.41, 0.68, 0.37, 0.68);
+  path.cubic(0.33, 0.68, 0.31, 0.58, 0.29, hem);
+  path.line(0.18, hem);
+  path.cubic(0.2, 0.78, 0.15, 1, 0.11, 1);
+  path.cubic(0.07, 1, 0.04, 0.78, 0.04, hem);
+  path.line(0, hem);
+  path.close();
+  return path.build();
+}
+
 /* -------------------------------------------------------------------- spooky */
 
 /** Radii of the pumpkin's body, as points a smooth closed curve is run through. */
@@ -421,6 +445,27 @@ function web(): PathData {
   return union(...pieces);
 }
 
+/** A witch hat: a wide elliptical brim and a cone that flopped sideways at the tip. */
+function hat(): PathData {
+  const path = pathBuilder();
+  path.move(0.02, 0.8);
+  path.cubic(0.12, 0.72, 0.24, 0.7, 0.36, 0.72);
+  path.cubic(0.38, 0.48, 0.44, 0.22, 0.56, 0.08);
+  path.cubic(0.62, 0.02, 0.7, 0.04, 0.68, 0.12);
+  path.cubic(0.66, 0.17, 0.6, 0.15, 0.6, 0.2);
+  path.cubic(0.62, 0.4, 0.63, 0.58, 0.64, 0.72);
+  path.cubic(0.76, 0.7, 0.88, 0.72, 0.98, 0.8);
+  path.cubic(0.82, 0.94, 0.18, 0.94, 0.02, 0.8);
+  path.close();
+  return path.build();
+}
+
+/** A dog bone: a shaft with a pair of knobs at each end, the notch between them doing the work. */
+function bone(): PathData {
+  const knobs = union(circleAt(0.185, 0.32, 0.15), circleAt(0.185, 0.68, 0.15));
+  return union(roundedRect(0.17, 0.4, 0.83, 0.6, 0.08), knobs, mirrorX(knobs, MID));
+}
+
 /* -------------------------------------------------------------------- cosmic */
 
 /** A rocket: nose, window, swept fins and a flared nozzle. */
@@ -552,6 +597,34 @@ function lolly(): PathData {
     union(circleAt(MID, 0.335, 0.335), rect(0.465, 0.335, 0.535, 1)),
     strokeRibbon(spiral, 0.055),
   );
+}
+
+/** A wrapped sweet: a centre oval with two crimped wrapper ends. */
+function candy(): PathData {
+  const wrapper = polygon([[0.05, 0.28], [0.27, 0.38], [0.27, 0.62], [0.05, 0.72], [0.12, 0.5]]);
+  return union(ellipseAt(MID, MID, 0.27, 0.26), wrapper, mirrorX(wrapper, MID));
+}
+
+/** A cupcake: a pleat-free cup, a three-bump swirl of frosting and a cherry on top. */
+function cupcake(): PathData {
+  const cup = polygon([[0.3, 0.6], [0.7, 0.6], [0.63, 1], [0.37, 1]]);
+  const frosting = pathBuilder();
+  frosting.move(0.26, 0.6);
+  frosting.cubic(0.08, 0.54, 0.1, 0.36, 0.28, 0.38);
+  frosting.cubic(0.26, 0.26, 0.36, 0.18, 0.44, 0.24);
+  frosting.cubic(0.42, 0.1, 0.56, 0.04, 0.62, 0.14);
+  frosting.cubic(0.76, 0.1, 0.9, 0.24, 0.82, 0.36);
+  frosting.cubic(0.94, 0.42, 0.9, 0.56, 0.74, 0.6);
+  frosting.close();
+  return union(cup, frosting.build(), circleAt(0.63, 0.09, 0.055));
+}
+
+/** Two cherries on joined stems, with a little leaf streaking off the top. */
+function cherry(): PathData {
+  const leftStem = strokeRibbon([[0.3, 0.6], [0.38, 0.36], [0.52, 0.14]], 0.045);
+  const rightStem = strokeRibbon([[0.7, 0.52], [0.64, 0.3], [0.52, 0.14]], 0.045);
+  const leaf = streak([0.52, 0.14], [0.76, 0.03], 0.1, 0.04);
+  return union(circleAt(0.3, 0.74, 0.17), circleAt(0.7, 0.66, 0.17), leftStem, rightStem, leaf);
 }
 
 /* --------------------------------------------------------------------- scene */
@@ -689,13 +762,27 @@ function gem(): PathData {
   );
 }
 
+/** A butterfly: four tilted wing lobes and a slim body, antennae left to the imagination. */
+function butterfly(): PathData {
+  const upper = rotatePath(ellipseAt(0.3, 0.3, 0.2, 0.14), deg(-38), 0.3, 0.3);
+  const lower = rotatePath(ellipseAt(0.31, 0.72, 0.14, 0.105), deg(24), 0.31, 0.72);
+  return union(
+    upper,
+    mirrorX(upper, MID),
+    lower,
+    mirrorX(lower, MID),
+    ellipseAt(MID, 0.52, 0.035, 0.28),
+    circleAt(MID, 0.13, 0.055),
+  );
+}
+
 /** Every pictorial figure, in the unit box. */
 export const STAMP_FIGURES = {
-  smiley, shades, bottle, cassette, floppy, boombox, pizza, daisy, peace, disc,
-  pumpkin, ghost, bat, skull, tombstone, web,
+  smiley, shades, bottle, cassette, floppy, boombox, pizza, daisy, peace, disc, drips,
+  pumpkin, ghost, bat, skull, tombstone, web, hat, bone,
   rocket, planet, moon, comet, saucer, sparkle,
-  cone, donut, lolly,
-  sun, palm, flame, cloud, speech, banner, gem,
+  cone, donut, lolly, candy, cupcake, cherry,
+  sun, palm, flame, cloud, butterfly, speech, banner, gem,
 } satisfies Record<string, () => PathData>;
 
 export type StampFigureId = keyof typeof STAMP_FIGURES;
