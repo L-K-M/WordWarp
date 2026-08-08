@@ -397,8 +397,9 @@ export function reversePath(path: PathData): PathData {
  */
 export function union(...paths: readonly PathData[]): PathData {
   const contours = paths.flatMap(splitContours);
-  const outward = contours.map(windingOf).find((winding) => winding !== 0) ?? 1;
-  return mergePaths(...contours.map((contour) => (windingOf(contour) === -outward ? reversePath(contour) : contour)));
+  const windings = contours.map(windingOf);
+  const outward = windings.find((winding) => winding !== 0) ?? 1;
+  return mergePaths(...contours.map((contour, index) => (windings[index] === -outward ? reversePath(contour) : contour)));
 }
 
 /**
