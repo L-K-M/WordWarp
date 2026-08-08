@@ -444,6 +444,17 @@ export const BUILT_IN_PRESETS: Preset[] = [
     Object.assign(stroke(1.5, '#ffffff'), { opacity: 0.6 }),
     reflection(0.35, 0.2),
   ], none(), ['glass', 'glassmorphism', 'modern']),
+  definePreset('clay', 'Clay', 'dimensional', ['#f6cdbd', '#e0a18b', '#b86a52', '#4a1f12'], [
+    shadow('#4a1f12', 7, 16, 0.4),
+    fill(gradient(['#f6cdbd', '#e0a18b', '#b86a52'])),
+    Object.assign(bevel(28, 'pillow', 150), {
+      technique: 'smooth',
+      highlight: { color: [1, 0.97, 0.93, 1], blendMode: 'screen', opacity: 0.28 },
+      shadow: { color: [0.32, 0.2, 0.16, 1], blendMode: 'multiply', opacity: 0.42 },
+    }),
+    innerShadow('#7a3522', 4, 10, 0.3),
+    texture('grain', 0.05),
+  ], warp('textInflate', 0.5, 0.55), ['clay', 'plasticine', 'matte']),
 
   definePreset('vaporwave-mall', 'Vaporwave Mall', 'synthwave', ['#ff71ce', '#01cdfe', '#fffb96', '#2d1b4e'], [
     glow('#ff71ce', 26, 0.6), fill(gradient(['#ff71ce', '#b967ff', '#01cdfe'], 100)), post('scanlines', { amount: 0.14, period: 4 }, 0.5), post('aberration', { amount: 2 }, 0.4),
