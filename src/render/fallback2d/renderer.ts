@@ -138,6 +138,8 @@ function drawTextElement(
       originY: Math.round((renderBounds.y - fullRenderBounds.y) * scale),
       extentWidth: effectViewport.width * scale,
       extentHeight: effectViewport.height * scale,
+      layerWidth: Math.max(1, Math.ceil(fullRenderBounds.width * scale)),
+      layerHeight: Math.max(1, Math.ceil(fullRenderBounds.height * scale)),
     })
     : face;
 
