@@ -51,8 +51,11 @@ describe('animated export frame budget', () => {
 
   it('reports the rate the frames actually land at, not the one that was asked for', () => {
     // 2.1 s at 12 fps rounds to 25 frames, which is 11.9 fps -- rounding, not a budget reduction.
+    // `reduced` is what callers must key their reporting off: a rate comparison would call this a
+    // reduction and warn about an export that gave up nothing.
     const plan = planAnimationFrames(2.1, 12, fixed(600, 400));
     expect(plan).toMatchObject({ frameCount: 25, fps: 11.9, reduced: false });
+    expect(plan.fps).toBeLessThan(plan.requestedFps);
   });
 
   it('renders at least two frames however small the loop or the rate', () => {

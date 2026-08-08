@@ -25,8 +25,16 @@ export interface AnimationExport {
   frameCount: number;
   /** Rate the frames were sampled at, which the frame budget may have lowered. */
   fps: number;
-  /** Rate that was asked for, so callers can tell a reduction from a plain export. */
+  /** Rate that was asked for, so a reduction can be reported against it. */
   requestedFps: number;
+  /**
+   * Whether the frame budget, rather than the caller, decided the rate.
+   *
+   * This is the signal to report a reduction on -- not `fps < requestedFps`. Frame counts are
+   * whole numbers, so a loop whose length does not divide evenly lands just under the requested
+   * rate on rounding alone: 2.1 s at 12 fps is 25 frames at 11.9 fps with nothing reduced.
+   */
+  reduced: boolean;
 }
 
 export async function exportAnimation(
@@ -77,6 +85,7 @@ export async function exportAnimation(
     frameCount,
     fps: plan.fps,
     requestedFps: plan.requestedFps,
+    reduced: plan.reduced,
   };
 }
 

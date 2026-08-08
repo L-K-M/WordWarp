@@ -421,8 +421,10 @@ export function App() {
         });
         downloadAnimation(result);
         // A frame rate the budget lowered is still a successful export, but it is not the export
-        // that was asked for, so it says so rather than reporting plain success.
-        if (result.fps < result.requestedFps) {
+        // that was asked for, so it says so rather than reporting plain success. `reduced` rather
+        // than a rate comparison: rounding a whole number of frames back into a rate can land
+        // under the requested one without anything having been given up.
+        if (result.reduced) {
           pushToast(
             `Exported ${result.frameCount}-frame ${exportFormat.toUpperCase()} at ${result.fps} fps,`
             + ` down from ${result.requestedFps} fps to fit this resolution in memory`,
