@@ -18,6 +18,10 @@ export type PresetCategory =
  * Lives beside `PresetCategory` rather than in the view so that adding a category and forgetting
  * to surface it is a test failure instead of a set of presets no one can reach: widening the union
  * without adding a tab here leaves those presets filtered out of every tab but "All".
+ *
+ * `user` is deliberately absent. Nothing constructs a preset with that category yet, and the picker
+ * iterates `BUILT_IN_PRESETS`, so a chip for it would filter to an empty list. Whatever surfaces
+ * saved presets later decides whether it belongs in this row or its own section.
  */
 export const PRESET_CATEGORY_TABS: ReadonlyArray<{ id: PresetCategory | 'all'; label: string }> = [
   { id: 'all', label: 'All' },

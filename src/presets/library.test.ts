@@ -27,6 +27,10 @@ describe('preset library', () => {
   it('offers every non-user category a tab in the picker', () => {
     const tabbed = new Set(PRESET_CATEGORY_TABS.map((tab) => tab.id));
     for (const preset of BUILT_IN_PRESETS) expect(tabbed.has(preset.category), preset.category).toBe(true);
+    // The unfiltered tab is the panel's initial state, so losing it would leave the picker opening
+    // with no tab selected -- which the per-category check above cannot see, since 'all' is not a
+    // category any preset carries.
+    expect(PRESET_CATEGORY_TABS[0]?.id).toBe('all');
   });
 
   it('builds Cross-Polar Crystal from interference colour and mineral cells', () => {

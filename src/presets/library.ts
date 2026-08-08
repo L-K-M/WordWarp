@@ -111,9 +111,7 @@ function bevel(
 }
 
 function chiselBevel(size: number, depth = 130, style: BevelEffect['style'] = 'inner'): BevelEffect {
-  const effect = bevel(size, style, depth);
-  effect.technique = 'chiselHard';
-  return effect;
+  return bevel(size, style, depth, 'chiselHard');
 }
 
 function shadow(color: string, distance = 14, size = 12, opacity = 0.68): DropShadowEffect {
