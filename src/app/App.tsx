@@ -8,10 +8,10 @@ import { downloadPng, exportPng } from '../export/png';
 import { createDefaultDocument, createDefaultTextElement, createStampElement, STAMP_LABELS } from '../model/defaults';
 import { createId } from '../lib/id';
 import {
-  PRESET_WARP_IDS, STAMP_IDS,
+  PRESET_WARP_IDS, STAMP_GROUPS, STAMP_IDS_BY_GROUP,
   type Effect, type Paint, type Point, type Rgba, type ShapeElement, type StampId, type TextElement,
 } from '../model/types';
-import { stampOutline } from '../geometry/stamps';
+import { stampAspect, stampOutline } from '../geometry/stamps';
 import { startAutosave, type AutosaveController } from '../persistence/autosave';
 import { loadActiveDocument, saveDocument } from '../persistence/database';
 import { applyPresetToElement, BUILT_IN_PRESETS } from '../presets/library';
@@ -762,11 +762,18 @@ export function App() {
             </div>
             {stampMenuOpen && (
               <div className="stamp-menu" id="stamp-menu" aria-label="Place a stamp">
-                {STAMP_IDS.map((shape) => (
-                  <button key={shape} className="stamp-choice" type="button" onClick={() => addStamp(shape)}>
-                    <svg viewBox="0 0 40 40" aria-hidden="true"><path d={stampPreviewPath(shape)} /></svg>
-                    <span>{STAMP_LABELS[shape]}</span>
-                  </button>
+                {STAMP_GROUPS.map((group) => (
+                  <section className="stamp-group" key={group.id} aria-label={group.label}>
+                    <h3>{group.label}</h3>
+                    <div className="stamp-grid">
+                      {STAMP_IDS_BY_GROUP[group.id].map((shape) => (
+                        <button key={shape} className="stamp-choice" type="button" onClick={() => addStamp(shape)}>
+                          <svg viewBox="0 0 40 40" aria-hidden="true"><path d={stampPreviewPath(shape)} /></svg>
+                          <span>{STAMP_LABELS[shape]}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
                 ))}
               </div>
             )}
@@ -1023,8 +1030,12 @@ export function App() {
                       });
                     }}
                   >
-                    {STAMP_IDS.map((shape) => (
-                      <option key={shape} value={shape}>{STAMP_LABELS[shape]}</option>
+                    {STAMP_GROUPS.map((group) => (
+                      <optgroup key={group.id} label={group.label}>
+                        {STAMP_IDS_BY_GROUP[group.id].map((shape) => (
+                          <option key={shape} value={shape}>{STAMP_LABELS[shape]}</option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                 </label>
@@ -1304,20 +1315,33 @@ function backgroundLabel(paint: Paint | null): string {
   return `${paint.kind.toUpperCase()} GROUND`;
 }
 
+/** The side of the square viewBox a stamp's menu icon is drawn into. */
+const STAMP_ICON_BOX = 40;
+
 /**
  * A stamp's menu icon, drawn from the same generator that draws the stamp itself.
  *
  * Hand-drawn icons would be a second definition of every shape, free to drift from the first. This
  * way a menu entry cannot misrepresent what placing it produces, and a new stamp needs no icon.
+ *
+ * Drawn at the stamp's own proportion inside the square and centred, rather than filling it: a
+ * ringed planet stretched to a square is an egg, and an icon that lies about the shape is worse
+ * than no icon.
  */
 function stampPreviewPath(shape: StampId): string {
-  return stampOutline(shape, 40, 40).commands
+  const aspect = stampAspect(shape);
+  const width = aspect >= 1 ? STAMP_ICON_BOX : STAMP_ICON_BOX * aspect;
+  const height = aspect >= 1 ? STAMP_ICON_BOX / aspect : STAMP_ICON_BOX;
+  const offsetX = (STAMP_ICON_BOX - width) / 2;
+  const offsetY = (STAMP_ICON_BOX - height) / 2;
+  const place = (point: Point): string => round([point[0] + offsetX, point[1] + offsetY]);
+  return stampOutline(shape, width, height).commands
     .map((command) => {
-      if (command.type === 'M') return `M${round(command.point)}`;
-      if (command.type === 'L') return `L${round(command.point)}`;
-      if (command.type === 'Q') return `Q${round(command.control)} ${round(command.point)}`;
+      if (command.type === 'M') return `M${place(command.point)}`;
+      if (command.type === 'L') return `L${place(command.point)}`;
+      if (command.type === 'Q') return `Q${place(command.control)} ${place(command.point)}`;
       if (command.type === 'C') {
-        return `C${round(command.control1)} ${round(command.control2)} ${round(command.point)}`;
+        return `C${place(command.control1)} ${place(command.control2)} ${place(command.point)}`;
       }
       return 'Z';
     })

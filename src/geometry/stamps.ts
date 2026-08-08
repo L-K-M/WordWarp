@@ -1,4 +1,8 @@
 import { flattenPath, pathBounds } from './path';
+import { STAMP_FIGURES } from './stamp-figures';
+import {
+  KAPPA, ellipse, mapPath, polygon, radialPoints, scalePath, smoothClosedPath, pathBuilder,
+} from './stamp-toolkit';
 import type { PathData, Point, ShapeElement, StampId } from '../model/types';
 
 /**
@@ -9,12 +13,14 @@ import type { PathData, Point, ShapeElement, StampId } from '../model/types';
  * in one space is what lets the renderer, the bounds pass and hit testing treat a generated stamp
  * and an edited one identically.
  *
+ * The catalogue comes in two halves. The abstract marks below are parametric: a star is however
+ * many points at whatever radii, and reads as itself at any proportion. The pictorial figures in
+ * `stamp-figures.ts` are drawn, in a unit box, and scaled here -- a pumpkin has one shape and the
+ * job is to get it right, not to parameterise it.
+ *
  * Nothing here touches a canvas. Stamps are geometry, so they are testable as geometry -- a
  * generator can be checked for the box it fills and the commands it emits without a DOM.
  */
-
-/** Circular-arc constant: the control-point offset that makes a cubic approximate a quarter turn. */
-const KAPPA = 0.5522847498307936;
 
 /**
  * Samples along one edge of a sampled ribbon.
@@ -25,26 +31,6 @@ const KAPPA = 0.5522847498307936;
  * 96 segments to show as facets is already far past the size anything in the catalogue is for.
  */
 const RIBBON_SAMPLES = 96;
-
-interface PathBuilder {
-  move: (x: number, y: number) => void;
-  line: (x: number, y: number) => void;
-  cubic: (c1x: number, c1y: number, c2x: number, c2y: number, x: number, y: number) => void;
-  close: () => void;
-  build: () => PathData;
-}
-
-function pathBuilder(): PathBuilder {
-  const commands: PathData['commands'] = [];
-  return {
-    move: (x, y) => commands.push({ type: 'M', point: [x, y] }),
-    line: (x, y) => commands.push({ type: 'L', point: [x, y] }),
-    cubic: (c1x, c1y, c2x, c2y, x, y) =>
-      commands.push({ type: 'C', control1: [c1x, c1y], control2: [c2x, c2y], point: [x, y] }),
-    close: () => commands.push({ type: 'Z' }),
-    build: () => ({ commands }),
-  };
-}
 
 /**
  * The outline a shape element should be drawn from.
@@ -59,6 +45,19 @@ export function shapeOutline(element: ShapeElement): PathData {
 
 export function stampOutline(shape: StampId, width: number, height: number): PathData {
   return fitToBox(generate(shape, width, height), width, height);
+}
+
+/**
+ * The proportion a stamp is drawn at when nothing has resized it.
+ *
+ * Measured from the generator rather than declared beside it, so it cannot drift: a figure that is
+ * redrawn wider arrives on the canvas wider, with no table to remember to update. It matters
+ * because `fitToBox` stretches every outline to whatever box it is given -- placing a ringed planet
+ * or a boombox in a square would not crop it, it would squash it.
+ */
+export function stampAspect(shape: StampId): number {
+  const bounds = pathBounds(flattenPath(generate(shape, 1, 1)));
+  return bounds.height > 0 ? bounds.width / bounds.height : 1;
 }
 
 /**
@@ -82,31 +81,18 @@ function fitToBox(path: PathData, width: number, height: number): PathData {
   if (bounds.width <= 0 || bounds.height <= 0) return path;
   const scaleX = width / bounds.width;
   const scaleY = height / bounds.height;
-  const map = ([x, y]: Point): Point => [(x - bounds.x) * scaleX, (y - bounds.y) * scaleY];
-  return {
-    commands: path.commands.map((command) => {
-      if (command.type === 'Z') return command;
-      if (command.type === 'Q') return { ...command, control: map(command.control), point: map(command.point) };
-      if (command.type === 'C') {
-        return {
-          ...command,
-          control1: map(command.control1),
-          control2: map(command.control2),
-          point: map(command.point),
-        };
-      }
-      return { ...command, point: map(command.point) };
-    }),
-  };
+  return mapPath(path, ([x, y]): Point => [(x - bounds.x) * scaleX, (y - bounds.y) * scaleY]);
 }
 
 /**
- * Dispatch, written as an exhaustive switch with no default.
+ * Dispatch: a case per abstract mark, and the pictorial figures looked up by name.
  *
- * The catalogue is a closed union, so leaving out the default makes the compiler the thing that
- * notices a new stamp with no generator. An if-chain ending in a bare `return heart(...)` would
- * not: a stamp added to `STAMP_IDS` and forgotten here would quietly draw a heart, and the box and
- * closed-path tests would all pass, because a heart satisfies every one of them.
+ * The catalogue is a closed union, and this stays the thing that notices a stamp with no generator.
+ * In the default branch `shape` has narrowed to whatever the cases above did not take, so indexing
+ * `STAMP_FIGURES` with it only compiles while every remaining id has a figure -- adding to
+ * `STAMP_IDS` and forgetting to draw it is a type error, not a stamp that quietly renders as
+ * something else. A bare `default: return heart(...)` would have caught nothing: the box and
+ * closed-path tests all pass for a heart.
  */
 function generate(shape: StampId, width: number, height: number): PathData {
   switch (shape) {
@@ -123,14 +109,8 @@ function generate(shape: StampId, width: number, height: number): PathData {
     case 'arch': return arch(width, height);
     case 'chevron': return chevron(width, height);
     case 'heart': return heart(width, height);
+    default: return scalePath(STAMP_FIGURES[shape](), width, height);
   }
-}
-
-function polygon(points: readonly Point[]): PathData {
-  const path = pathBuilder();
-  points.forEach(([x, y], index) => (index === 0 ? path.move(x, y) : path.line(x, y)));
-  path.close();
-  return path.build();
 }
 
 function normalizedPolygon(points: readonly Point[], width: number, height: number): PathData {
@@ -156,19 +136,6 @@ const CROWN: readonly Point[] = [
  */
 const SPLAT_RADII = [1, 0.55, 0.92, 0.48, 1, 0.6, 0.86, 0.5, 0.97, 0.52, 0.9];
 
-function radialPoints(width: number, height: number, points: number, innerRatio: number): Point[] {
-  const cx = width / 2;
-  const cy = height / 2;
-  const vertices: Point[] = [];
-  for (let index = 0; index < points * 2; index += 1) {
-    // Start at -90 degrees so a star sits on a point rather than an edge.
-    const angle = (index / (points * 2)) * Math.PI * 2 - Math.PI / 2;
-    const radius = index % 2 === 0 ? 1 : innerRatio;
-    vertices.push([cx + Math.cos(angle) * cx * radius, cy + Math.sin(angle) * cy * radius]);
-  }
-  return vertices;
-}
-
 function splat(width: number, height: number): PathData {
   const cx = width / 2;
   const cy = height / 2;
@@ -177,50 +144,6 @@ function splat(width: number, height: number): PathData {
     return [cx + Math.cos(angle) * cx * radius, cy + Math.sin(angle) * cy * radius];
   });
   return smoothClosedPath(points);
-}
-
-/**
- * A closed cubic path through every point, via the uniform Catmull-Rom to Bezier conversion.
- *
- * Each segment's control points are placed a sixth of the way along the chord between the
- * neighbours either side of it, which is what makes the curve pass through the points rather than
- * being pulled toward them the way a raw B-spline would be.
- */
-function smoothClosedPath(points: readonly Point[]): PathData {
-  const path = pathBuilder();
-  const count = points.length;
-  path.move(points[0]![0], points[0]![1]);
-  for (let index = 0; index < count; index += 1) {
-    const previous = points[(index - 1 + count) % count]!;
-    const start = points[index]!;
-    const end = points[(index + 1) % count]!;
-    const next = points[(index + 2) % count]!;
-    path.cubic(
-      start[0] + (end[0] - previous[0]) / 6,
-      start[1] + (end[1] - previous[1]) / 6,
-      end[0] - (next[0] - start[0]) / 6,
-      end[1] - (next[1] - start[1]) / 6,
-      end[0],
-      end[1],
-    );
-  }
-  path.close();
-  return path.build();
-}
-
-function ellipse(width: number, height: number): PathData {
-  const rx = width / 2;
-  const ry = height / 2;
-  const ox = rx * KAPPA;
-  const oy = ry * KAPPA;
-  const path = pathBuilder();
-  path.move(width, ry);
-  path.cubic(width, ry + oy, rx + ox, height, rx, height);
-  path.cubic(rx - ox, height, 0, ry + oy, 0, ry);
-  path.cubic(0, ry - oy, rx - ox, 0, rx, 0);
-  path.cubic(rx + ox, 0, width, ry - oy, width, ry);
-  path.close();
-  return path.build();
 }
 
 /**

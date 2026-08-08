@@ -92,6 +92,37 @@ test('places a stamp, styles it from the rack, and exports it over a background'
   expect([image.data[0], image.data[1], image.data[2]]).toEqual([0x5b, 0x5b, 0xd6]);
 });
 
+test('groups the stamp menu by theme and places a pierced figure at its own proportion', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('./');
+  await expect(page.getByRole('button', { name: 'WordWarp GOO TYPE LAB' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Stamp', exact: true }).click();
+  const menu = page.locator('#stamp-menu');
+  // Themed sections, not one wall of forty-five icons. The panel scrolls, so the later sections
+  // only exist below the fold -- which is what the count is really checking.
+  await expect(menu.locator('.stamp-group')).toHaveCount(7);
+  await expect(menu.getByRole('heading', { name: 'Spooky' })).toBeAttached();
+  await expect(menu.getByRole('heading', { name: 'Cosmic' })).toBeAttached();
+
+  await menu.locator('.stamp-choice', { hasText: /^Planet$/ }).click();
+  await expect(page.getByLabel('Shape')).toHaveValue('planet');
+
+  // A ringed planet is much wider than it is tall, and stamps are stretched to whatever box they
+  // are given -- so placement has to hand it a box of its own proportion or it arrives as an egg.
+  const width = Number(await page.locator('.range-field', { hasText: 'Width' }).locator('output').innerText());
+  const height = Number(await page.locator('.range-field', { hasText: 'Height' }).locator('output').innerText());
+  expect(width).toBeGreaterThan(height * 1.3);
+
+  // The face is cut out of the fill, so the figure has to survive the effect stack as geometry
+  // rather than as a picture: applying a style must leave the stamp rendering without error.
+  await page.locator('#preset-search').fill('Nebula');
+  await page.locator('.preset-card').first().click();
+  await expect(page.locator('.effect-list li')).not.toHaveCount(0);
+  await expect(page.locator('.render-error')).toHaveCount(0);
+});
+
 test('renders a non-interactive dual-stroke selection outline', async ({ page }) => {
   await page.goto('./');
 
