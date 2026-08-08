@@ -1,4 +1,4 @@
-export const DOC_VERSION = 2 as const;
+export const DOC_VERSION = 3 as const;
 
 export type Point = [number, number];
 export type Rgba = [number, number, number, number];
@@ -358,11 +358,51 @@ export interface TextElement extends ElementBase {
   warp: WarpSpec;
 }
 
+/**
+ * The stamp catalogue: decorations that sit beside the word rather than on it.
+ *
+ * The first four predate the catalogue and keep their meanings. The rest are the shapes a Memphis
+ * sheet, a sticker book or a clipart disc from the decade actually printed, chosen so a scene can
+ * be built without ever needing to draw geometry by hand.
+ */
+export const STAMP_IDS = [
+  'rectangle',
+  'ellipse',
+  'star',
+  'splat',
+  'triangle',
+  'zigzag',
+  'squiggle',
+  'bolt',
+  'starburst',
+  'arch',
+  'chevron',
+  'crown',
+  'heart',
+] as const;
+
+export type StampId = (typeof STAMP_IDS)[number];
+
 export interface ShapeElement extends ElementBase {
   type: 'shape';
-  shape: 'rectangle' | 'ellipse' | 'star' | 'splat';
+  shape: StampId;
   width: number;
   height: number;
+  /**
+   * Detached geometry, or `null` to generate the outline from `shape`.
+   *
+   * A stamp is a *named generator*, not stored geometry: the renderer asks `shapeOutline` for a
+   * path each time it draws. That is what keeps resizing exact -- the outline is rebuilt at the new
+   * size rather than scaled from a rounded copy of the old one -- and it is what keeps the
+   * catalogue editable, since improving a generator improves every document that used it.
+   *
+   * This field is the hinge for a future path editor. Setting it detaches the element from its
+   * generator: the renderer then draws these commands verbatim and `shape` survives only as a
+   * record of where the geometry came from. Both forms live in the same coordinate space, the
+   * element-local box from (0, 0) to (`width`, `height`), so nothing downstream -- bounds, warps,
+   * the effect stack, hit testing -- needs to know which of the two it is looking at.
+   */
+  path: PathData | null;
 }
 
 export interface ImageElement extends ElementBase {

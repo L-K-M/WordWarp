@@ -52,6 +52,46 @@ test('edits text, applies a preset, and exports transparent PNG', async ({ page 
   await expect(page.getByLabel('Content')).toHaveValue('Chrome test');
 });
 
+test('places a stamp, styles it from the rack, and exports it over a background', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('./');
+  await expect(page.getByRole('button', { name: 'WordWarp GOO TYPE LAB' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Stamp', exact: true }).click();
+  await page.locator('.stamp-choice', { hasText: /^Bolt$/ }).click();
+
+  // Placing a stamp selects it, and the inspector should be showing stamp controls rather than
+  // the text ones -- the two share a panel, so this is what proves the branch switched.
+  await expect(page.getByLabel('Shape')).toHaveValue('bolt');
+  await expect(page.locator('.layer-main').filter({ hasText: 'Bolt' })).toBeVisible();
+
+  // A style from the rack has to land on a decoration the same way it lands on a word. Memphis
+  // Confetti carries a warp that a stamp has no use for; applying it must not throw.
+  await page.locator('#preset-search').fill('Memphis Confetti');
+  await page.locator('.preset-card').first().click();
+  await expect(page.locator('.effect-list li')).not.toHaveCount(0);
+
+  // A background turns the export opaque and stops it cropping to the artwork, so the exported
+  // frame should now be the full canvas rather than a tight crop around the content.
+  await page.locator('.background-swatch', { hasText: 'Violet' }).click();
+  await expect(page.locator('.canvas-status')).toContainText('GROUND');
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: /Export PNG/ }).click();
+  const download = await downloadPromise;
+  const downloadPath = await download.path();
+  if (!downloadPath) throw new Error('Playwright did not provide the downloaded PNG path');
+  const image = decode(await readFile(downloadPath));
+  expect(image.width).toBe(2400);
+  expect(image.height).toBe(1260);
+
+  // Every pixel is opaque with a background set, and the corner is the ground colour rather than
+  // anything the artwork put there.
+  expect(image.data[3]).toBe(255);
+  expect([image.data[0], image.data[1], image.data[2]]).toEqual([0x5b, 0x5b, 0xd6]);
+});
+
 test('renders a non-interactive dual-stroke selection outline', async ({ page }) => {
   await page.goto('./');
 

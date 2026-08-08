@@ -35,6 +35,27 @@ registerMigration(1, (document) => {
   return { ...document, version: 2 };
 });
 
+// v2 -> v3: give every shape element an explicit `path`.
+//
+// Shapes gained a `path` field so a stamp can later be detached from its generator and edited as
+// geometry. `null` is the generating form, and it has to be written rather than left absent
+// because the document schema is strict about unknown *and* missing keys.
+//
+// In practice this rewrites nothing: no version of the app could create a shape element, and the
+// renderer refused to draw one, so no saved document contains any. It is registered anyway,
+// because "nobody could have made one" is an argument about the past, and hand-authored and
+// third-party documents are not bound by it.
+registerMigration(2, (document) => {
+  const elements = Array.isArray(document.elements) ? document.elements : [];
+  for (const element of elements) {
+    if (!element || typeof element !== 'object') continue;
+    if ((element as { type?: unknown }).type !== 'shape') continue;
+    const shape = element as Record<string, unknown>;
+    shape.path ??= null;
+  }
+  return { ...document, version: 3 };
+});
+
 export function loadDocument(value: unknown): WordWarpDocument {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error('Document must be an object');

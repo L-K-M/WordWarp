@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { createDefaultDocument } from '../defaults';
+import { DOC_VERSION } from '../types';
 import { loadDocument } from './index';
 
 /**
@@ -46,7 +47,7 @@ describe('extrude v1 to v2 migration', () => {
   it('strips facePaint and capBack and lands on the current version', () => {
     const migrated = loadDocument(createV1DocumentWithExtrude());
 
-    expect(migrated.version).toBe(2);
+    expect(migrated.version).toBe(DOC_VERSION);
     const element = migrated.elements[0]!;
     if (element.type !== 'text') throw new Error('Expected a text element');
     const extrude = element.effects[0]!;
@@ -67,7 +68,7 @@ describe('extrude v1 to v2 migration', () => {
 
     const migrated = loadDocument(raw);
 
-    expect(migrated.version).toBe(2);
+    expect(migrated.version).toBe(DOC_VERSION);
     const migratedElement = migrated.elements[0]!;
     if (migratedElement.type !== 'text') throw new Error('Expected a text element');
     expect(migratedElement.effects).toEqual([]);

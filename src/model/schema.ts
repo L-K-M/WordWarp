@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { DOC_VERSION, PRESET_WARP_IDS } from './types';
+import { DOC_VERSION, PRESET_WARP_IDS, STAMP_IDS } from './types';
 import type { WordWarpDocument } from './types';
 
 const finite = z.number().finite();
@@ -351,9 +351,13 @@ export const elementSchema = z.discriminatedUnion('type', [
   z.object({
     ...elementBase,
     type: z.literal('shape'),
-    shape: z.enum(['rectangle', 'ellipse', 'star', 'splat']),
+    shape: z.enum(STAMP_IDS),
     width: finite.positive(),
     height: finite.positive(),
+    // Nullable rather than optional: a stamp that generates its outline says so with an explicit
+    // `null`, so a document never leaves the reader guessing whether missing geometry means
+    // "generate it" or "this document was written before the field existed".
+    path: pathDataSchema.nullable(),
   }),
   z.object({
     ...elementBase,
