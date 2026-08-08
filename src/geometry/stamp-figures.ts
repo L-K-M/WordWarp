@@ -908,24 +908,30 @@ function musicNote(): PathData {
  *
  * The legs are ribbons that start *under* the body so their blunt inner ends are buried and only
  * the taper shows. A leg meeting the body rim instead would leave a visible chord across it, and
- * eight chords would read as a starburst wearing a disc.
+ * eight chords would read as a starburst wearing a disc. The start radius is well inside the
+ * narrowest point of the body union -- the waist between head and abdomen, which is where the legs
+ * are anchored -- so no leg can reach its own beginning.
+ *
+ * Every leg is bowed back toward the horizontal, so each one turns a knee on its way out. A leg
+ * with no bend at all is a straight stick, and a straight stick through the waist reads as a bar
+ * laid across the spider rather than a limb.
  */
 function spider(): PathData {
   const leg = (angle: number, bend: number): PathData => {
     const points: Point[] = [];
     for (let index = 0; index <= 10; index += 1) {
       const t = index / 10;
-      const radius = 0.14 + 0.31 * t;
+      const radius = 0.05 + 0.41 * t;
       const a = deg(angle) + bend * t;
-      points.push([MID + Math.cos(a) * radius, 0.42 + Math.sin(a) * radius]);
+      points.push([MID + Math.cos(a) * radius, 0.47 + Math.sin(a) * radius]);
     }
-    return strokeRibbon(points, 0.032);
+    return strokeRibbon(points, 0.030);
   };
   return union(
     ellipseAt(MID, 0.64, 0.21, 0.23),
     ellipseAt(MID, 0.36, 0.11, 0.13),
-    leg(120, -0.25), leg(150, -0.15), leg(180, 0), leg(210, 0.15),
-    leg(60, 0.25), leg(30, 0.15), leg(0, 0), leg(-30, -0.15),
+    leg(145, 0.30), leg(170, 0.12), leg(195, -0.12), leg(220, -0.30),
+    leg(35, -0.30), leg(10, -0.12), leg(-15, 0.12), leg(-40, 0.30),
   );
 }
 

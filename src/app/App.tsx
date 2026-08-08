@@ -32,6 +32,8 @@ import { warpDisplayName } from '../warp';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 
 const presetCategories = PRESET_CATEGORY_TABS;
+
+/** The side of the square viewBox a stamp's menu icon is drawn into. */
 const STAMP_ICON_BOX = 40;
 const stampPreviewPaths = Object.fromEntries(
   STAMP_IDS.map((shape) => [shape, stampPreviewPath(shape)]),
@@ -1489,7 +1491,6 @@ function backgroundLabel(paint: Paint | null): string {
   return `${paint.kind.toUpperCase()} GROUND`;
 }
 
-/** The side of the square viewBox a stamp's menu icon is drawn into. */
 /**
  * A stamp's menu icon, drawn from the same generator that draws the stamp itself.
  *

@@ -1,4 +1,4 @@
-export const DOC_VERSION = 4 as const;
+export const DOC_VERSION = 3 as const;
 
 export type Point = [number, number];
 export type Rgba = [number, number, number, number];
