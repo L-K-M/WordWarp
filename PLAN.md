@@ -279,6 +279,29 @@ palette and the effect stack that reproduces it.
 | N5 | **Lisa Frank** | `#ff6ec7 #a06eff #6ec7ff #6effb8 #fff36e` | Rainbow angular gradient → white stroke → rainbow outer glow → sparkles |
 | N6 | **Graffiti Wildstyle** | `#00d4ff #ff00a0 #ffe600 #000000` | Fill → double stroke (`#000000` 6px outside, `#ffffff` 2px) → offset shadow → drip warp |
 
+N1–N6 are the decade's loud half. N7–N20 are the friendly half — the paper cup, the sticker sheet,
+the school binder, the boardwalk T-shirt. Two habits recur and are period rather than taste: a
+Memphis-descended graphic never softened an edge, so its drop shadows are unblurred blocks of flat
+colour at full opacity; and its outlines come in pairs, a heavy dark band with a thin light keyline
+drawn over the inside of it, so a shape reads as cut out and laid down rather than drawn in place.
+
+| # | Style | Palette | Stack |
+|---|---|---|---|
+| N7 | **Jazz Cup** ⟨R⟩ | `#ffffff #00b2ae #6d3f9c` | Two multiplied ink plates drifted in opposite directions → opaque near-white face → mottle dry-brush skip → grain → thin dark keyline → wave warp |
+| N8 | **Memphis Confetti** | `#ffd93d #ff5fa2 #3fd0b6 #5b5bd6` | Flat offset shadow → four-colour diagonal gradient → halftone speckle → `#141433` 7px + `#ffffff` 2px strokes → wave warp. *Animated: rainbow scroll.* |
+| N9 | **Squiggle Scribble** | `#f7f4ea #141416` on `#ff5fa2` | Flat pink offset → cream fill → clipped contour overlay in `difference` (white lines invert the card into ink) → 5px dark stroke |
+| N10 | **Acid Smiley** | `#fff87a #ffe11f #ffc400` | Flat offset → radial yellow fill → fixed-light pillow bevel → warm inner glow → hard keyline → inflate warp. *Animated: pulse.* |
+| N11 | **Bubble Tag** | `#ffffff #3fcdff #0a5fc4` | Flat offset → gloss gradient → deep pillow bevel → white rim → paired outline → strong inflate warp |
+| N12 | **Hi-Top Fresh** | `#ff4fd8 #d59cff #3df0e0` | Flat offset → neon diagonal gradient → coarse multiplied mottle as canvas print → grain → dark + `#fff36e` outline → slant |
+| N13 | **Mixtape Label** | `#fdf6e3 #efe0bd #d8c08d` + `#ff5fa2` | Contact shadow → highlighter ink plate run past the line → cream card gradient → grain → seated inner shadow → dark + teal caption strokes → slant |
+| N14 | **Floppy Disk** | `#7fded0 #25b0a2 #0f5f5e` | Contact shadow → teal shell gradient → shallow inner bevel (mould draft) → inner shadow → fine noise → dark keyline + `#eef7f4` shutter hairline |
+| N15 | **Pizza Party** | `#ffe07f #ffc043 #f0982a` | Contact shadow → cheese gradient → multiplied mottle as uneven bake → grain → warm inner glow → `#c1470f` crust stroke → arch-up warp |
+| N16 | **Zigzag Bolt** | `#ffd21f #fff3b0` on `#141416` | Flat offset → hard-edged two-tone band fill → dark + `#ff3fa0` outline → chevron warp |
+| N17 | **Grid Lock** | `#fdfdfb #131316` on `#00cfc1` | Flat teal offset → white card → multiplied weave checker as ruling (overlay leaves white untouched) → dark + `#ffe14d` outline |
+| N18 | **Airbrush Tee** | `#ffcf2e #ff4f9c #7a3fe0 #0f9fe8` | Two outer glows → sunset gradient → white inner glow → paint grain → overspray grain post. No stroke: a spray gun cannot draw one. Arch-up warp |
+| N19 | **Trapper Keeper** | `#ff2f86 #12bcd8` | Soft shadow → hard-edged diagonal colour panels → white satin sheen → inner bevel → dark keyline + white piping → reflection |
+| N20 | **Puffy Sticker** | `#fff3c2 #ffb03a #ff2f86` | Soft contact shadow → gloss gradient → deep pillow bevel → white inner glow → satin → 13px dark rim under a 10px white die-cut border → inflate warp |
+
 ### 4.5 Dimensional
 
 | # | Style | Palette | Stack |

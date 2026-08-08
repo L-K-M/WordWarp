@@ -7,7 +7,7 @@ import { OFFICE_RAMPS } from './office-ramps';
 import { PRESET_CATEGORY_TABS } from './types';
 
 /** Bump deliberately when a style is added or removed, so neither happens by accident. */
-const PRESET_COUNT = 99;
+const PRESET_COUNT = 113;
 
 describe('preset library', () => {
   it('ships every named style across the core and themed categories', () => {
@@ -74,6 +74,72 @@ describe('preset library', () => {
       [3, 'inside'],
       [2, 'outside'],
     ]);
+  });
+
+  it('files the whole friendly-1990s block under the decade tab', () => {
+    // These share a tab with the loud half of the decade rather than getting one of their own, so
+    // the thing worth pinning is that none of them drifted into another category and out of it.
+    const friendly = [
+      'jazz-cup', 'memphis-confetti', 'squiggle-scribble', 'acid-smiley', 'bubble-tag',
+      'hi-top-fresh', 'mixtape-label', 'floppy-disk', 'pizza-party', 'zigzag-bolt',
+      'grid-lock', 'airbrush-tee', 'trapper-keeper', 'puffy-sticker',
+    ];
+
+    for (const id of friendly) {
+      expect(BUILT_IN_PRESETS.find((preset) => preset.id === id)?.category, id).toBe('nineties');
+    }
+    // Cards are keyed by name in the picker, so a duplicate would drop one of them from the grid
+    // without the id check above noticing.
+    expect(new Set(BUILT_IN_PRESETS.map((preset) => preset.name)).size).toBe(BUILT_IN_PRESETS.length);
+  });
+
+  it('builds Jazz Cup from two misregistered brush plates behind an opaque face', () => {
+    const preset = BUILT_IN_PRESETS.find((candidate) => candidate.id === 'jazz-cup');
+
+    // The plates only ever show as the fringe either side of the letter, which is the whole look:
+    // a translucent face would let them wash across it and turn the cup into a duotone.
+    expect(preset?.apply.effects).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: 'fill', paint: { kind: 'solid', color: [expect.any(Number), expect.any(Number), expect.any(Number), 1] } }),
+    ]));
+    const plates = preset?.apply.effects.filter(
+      (effect) => effect.kind === 'dropShadow' && effect.blendMode === 'multiply',
+    ) ?? [];
+    expect(plates).toHaveLength(2);
+    // Unblurred and drifted in two different directions -- a shared angle would stack them into one
+    // thicker plate instead of two separate strokes.
+    expect(plates.map((effect) => effect.kind === 'dropShadow' && effect.size)).toEqual([0, 0]);
+    expect(new Set(plates.map((effect) => effect.kind === 'dropShadow' && effect.angle)).size).toBe(2);
+  });
+
+  it('draws Squiggle Scribble as dark contours by inverting the card under them', () => {
+    const preset = BUILT_IN_PRESETS.find((candidate) => candidate.id === 'squiggle-scribble');
+
+    // Contours paint white. Any blend that lightens would lose them entirely against the pale
+    // fill, so `difference` is load-bearing rather than a taste call.
+    expect(preset?.apply.effects).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        kind: 'textureOverlay',
+        source: { type: 'procedural', pattern: 'topography' },
+        blendMode: 'difference',
+        clipToShape: true,
+      }),
+    ]));
+  });
+
+  it('gives the Memphis-descended styles flat offset shadows rather than blurred ones', () => {
+    // A soft shadow is the single quickest way to read as 2005 instead of 1995, and every style
+    // here is built around a hard block of colour sitting behind the letter.
+    for (const id of ['memphis-confetti', 'squiggle-scribble', 'acid-smiley', 'bubble-tag', 'zigzag-bolt', 'grid-lock']) {
+      const shadows = BUILT_IN_PRESETS
+        .find((preset) => preset.id === id)
+        ?.apply.effects.filter((effect) => effect.kind === 'dropShadow') ?? [];
+
+      expect(shadows.length, id).toBeGreaterThan(0);
+      for (const shadow of shadows) {
+        expect(shadow.kind === 'dropShadow' && shadow.size, id).toBe(0);
+        expect(shadow.kind === 'dropShadow' && shadow.distance, id).toBeGreaterThan(0);
+      }
+    }
   });
 
   it('ships all 24 Office ramp names with 20 stops each', () => {
