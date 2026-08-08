@@ -822,6 +822,11 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('slime-time', 'Slime Time', 'nineties', ['#c9ff4a', '#12a02e', '#083f16', '#eaffb0'], [
     shadow('#0d3b0d', 8, 10, 0.5), fill(gradient(['#c9ff4a', '#4ddb33', '#12a02e', '#0a5c1a'], 100)), bevel(26, 'pillow', 210), innerGlow('#eaffb0', 12, 0.5), stroke(3, '#083f16'),
   ], warp('textInflateBottom', 0.65, 0.6), ['slime', 'goo', 'nickelodeon']),
+  definePreset('terminal', 'Terminal', 'texture', ['#46f97f', '#0b3d1a', '#d6ffe0', '#041b0c'], [
+    glow('#33ff66', 10, 0.5), fill(solid('#46f97f')), innerGlow('#d6ffe0', 3, 0.3), post('scanlines', { amount: 0.3, period: 3 }, 0.6),
+  ], none(), ['crt', 'phosphor', 'matrix', 'animated'], [
+    { id: 'terminal-roll', kind: 'scanlineRoll', enabled: true, duration: 4, params: {}, seed: 41 },
+  ]),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {
