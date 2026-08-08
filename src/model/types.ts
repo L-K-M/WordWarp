@@ -392,11 +392,11 @@ export type StampGroupId = (typeof STAMP_GROUPS)[number]['id'];
  */
 export const STAMP_IDS_BY_GROUP = {
   basics: ['rectangle', 'ellipse', 'triangle', 'arch', 'chevron', 'heart', 'speech', 'banner'],
-  marks: ['star', 'starburst', 'sparkle', 'splat', 'zigzag', 'squiggle', 'bolt', 'crown', 'gem', 'diamond', 'plus', 'ring', 'blob'],
-  nineties: ['smiley', 'shades', 'bottle', 'cassette', 'floppy', 'boombox', 'pizza', 'daisy', 'peace', 'disc', 'gamepad', 'spiral', 'drips'],
-  spooky: ['pumpkin', 'ghost', 'bat', 'skull', 'tombstone', 'web', 'coffin', 'witch-hat', 'bone'],
+  marks: ['star', 'starburst', 'sparkle', 'splat', 'zigzag', 'squiggle', 'bolt', 'crown', 'gem', 'diamond', 'plus', 'ring', 'blob', 'gear', 'crosshair'],
+  nineties: ['smiley', 'shades', 'bottle', 'cassette', 'floppy', 'boombox', 'pizza', 'daisy', 'peace', 'disc', 'gamepad', 'music-note', 'spiral', 'drips'],
+  spooky: ['pumpkin', 'ghost', 'bat', 'skull', 'tombstone', 'web', 'coffin', 'witch-hat', 'spider', 'bone'],
   cosmic: ['rocket', 'planet', 'moon', 'comet', 'saucer', 'satellite'],
-  sweets: ['cone', 'donut', 'lolly', 'candy', 'cupcake', 'cherry'],
+  sweets: ['cone', 'donut', 'lolly', 'candy', 'candy-cane', 'cupcake', 'cherry'],
   scene: ['sun', 'palm', 'cloud', 'flame', 'butterfly'],
 } as const satisfies Record<StampGroupId, readonly string[]>;
 

@@ -849,13 +849,121 @@ function gem(): PathData {
   );
 }
 
+/**
+ * A gear: ten square teeth around a solid disc, with a hub hole.
+ *
+ * Teeth are flat-topped trapezoids rather than points -- a pointed tooth reads as a starburst, and
+ * the silhouette of the tooth *top* is what separates a cog from a burst. The teeth are listed
+ * with their valley corners first, so the polygon's edge runs along the disc between them and the
+ * body stays solid rather than sprouting spikes into itself.
+ */
+function gear(): PathData {
+  const teeth = 10;
+  const half = (Math.PI / teeth) * 0.38;
+  const at = (angle: number, radius: number): Point => [MID + Math.cos(angle) * radius, MID + Math.sin(angle) * radius];
+  const points: Point[] = [];
+  for (let index = 0; index < teeth; index += 1) {
+    const angle = (index / teeth) * Math.PI * 2;
+    points.push(at(angle - half, 0.33), at(angle - half, 0.45), at(angle + half, 0.45), at(angle + half, 0.33));
+  }
+  return withHoles(polygon(points), circleAt(MID, MID, 0.10));
+}
+
+/**
+ * A targeting reticle: an outer ring over a thin cross.
+ *
+ * The cross is part of the filled shape, not a pair of holes -- a reticle's hairlines are drawn
+ * on, and the gap they enclose stays transparent. The centre of the cross is solid because the
+ * two bars cross there, which is exactly how a reticle reads.
+ */
+function crosshair(): PathData {
+  return withHoles(
+    union(circleAt(MID, MID, 0.40), rect(0.17, 0.48, 0.83, 0.52), rect(0.48, 0.17, 0.52, 0.83)),
+    circleAt(MID, MID, 0.30),
+  );
+}
+
+/* --------------------------------------------------------------------- nineties */
+
+/**
+ * A single beamed eighth note, the sticker of every mixtape label.
+ *
+ * The three pieces are separate contours that happen to touch: a filled head, a filled stem and a
+ * flag. Under nonzero fill they union into one note, and the flag's curve -- swept out and back to
+ * the stem, its width dying toward the tip -- is what keeps it a flag rather than a comma.
+ */
+function musicNote(): PathData {
+  const flag = pathBuilder();
+  flag.move(0.52, 0.06);
+  flag.cubic(0.76, 0.05, 0.92, 0.18, 0.84, 0.38);
+  flag.cubic(0.80, 0.50, 0.66, 0.46, 0.58, 0.12);
+  flag.close();
+  return union(ellipseAt(0.36, 0.74, 0.17, 0.19), rect(0.46, 0.08, 0.54, 0.60), flag.build());
+}
+
+/* -------------------------------------------------------------------- spooky */
+
+/**
+ * A dorsal-view spider: two body ovals under eight thin, curved legs.
+ *
+ * The legs are ribbons that start *under* the body so their blunt inner ends are buried and only
+ * the taper shows. A leg meeting the body rim instead would leave a visible chord across it, and
+ * eight chords would read as a starburst wearing a disc.
+ */
+function spider(): PathData {
+  const leg = (angle: number, bend: number): PathData => {
+    const points: Point[] = [];
+    for (let index = 0; index <= 10; index += 1) {
+      const t = index / 10;
+      const radius = 0.14 + 0.31 * t;
+      const a = deg(angle) + bend * t;
+      points.push([MID + Math.cos(a) * radius, 0.42 + Math.sin(a) * radius]);
+    }
+    return strokeRibbon(points, 0.032);
+  };
+  return union(
+    ellipseAt(MID, 0.64, 0.21, 0.23),
+    ellipseAt(MID, 0.36, 0.11, 0.13),
+    leg(120, -0.25), leg(150, -0.15), leg(180, 0), leg(210, 0.15),
+    leg(60, 0.25), leg(30, 0.15), leg(0, 0), leg(-30, -0.15),
+  );
+}
+
+/* -------------------------------------------------------------------- cosmic */
+
+/* -------------------------------------------------------------------- sweets */
+
+/**
+ * A candy cane: a chunky ribbon bent into the classic hook.
+ *
+ * The centreline is the stem up the right edge and a half-turn over the top; the ribbon offset is
+ * a true normal offset, which is why the hook's inner corner stays full where a hand-traced
+ * outline would pinch it.
+ */
+function candyCane(): PathData {
+  const centres: Point[] = [];
+  for (let index = 0; index <= 8; index += 1) {
+    const t = index / 8;
+    centres.push([0.78, 0.96 - 0.54 * t]);
+  }
+  const samples = 22;
+  for (let index = 1; index <= samples; index += 1) {
+    const angle = (index / samples) * Math.PI;
+    centres.push([0.52 + Math.cos(angle) * 0.26, 0.42 - Math.sin(angle) * 0.26]);
+  }
+  return strokeRibbon(centres, 0.13);
+}
+
+/* --------------------------------------------------------------------- scene */
+
 /** Every pictorial figure, in the unit box. */
 export const STAMP_FIGURES = {
   smiley, shades, bottle, cassette, floppy, boombox, pizza, daisy, peace, disc, gamepad, drips,
-  pumpkin, ghost, bat, skull, tombstone, web, coffin, bone, 'witch-hat': witchHat,
+  'music-note': musicNote,
+  pumpkin, ghost, bat, skull, tombstone, web, coffin, bone, spider, 'witch-hat': witchHat,
   rocket, planet, moon, comet, saucer, satellite, sparkle,
-  cone, donut, lolly, candy, cupcake, cherry,
-  sun, palm, flame, cloud, butterfly, speech, banner, gem,
+  cone, donut, lolly, candy, 'candy-cane': candyCane, cupcake, cherry,
+  sun, palm, flame, cloud, butterfly, speech, banner, gem, gear, crosshair,
 } satisfies Record<string, () => PathData>;
 
 export type StampFigureId = keyof typeof STAMP_FIGURES;

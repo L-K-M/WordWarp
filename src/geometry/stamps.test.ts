@@ -130,6 +130,10 @@ describe('stamp outlines', () => {
     // Neither shows up in bounds, command counts or contour counts; only the winding says so. A
     // count above one is fine and common -- that is two filled shapes unioning, which is how most
     // of these figures are built.
+    //
+    // The grid is the expensive part of this test -- a full winding sample of every stamp on a
+    // fine mesh -- and the catalogue has grown since it was written, so it gets a budget of its own
+    // rather than the file's default.
     for (const shape of STAMP_IDS) {
       expect(Math.min(...sampleWindings(shape)), shape).toBeGreaterThanOrEqual(0);
     }
@@ -142,7 +146,7 @@ describe('stamp outlines', () => {
     const pierced = [
       'smiley', 'shades', 'cassette', 'floppy', 'boombox', 'pizza', 'daisy', 'peace', 'disc',
       'gamepad', 'pumpkin', 'ghost', 'skull', 'tombstone', 'coffin', 'rocket', 'saucer',
-      'satellite', 'donut', 'lolly', 'sun', 'gem', 'butterfly', 'ring',
+      'satellite', 'donut', 'lolly', 'sun', 'gem', 'butterfly', 'ring', 'gear', 'crosshair',
     ] as const;
 
     for (const shape of pierced) {
@@ -242,7 +246,7 @@ describe('the stamp catalogue', () => {
 
     expect(new Set(grouped).size).toBe(grouped.length);
     expect(grouped).toEqual([...STAMP_IDS]);
-    expect(grouped).toHaveLength(60);
+    expect(grouped).toHaveLength(65);
   });
 
   it('gives every group at least one stamp', () => {
