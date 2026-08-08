@@ -455,6 +455,13 @@ export const BUILT_IN_PRESETS: Preset[] = [
     innerShadow('#7a3522', 4, 10, 0.3),
     texture('grain', 0.05),
   ], warp('textInflate', 0.5, 0.55), ['clay', 'plasticine', 'matte']),
+  definePreset('stained-glass', 'Stained Glass', 'dimensional', ['#c01a4a', '#1a6cc0', '#1ac089', '#0a0a0a'], [
+    shadow('#000000', 9, 6, 0.55),
+    fill(gradient(['#c01a4a', '#1a6cc0', '#1ac089', '#e0a312'], 45)),
+    bevel(5, 'emboss', 110),
+    innerGlow('#ffd97a', 7, 0.3),
+    stroke(7, '#0a0a0a'),
+  ], warp('textArchUp', 0.5), ['stained-glass', 'lead', 'tiffany']),
 
   definePreset('vaporwave-mall', 'Vaporwave Mall', 'synthwave', ['#ff71ce', '#01cdfe', '#fffb96', '#2d1b4e'], [
     glow('#ff71ce', 26, 0.6), fill(gradient(['#ff71ce', '#b967ff', '#01cdfe'], 100)), post('scanlines', { amount: 0.14, period: 4 }, 0.5), post('aberration', { amount: 2 }, 0.4),
