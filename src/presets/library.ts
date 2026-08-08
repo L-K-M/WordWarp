@@ -468,6 +468,12 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('arcade-cabinet', 'Arcade Cabinet', 'synthwave', ['#ff00a0', '#ffffff', '#ffe600', '#14061f'], [
     glow('#ff00a0', 30, 0.75), fill(gradient(['#ffe600', '#ff5e00', '#ff00a0'], 100)), stroke(6, '#ff00a0'), stroke(2, '#ffffff'),
   ], warp('textWave1', 0.22), ['arcade', 'neon']),
+  definePreset('aurora-borealis', 'Aurora Borealis', 'synthwave', ['#39ffb8', '#1a9d6e', '#6ec7ff', '#a06eff'], [
+    glow('#39ffb8', 32, 0.5), glow('#a06eff', 20, 0.38),
+    fill(gradient(['#0d6b4f', '#39ffb8', '#5cf2d8', '#6ec7ff', '#a06eff'], 90)),
+    innerGlow('#cfffe8', 9, 0.5), satin('#6ec7ff', 0.35), stroke(1, '#0a3d2e'),
+  ], warp('textWave1', 0.32), ['aurora', 'nature', 'northern-lights'],
+  [{ id: 'aurora-undulate', kind: 'waveUndulate', enabled: true, duration: 6, params: {}, seed: 2024 }]),
 
   definePreset('sticker-bomb', 'Sticker Bomb', 'nineties', ['#ffdd00', '#ffffff', '#1a1a2e', '#ff4757'], [
     shadow('#1a1a2e', 9, 0, 1), fill(gradient(['#ffdd00', '#ff4757'], 120)), stroke(9, '#ffffff'), stroke(2, '#1a1a2e'),
