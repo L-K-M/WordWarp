@@ -1,4 +1,4 @@
-import type { KeyboardEvent, PointerEvent } from 'react';
+import { useSyncExternalStore, type KeyboardEvent, type PointerEvent } from 'react';
 
 import { maxRackWidth, RACK_MIN_WIDTH } from '../state/editor-store';
 
@@ -20,7 +20,10 @@ interface RackResizerProps {
  * arrow keys alone while it holds focus -- see the separator entry in its interactive selector.
  */
 export function RackResizer({ width, onResize, onReset }: RackResizerProps) {
-  const viewportWidth = typeof window === 'undefined' ? 1200 : window.innerWidth;
+  // Read through a subscription rather than at render: nothing else re-renders this component when
+  // the window changes, so a plain read would leave both the reported maximum and the End key
+  // aiming at the size the window used to be.
+  const viewportWidth = useSyncExternalStore(subscribeToViewport, readViewportWidth, () => 1200);
   // The stored preference can outrun what this window has room to draw, and `.workspace` clamps it
   // in CSS. Report the width that is actually on screen rather than the one being remembered.
   const drawnWidth = Math.min(Math.round(width), maxRackWidth(viewportWidth));
@@ -76,4 +79,13 @@ export function RackResizer({ width, onResize, onReset }: RackResizerProps) {
       <span className="rack-resizer-grip" aria-hidden="true" />
     </div>
   );
+}
+
+function subscribeToViewport(onChange: () => void): () => void {
+  window.addEventListener('resize', onChange);
+  return () => window.removeEventListener('resize', onChange);
+}
+
+function readViewportWidth(): number {
+  return window.innerWidth;
 }

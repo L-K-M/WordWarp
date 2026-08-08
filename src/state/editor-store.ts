@@ -143,8 +143,11 @@ export const useEditorStore = create<EditorState>((set) => ({
     storeNumber(RACK_WIDTH_KEY, rackWidth);
     return { rackWidth };
   }),
+  // Reset stores the default itself, not what this window can draw of it. Clamping here would
+  // mean a reset on a 1280px window remembered 568px and stayed there on a 1600px display -- the
+  // preference is the intent, and CSS draws whatever fits.
   resetRackWidth: () => set(() => {
-    const rackWidth = clampRackWidth(RACK_DEFAULT_WIDTH, viewportWidth());
+    const rackWidth = clampRackPreference(RACK_DEFAULT_WIDTH);
     storeNumber(RACK_WIDTH_KEY, rackWidth);
     return { rackWidth };
   }),

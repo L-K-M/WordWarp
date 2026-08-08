@@ -76,6 +76,16 @@ describe('rack width', () => {
     useEditorStore.getState().resetRackWidth();
     expect(useEditorStore.getState().rackWidth).toBe(RACK_DEFAULT_WIDTH);
   });
+
+  it('resets to the full default even in a window too narrow to draw it', () => {
+    // Storing the window-clamped default instead would follow the user to their next display: a
+    // reset on a 1280px laptop remembered 568px and stayed there on a 1600px monitor.
+    vi.stubGlobal('window', { innerWidth: 1280 });
+    expect(maxRackWidth(1280)).toBeLessThan(RACK_DEFAULT_WIDTH);
+    useEditorStore.getState().setRackWidth(300);
+    useEditorStore.getState().resetRackWidth();
+    expect(useEditorStore.getState().rackWidth).toBe(RACK_DEFAULT_WIDTH);
+  });
 });
 
 describe('preview size', () => {
