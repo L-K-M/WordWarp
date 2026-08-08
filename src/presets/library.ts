@@ -242,6 +242,24 @@ function topography(
   return effect;
 }
 
+/**
+ * Fine ruled squares laid across the face.
+ *
+ * `weave` is the closest thing the procedural set has to graph-paper ruling: a checkerboard on a
+ * fixed three-pixel cell. Cell size is deliberately not a parameter here, because the pattern is
+ * grid-locked to device pixels and ignores the effect's `scale` -- accepting one would advertise a
+ * knob that does nothing.
+ *
+ * The blend mode is the load-bearing part. The texture default is `overlay`, which is symmetric
+ * about mid-grey and so leaves a near-white ground essentially untouched -- and a near-white ground
+ * is exactly what a ruled card is. Multiplying is what puts the ruling on the page.
+ */
+function grid(opacity: number): TextureOverlayEffect {
+  const effect = texture('weave', opacity);
+  effect.blendMode = 'multiply';
+  return effect;
+}
+
 function reflection(height = 0.45, opacity = 0.32): ReflectionEffect {
   const effect = createEffect('reflection');
   effect.height = height;
@@ -851,6 +869,137 @@ export const BUILT_IN_PRESETS: Preset[] = [
   ], none(), ['neon', 'sign', 'flicker', 'animated'], [
     { id: 'night-market-flicker', kind: 'neonFlicker', enabled: true, duration: 2.4, params: {}, seed: 12 },
   ]),
+
+  // ## The friendly 1990s
+  //
+  // The decade was already represented by its loud half -- the Office relic, the skate deck, the
+  // wildstyle piece. This block is the rest of it: the paper cup, the sticker sheet, the school
+  // binder, the boardwalk T-shirt. Nothing here needs a new primitive.
+  //
+  // Two habits recur, and both are period rather than taste. A Memphis-descended graphic never
+  // softened an edge, so its shadows are `size` 0 at full opacity -- a flat block of colour offset
+  // behind the letter, not a glow. And its outlines come in pairs, a heavy dark band with a thin
+  // light keyline drawn over the inside of it, which is what makes a shape read as cut out and
+  // laid down rather than drawn in place.
+  definePreset('jazz-cup', 'Jazz Cup', 'nineties', ['#ffffff', '#00b2ae', '#6d3f9c', '#1b1b1f'], [
+    // The 1992 paper cup: a white ground with a wide teal brushstroke and a thinner purple one
+    // crossing it. Two ink plates are exactly that -- one stencil, drifted in two directions,
+    // multiplied -- and because the face is opaque the plates survive only as the fringes either
+    // side of the letter, which is where the brushwork lives. The mottle is the dry-brush skip.
+    inkPlate('#6d3f9c', 17, 200), inkPlate('#00b2ae', 11, 15), fill(solid('#fbfbf8')),
+    mottle(0.55, 'multiply', 0.16), texture('grain', 0.12), stroke(2.5, '#1b1b1f'),
+  ], warp('textWave2', 0.4), ['jazz', 'solo-cup', 'brushstroke', 'squiggle', 'diner', 'teal', 'purple']),
+  definePreset('memphis-confetti', 'Memphis Confetti', 'nineties', ['#5b5bd6', '#ff5fa2', '#3fd0b6', '#ffd93d'], [
+    // `memphis-party` is one flat colour in a heavy keyline; this is the same design language with
+    // the whole palette in play at once. The halftone is the confetti speckle those patterns
+    // scattered between their triangles, and the scroll walks the four colours round the letter.
+    shadow('#141433', 20, 0, 1),
+    fill(gradient(['#ffd93d', '#ff5fa2', '#3fd0b6', '#5b5bd6'], 35)),
+    texture('halftone', 0.22), stroke(7, '#141433'), stroke(2, '#ffffff'),
+  ], warp('textWave1', 0.3), ['memphis', 'confetti', 'postmodern', 'geometric', 'party', 'animated'], [
+    { id: 'memphis-scroll', kind: 'rainbowScroll', enabled: true, duration: 5, params: {}, seed: 92 },
+  ]),
+  definePreset('squiggle-scribble', 'Squiggle Scribble', 'nineties', ['#f7f4ea', '#141416', '#ff5fa2', '#3fd0b6'], [
+    // The black squiggle block every Memphis sheet printed next to its triangles. Contours are
+    // painted white, so `difference` is what turns them into ink on a pale card instead of losing
+    // them in it, and clipping them to the letterform is what keeps them a scribble inside a shape
+    // rather than the contour map the same pattern draws unclipped in `topo-survey`.
+    shadow('#ff5fa2', 10, 0, 1), fill(solid('#f7f4ea')),
+    topography(0.75, 'difference', 0.9), stroke(5, '#141416'),
+  ], warp('textWave4', 0.26), ['memphis', 'squiggle', 'bacterio', 'doodle', 'scribble']),
+  definePreset('acid-smiley', 'Acid Smiley', 'nineties', ['#fff87a', '#ffe11f', '#ffc400', '#141005'], [
+    // The rave badge: a domed yellow button on its own fixed light rather than the document's, so
+    // the dome reads the same whichever way that points, with a hard keyline and no blur anywhere.
+    shadow('#141005', 16, 0, 1), fill(gradient(['#fff87a', '#ffe11f', '#ffc400'], 0, 'radial')),
+    pillowBevel(20, 200, '#fffbe0'), innerGlow('#fff7c2', 10, 0.5), stroke(4, '#141005'),
+  ], warp('textInflate', 0.62, 0.6), ['smiley', 'acid-house', 'rave', 'button', 'happy', 'animated'], [
+    { id: 'smiley-pulse', kind: 'pulse', enabled: true, duration: 1.5, params: { amount: 0.05 }, seed: 90 },
+  ]),
+  definePreset('bubble-tag', 'Bubble Tag', 'nineties', ['#ffffff', '#3fcdff', '#0a5fc4', '#12123a'], [
+    // Bubble letters are the friendly half of the graffiti pair: `graffiti-wildstyle` is all angle
+    // and overlap, this is all volume. The pillow bevel and the inflate warp do the swelling; the
+    // paired outline and the unblurred shadow are what keep it a marker drawing on a wall rather
+    // than a rendered solid.
+    shadow('#12123a', 22, 0, 1), fill(gradient(['#ffffff', '#3fcdff', '#0a5fc4'])),
+    bevel(26, 'pillow', 210), innerGlow('#ffffff', 11, 0.6),
+    stroke(8, '#12123a'), stroke(2.5, '#ffffff'),
+  ], warp('textInflate', 0.9, 0.72), ['graffiti', 'bubble-letters', 'tag', 'marker', 'chunky']),
+  definePreset('hi-top-fresh', 'Hi-Top Fresh', 'nineties', ['#ff4fd8', '#d59cff', '#3df0e0', '#141024'], [
+    // Neon high-tops. The mottle is the print rather than the material: multiplied on a coarse
+    // cell it drops broad patches of deeper dye into the gradient and leaves the outline alone,
+    // which is how a printed canvas behaves -- the dye varies, the stitching does not.
+    shadow('#1b0a2e', 15, 0, 0.95), fill(gradient(['#ff4fd8', '#d59cff', '#3df0e0'], 120)),
+    mottle(1.4, 'multiply', 0.26), texture('grain', 0.1),
+    stroke(6, '#141024'), stroke(2.5, '#fff36e'),
+  ], warp('textSlantUp', 0.5), ['sneakers', 'high-tops', 'print', 'neon', 'streetwear']),
+  definePreset('mixtape-label', 'Mixtape Label', 'nineties', ['#fdf6e3', '#d8c08d', '#ff5fa2', '#3a2a1b'], [
+    // The paper insert, not the shell. A cream card pressed into its well by the inner shadow,
+    // aged with grain, and captioned in the cassette's own teal -- with a highlighter plate run
+    // past the line, because nobody labelling a tape ever stayed inside it.
+    shadow('#2a1d12', 6, 6, 0.42), inkPlate('#ff5fa2', 12, 340, 0.7),
+    fill(gradient(['#fdf6e3', '#efe0bd', '#d8c08d'], 168)),
+    texture('grain', 0.24), innerShadow('#6b4f26', 3, 6, 0.4),
+    stroke(4, '#3a2a1b'), stroke(1.5, '#38b0ae'),
+  ], warp('textSlantUp', 0.22), ['cassette', 'mixtape', 'tape', 'label', 'handwritten', 'analogue']),
+  definePreset('floppy-disk', 'Floppy Disk', 'nineties', ['#7fded0', '#25b0a2', '#0f5f5e', '#eef7f4'], [
+    // Moulded 3.5" plastic: a shallow inner bevel for the draft angle the mould needed, a fine
+    // noise for the matte shell, and a bright hairline standing in for the metal shutter.
+    shadow('#0d2a2e', 9, 5, 0.55), fill(gradient(['#7fded0', '#25b0a2', '#0f5f5e'], 150)),
+    bevel(9, 'inner', 170), innerShadow('#0f3b3a', 3, 5, 0.4), texture('noise', 0.1),
+    stroke(3, '#0b2c2e'), stroke(1.5, '#eef7f4'),
+  ], none(), ['floppy', 'disk', 'save', 'computer', 'plastic']),
+  definePreset('pizza-party', 'Pizza Party', 'nineties', ['#ffe07f', '#ffc043', '#c1470f', '#fff0b8'], [
+    // Melted cheese wants uneven colour, not texture relief, so the mottle multiplies patches of
+    // deeper bake into the gradient and the crust arrives entirely through the warm outer keyline.
+    shadow('#5c2a06', 9, 4, 0.55), fill(gradient(['#ffe07f', '#ffc043', '#f0982a'], 168)),
+    mottle(0.6, 'multiply', 0.3), texture('grain', 0.14), innerGlow('#fff0b8', 8, 0.4),
+    stroke(6, '#c1470f'), stroke(2, '#ffe9a8'),
+  ], warp('textArchUp', 0.36), ['pizza', 'party', 'snack', 'cheese', 'food']),
+  definePreset('zigzag-bolt', 'Zigzag Bolt', 'nineties', ['#ffd21f', '#fff3b0', '#141416', '#ff3fa0'], [
+    // The lightning bolt off every clipart sheet of the decade: a chevron silhouette, banded fill,
+    // and the flat black offset that always sat under it. Banded rather than flat because a bolt
+    // was rarely printed as one colour -- a second, lighter tone stepped across the shape, and the
+    // hard-edged stripe pair is that step without a second effect to draw it.
+    shadow('#141416', 16, 0, 1), fill(stripes(['#ffd21f', '#fff3b0'], 90, 5)),
+    stroke(6, '#141416'), stroke(2.5, '#ff3fa0'),
+  ], warp('textChevron', 0.75), ['zigzag', 'lightning', 'bolt', 'chevron', 'memphis']),
+  definePreset('grid-lock', 'Grid Lock', 'nineties', ['#fdfdfb', '#131316', '#00cfc1', '#ffe14d'], [
+    // Ruled squares on a white card, offset onto a flat teal block. Held well under full strength
+    // so the grid stays a tint of the card rather than becoming a second colour on it.
+    shadow('#00cfc1', 14, 0, 1), fill(solid('#fdfdfb')), grid(0.4),
+    stroke(5, '#131316'), stroke(1.5, '#ffe14d'),
+  ], none(), ['grid', 'graph-paper', 'monochrome', 'memphis', 'ruled']),
+  definePreset('airbrush-tee', 'Airbrush Tee', 'nineties', ['#ffcf2e', '#ff4f9c', '#7a3fe0', '#0f9fe8'], [
+    // The boardwalk T-shirt stall. There is no stroke anywhere in this stack, because a spray gun
+    // cannot draw one: every edge is a glow falling off, and the two grains are the paint's own
+    // stipple and the overspray that landed on the shirt around it.
+    glow('#ff2f8f', 24, 0.5), glow('#1fa8ff', 13, 0.4),
+    fill(gradient(['#ffcf2e', '#ff4f9c', '#7a3fe0', '#0f9fe8'], 115)),
+    innerGlow('#ffffff', 6, 0.3), texture('grain', 0.3), post('grain', { amount: 0.14 }, 0.4),
+  ], warp('textArchUp', 0.44), ['airbrush', 'spray', 'beach', 'tee', 'sunset']),
+  definePreset('trapper-keeper', 'Trapper Keeper', 'nineties', ['#ff2f86', '#8a2fff', '#12bcd8', '#ffffff'], [
+    // Glossy vinyl in hard diagonal panels, with the white piping that ran round every binder
+    // edge. The panels are banded rather than graded on purpose: these covers were printed as flat
+    // blocks of colour meeting on a line, and a gradient between the same two inks reads as an
+    // airbrush instead. The satin sheen is what separates vinyl from paper, and the reflection is
+    // the desk it was slid across; it comes last so the mirrored copy carries the piping with it.
+    shadow('#2a0b3d', 10, 8, 0.5), fill(stripes(['#ff2f86', '#12bcd8'], 55, 3)),
+    satin('#ffffff', 0.16), bevel(8, 'inner', 110),
+    stroke(5, '#2a0b3d'), stroke(3, '#ffffff'), reflection(0.3, 0.22),
+  ], none(), ['binder', 'trapper-keeper', 'school', 'vinyl', 'gloss']),
+  definePreset('puffy-sticker', 'Puffy Sticker', 'nineties', ['#fff3c2', '#ffb03a', '#ff2f86', '#2b1b3f'], [
+    // `sticker-bomb` is the flat die-cut off the sheet; this is the domed one next to it. The wide
+    // white stroke is the die-cut border, and the shadow is soft and close rather than offset and
+    // hard -- the one place in this block where a blur is right, because a puffy sticker really
+    // does stand off the page and cast onto it.
+    //
+    // Strokes are drawn widest-first for the usual reason, which here means the dark one has to go
+    // down before the white: an outside stroke grows outward from the same outline, so a narrow
+    // dark one laid second would eat the inner edge of the border instead of ringing it.
+    shadow('#2b1b3f', 8, 12, 0.45), fill(gradient(['#fff3c2', '#ffb03a', '#ff2f86'], 120)),
+    bevel(24, 'pillow', 200), innerGlow('#ffffff', 10, 0.5), satin('#ffffff', 0.18),
+    stroke(13, '#2b1b3f'), stroke(10, '#ffffff'),
+  ], warp('textInflate', 0.7, 0.65), ['sticker', 'puffy', 'glossy', 'die-cut', 'scrapbook']),
 ];
 
 export function applyPresetToElement(element: TextElement, preset: Preset, replaceFont = false): void {
