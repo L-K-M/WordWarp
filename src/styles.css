@@ -432,11 +432,12 @@ button:disabled {
   transform: rotate(-2deg) scale(1.04);
 }
 
-/* The lockup carries its own glow and shadows, so the header adds nothing but a size: tall
-   enough for the wordmark to read, with the baked-in claim riding along as decoration. */
+/* The lockup carries its own glow and shadows, so the header adds nothing but a size: the asset
+   is trimmed to its visible pixels, so the height here is the height the artwork stands in the
+   88px header row. */
 .brand-logo {
   display: block;
-  height: 58px;
+  height: 76px;
   width: auto;
   transition: transform 140ms ease;
 }
@@ -1856,7 +1857,7 @@ button:disabled {
   /* The lockup is wide, so at phone width it shrinks rather than collapsing to a square mark --
      there is no square crop of a wordmark that stays the wordmark. */
   .brand-logo {
-    height: 38px;
+    height: 52px;
   }
 
   .topbar-actions button {
