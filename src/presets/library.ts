@@ -461,24 +461,42 @@ export const BUILT_IN_PRESETS: Preset[] = [
     // where the depth goes, so 90 drops it straight below.
     vhsShadow('#e0447e', 135),
     extrude(14, '#141a30', 90),
+    // A polished bar's luminance is a V, not a slope: brightest at both ends, darkest at the
+    // waist, because the surface reflects sky at the top, sky again below, and the dark room in
+    // between. The waist drops fast -- 0.42 to 0.5 -- which is what reads as a reflection line
+    // rather than a shade.
     fill(bandedGradient([
-      [0, '#2b3050'], [0.1, '#c9d2ee'], [0.3, '#eef2fc'], [0.55, '#8890b4'],
-      [0.72, '#4d5478'], [0.88, '#7a83ac'], [1, '#c3cbe8'],
+      [0, '#f6f8fe'], [0.16, '#c9d2ee'], [0.42, '#6d7398'], [0.5, '#353a5c'],
+      [0.56, '#4d5478'], [0.78, '#aab1d0'], [1, '#eef2fc'],
     ])),
     bevel(6, 'inner', 130),
     stroke(2, '#10142a'),
   ], none(), ['metal', 'steel', 'banded', 'airbrush', 'poster']),
-  definePreset('meltorama-ii', 'Meltorama II', 'metallic', ['#e8ecf8', '#aab1cf', '#565c85', '#d6428e'], [
-    // The same steel as Meltorama with the bands relaxed into one slow melt: pale crown fading
-    // through slate into a blue-violet base, no bright horizon anywhere. The pink rides the top
-    // edge as a rim rather than trailing below, and the depth is a plain dark drop.
+  definePreset('meltorama-ii', 'Meltorama II', 'metallic', ['#f4f6fd', '#c3c9e4', '#41466b', '#d6428e'], [
+    // The same steel as Meltorama with the reflection line relaxed into one slow melt: the
+    // luminance still runs very bright, bright, dark at the waist, bright, very bright -- the
+    // profile every polished-metal logo shares -- but here each transition is a wash rather than
+    // a band. The pink rides the top edge as a rim, and the depth is a plain dark drop.
     vhsShadow('#d6428e', 205),
     extrude(10, '#0c102b', 85),
     fill(bandedGradient([
-      [0, '#e8ecf8'], [0.28, '#a6adcc'], [0.62, '#5d6389'], [1, '#3d4166'],
+      [0, '#f4f6fd'], [0.22, '#c3c9e4'], [0.5, '#41466b'], [0.72, '#9aa1c4'], [1, '#eef1fa'],
     ])),
     bevel(4, 'inner', 110),
   ], none(), ['metal', 'steel', 'satin', 'melt', 'poster']),
+  definePreset('showroom-chrome', 'Showroom Chrome', 'metallic', ['#ffffff', '#cfd4d9', '#16181c', '#f2f4f7'], [
+    // The badge chrome on a car boot: one monochrome gloss profile, white sky fading down the top
+    // half, a hard reflection line just under centre, a near-black room below it, and the floor
+    // bouncing back up to silver at the baseline. The two stops at 0.52/0.53 are the hard line;
+    // everything else is wash.
+    shadow('#63666e', 8, 18, 0.5),
+    fill(bandedGradient([
+      [0, '#ffffff'], [0.3, '#cfd4d9'], [0.52, '#9aa0a8'], [0.53, '#16181c'],
+      [0.62, '#3a3f47'], [0.85, '#b9bfc7'], [1, '#f2f4f7'],
+    ])),
+    bevel(7, 'inner', 150),
+    stroke(2, '#878d95'),
+  ], none(), ['chrome', 'gloss', 'showroom', 'badge', 'silver']),
   definePreset('airbrush-chrome', 'Airbrush Chrome', 'metallic', ['#dff3ff', '#8fc7ee', '#5c3a1e', '#e8c390'], [
     // The canonical logo chrome: sky above, desert below, meeting on a horizon of two stops
     // nearly touching. Everything else on the letter exists to sell that reflection.
