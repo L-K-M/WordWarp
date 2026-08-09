@@ -1,24 +1,14 @@
-# WordWarp
-
 <img src="./src/assets/brand/wordwarp-logo.png" alt="Word Warp — Your Gooey Type Lab" width="640" />
 
-**Your Gooey Type Lab** · **Latest release:** v<!-- version -->0.1.0<!-- /version -->
+**Latest release:** v<!-- version -->0.1.0<!-- /version -->
 
 WordWarp is a browser-based studio for warped, metallic, dimensional text with alpha-correct image
 export. The product and rendering decisions are documented in [`PLAN.md`](./PLAN.md).
 
-## Features
 
-- 41 envelope warp presets plus path, mesh, and perspective mapping primitives
-- Editable fill, stroke, bevel, glow, shadow, extrusion, texture, reflection, and post effects
-- 125 built-in styles and 24 Office-compatible color ramps
-- 65 procedural decoration stamps, themed from Memphis marks to pumpkins and rockets, taking the same effect
-  stack and styles as text
-- Transparent or solid canvas background
-- Transparent PNG, animated APNG, and GIF export
-- Deterministic procedural animation with live reduced-motion-aware preview
-- IndexedDB autosave, compressed share URLs, direct manipulation, undo/redo, and offline PWA support
-- WebGL2 presentation with a Canvas2D fallback and tiled large-image export
+[
+![screenshot.png](media-sources/screenshot.png)
+](https://wordwarp.ch/#ww=1.5VjZbuTGFf0Vgc_NTq1kVb8lBmI_TJAAHmfiBHkoksVWjShWh2RLowj6d59L9kK2Fo-NMWzDWlnbrXvP3Q77MbnzXR9im2zkKglVskmqujCa8TwtpKlS5V2ZFtzWaeVNzjUTzuUsWSWtu_XY_V07hKHx1dW963aYLl175_pk85jch2q4TjZcMLZKrn3YXg_JJpMYFK682XZx3-K6dt80q8Tth_jXgPWh2_tV4j_tYjf8w1VVaLfJRpknzDX-1rcDRP_ncVK09KaymsnU-6JIVaUrqFxlqfB1Zb10rMjcWdEPsauuPkxK3oU-FA1mp-uaWN54SKxd02MYd64MwwNUh6qNb6u_xYoktLG7dQ2OD51r-xojMvNTstFWrWWuM6604YrzfJXgtNBibYxVQjJmjLLarJIuDm4Y0QYMfeka_y9cs-a5towxqbTAdpsd1r6nNWYya2xmmeCKSSmwduPvcYwk4Amb8BS7sA0tza71cUQra03Q1bUv58h5bupClSqVxtdwMStTw61Ks0JZWTInKl7CTt862I8DE0wnXNgapsyRud03Q9g1DzjTNxFuHF1M0RCb2OFetsIZa5i0guvMZCJXesVX_L9wfbslTyBMVkkV-sG15TiEqPB_PMGcMrZD3B_lCI0_9JtDBAS0MfTYh-M3gSIqqbq4-_baVfGe9Nl13mGWAchVsu_9100sXPNuCsfJsJsWARD3h_HT6oCS09KziulUc2tSlXmTulxwDHOnTW5M7tWbKEHBBUx92XnfPgNp50KL4eNR_z42uP8MHl-N8Ekuc6GVZdxmLLewHa49Gz_48roN_9uPF8V68B1dNEIoYPnbGCKgtyRmVPljGOj0DFFg4zsAdwnoCarKljmzXKSFEiJVOQVUVZdppksnbVkXsn4roF5LtCNOsaLQOihTh4bWLlHbdq4KKBBYOj1idXjYkcgmtN6NiAxxN2VCrOveYw_MnCG9NmoBtAH4hPRs_1pefC0FqMs4x4GF64x6JjG7-FpKpCNzEeS7PAPK2hghtbCKUmkuEYCeUm-tDrceReA4P2oymzNzpZk1JPKcn5ZgAqYUGJA5xg9Wxzo13leF4ZoWJ9fCN77bxeZQ7ZJ407gieXo6RYxVZe15ibwS0iFinEudQEVimfVe5qpk6q3k-kkRU_g7Py4OD6QslGvH7FikzG2MaFeww-_GtkWNqgodCudkwZ4ax5RPqO9jhmEaeswLmEMdHPakkkQivVxttk3s-6_eTMdr7G-mM4-zSBi_sfxiTZlXZxSGfiqAs_OII0nBpOgPeffVGj4TlemnKQjC7ehKSh2MD1k1-E-Ub-O_ZYetYR9dXrvbAJmb5M9dcM3VX5qp5PWwnco8td7Rb_cHfoA2iOAZXBPKUz-uvRv2nR9JBVBxp7LtO3hgLNkwuHEPYwl_PDiJZ4r8EbbkvEPkYhfqwDeHu-C7xlOp-5bsJaKRAhkNx93DktMk1dZzw0eotZ7CZBYazUCiy31350-nEteVKeDdIpig3ciOzsUKNZTyFFVsepig_ODuPMekqz5OSUb-oiwr4CaU8alBghl9M2p1GPxzqtTe777boe-TZSNw51yrRM5lgeqcCY1cs4VMwSgkho5LXWvBpDkTpe_hm6uvY_QPV-_h5qt3SNxfgDKZdZaDMOUWiCsUMKJMMjdrloGJEN3JtHqVMc0I0pfgQ0YqwzTqkChKal-VT50tXMprVZbWeGhLGLze6VGwfxofgpmHMnvoFVSB2WLGZGO6XnSTzyNNfGxqvwprqpmxRQEEs0ygutd4czBS2FS63Iha-aqsxe-ACqCKXngD2Nmx1_JT7x3r8bKT81nvBuCLJssE4X_pT4i95BOXQhUcexZqz0RilEwSngXJcxl2Tipe2qEXt8jnqotlyI6QzNB4kYkgNxZiERVzITkRpvlxEkdXzcc5y55JzUdOe4LkIk0I56VahLNeTsF9r5MmuyRDo5suvY8YubRmwZm4-cKkqS5Yrh3jaV5UeOOttUpdXRdprqURRYEa9iuTJv06aUL4_ZFI09FluUK0OI8PUniRg-zipcjkok7rSqkKUwgd-_NdVnfEs04-64cu3hA7OXz2gszbxT4cw2k_9AFifvyNk14Qnr_FsIuXFMpd9uKrTfIxBrpx-oxnldwGBPa7gH_4MAcR4nooN33yQ89_P2b1Z1PNlznKM9L51TXiLM75ZgGFCOcz41RfjHFStv9WCedByIlZLojlmUt-JrEkN_VwGQGEu5Cc53x9fDW3sfPWDwAT6QV6MVC4JwJEL2UGP--53fB8I-3acvZvippYhTosd9n3XG0kR6Whmk-73A52ju8e9OrxJ4TumqFm_gA)
 
 ## Development
 
