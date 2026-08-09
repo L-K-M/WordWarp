@@ -1004,17 +1004,16 @@ export function App() {
         <main className="canvas-panel">
           <div className="canvas-toolbar">
             <div className="tool-group" aria-label="Canvas tools">
-              <button className="orb orb-xs orb-aqua active" type="button">Select</button>
-              <button className="orb orb-xs orb-lime" type="button" onClick={addText}>Text</button>
+              <button className="orb orb-xs orb-lime" type="button" onClick={addText}>Add Text</button>
               <button
                 ref={stampButtonRef}
-                className="orb orb-xs orb-berry"
+                className="orb orb-xs orb-aqua"
                 type="button"
                 aria-expanded={stampMenuOpen}
                 aria-controls="stamp-menu"
                 onClick={() => setStampMenuOpen((open) => !open)}
               >
-                Stamp
+                Add Stamp
               </button>
             </div>
             {stampMenuOpen && (

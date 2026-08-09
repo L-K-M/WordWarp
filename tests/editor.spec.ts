@@ -60,7 +60,7 @@ test('places a stamp, styles it from the rack, and exports it over a background'
   await page.goto('./');
   await expect(page.getByRole('button', { name: 'WordWarp Your Gooey Type Lab' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Stamp', exact: true }).click();
+  await page.getByRole('button', { name: 'Add Stamp', exact: true }).click();
   await page.locator('.stamp-choice', { hasText: /^Bolt$/ }).click();
 
   // Placing a stamp selects it, and the inspector should be showing stamp controls rather than
@@ -100,7 +100,7 @@ test('groups the stamp menu by theme and places a pierced figure at its own prop
   await page.goto('./');
   await expect(page.getByRole('button', { name: 'WordWarp Your Gooey Type Lab' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Stamp', exact: true }).click();
+  await page.getByRole('button', { name: 'Add Stamp', exact: true }).click();
   const menu = page.locator('#stamp-menu');
   // Themed sections, not one wall of fifty-two icons. The panel scrolls, so the later sections
   // only exist below the fold -- which is what the count is really checking.
@@ -132,7 +132,7 @@ test.describe('expanded stamp picker', () => {
     test('reaches the final item and restores trigger focus', async ({ page }) => {
       await page.setViewportSize({ width: 1366, height: 768 });
       await page.goto('./');
-      const trigger = page.getByRole('button', { name: 'Stamp', exact: true });
+      const trigger = page.getByRole('button', { name: 'Add Stamp', exact: true });
       await trigger.click();
       const menu = page.getByRole('group', { name: 'Place a stamp' });
       await expect(menu.locator('.stamp-choice')).toHaveCount(STAMP_IDS.length);
@@ -161,7 +161,7 @@ test.describe('expanded stamp picker', () => {
 
     test('keeps every theme reachable', async ({ page }) => {
       await page.goto('./');
-      const trigger = page.getByRole('button', { name: 'Stamp', exact: true });
+      const trigger = page.getByRole('button', { name: 'Add Stamp', exact: true });
       await trigger.click();
       const menu = page.getByRole('group', { name: 'Place a stamp' });
       const butterfly = menu.locator('.stamp-choice', { hasText: /^Butterfly$/ });
@@ -183,7 +183,7 @@ test.describe('expanded stamp picker', () => {
     test('shows one complete choice in short landscape', async ({ page }) => {
       await page.setViewportSize({ width: 568, height: 320 });
       await page.goto('./');
-      await page.getByRole('button', { name: 'Stamp', exact: true }).click();
+      await page.getByRole('button', { name: 'Add Stamp', exact: true }).click();
       const menu = page.getByRole('group', { name: 'Place a stamp' });
       const choice = menu.locator('.stamp-choice').first();
       const [menuBounds, choiceBounds] = await Promise.all([menu.boundingBox(), choice.boundingBox()]);
