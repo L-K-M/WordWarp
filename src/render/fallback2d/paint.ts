@@ -1,6 +1,6 @@
 import { rgbaToCss, sampleGradient } from '../color';
 import type { Bounds } from '../../geometry/bounds';
-import type { Paint } from '../../model/types';
+import type { Gradient, Paint } from '../../model/types';
 import { officeRampColors } from '../../presets/office-ramps';
 import type { TextContext } from '../../text/layout';
 
@@ -33,8 +33,8 @@ export function createPaintStyle(context: TextContext, paint: Paint, bounds: Bou
     const dy = Math.sin(radians) * radius;
     const canvasGradient = context.createLinearGradient(centerX - dx, centerY - dy, centerX + dx, centerY + dy);
     if (gradient.type === 'reflected') {
-      for (let index = 0; index <= 32; index += 1) {
-        const offset = index / 32;
+      // The mirror runs out from the centre, so each stop offset lands at two canvas positions.
+      for (const offset of sampleOffsets(gradient, (stop) => [stop / 2, 1 - stop / 2])) {
         const reflected = 1 - Math.abs(offset * 2 - 1);
         canvasGradient.addColorStop(offset, rgbaToCss(sampleGradient(gradient, reflected)));
       }
@@ -79,10 +79,37 @@ export function createPaintStyle(context: TextContext, paint: Paint, bounds: Bou
   return '#727b8c';
 }
 
-function addSampledStops(canvasGradient: CanvasGradient, gradient: Extract<Paint, { kind: 'gradient' }>['gradient']): void {
-  const samples = gradient.interpolation === 'oklab' ? 32 : Math.max(2, gradient.stops.length - 1);
-  for (let index = 0; index <= samples; index += 1) {
-    const offset = index / samples;
+function addSampledStops(canvasGradient: CanvasGradient, gradient: Gradient): void {
+  for (const offset of sampleOffsets(gradient)) {
     canvasGradient.addColorStop(offset, rgbaToCss(sampleGradient(gradient, offset)));
   }
+}
+
+/**
+ * The resampling grid, plus every stop's own position.
+ *
+ * OKLab interpolation is emulated by sampling the gradient densely onto canvas stops, and the
+ * even grid alone rounds a stop that falls between grid points onto the nearest cell -- which
+ * flattens the hand-placed bands a metal fill is made of. The stops' exact offsets therefore join
+ * the grid instead of being quantised to it. An evenly spaced gradient is unchanged: its stops
+ * already sit on the grid.
+ *
+ * Two stops sharing an offset are the model's hard edge, but a single sample there can only carry
+ * one side of it, so the far side is planted a hair after -- close enough to read as a crisp
+ * boundary at any export scale.
+ *
+ * `place` maps a stop offset to its canvas positions, for geometries (the reflected mirror) where
+ * the two disagree.
+ */
+function sampleOffsets(gradient: Gradient, place: (stopOffset: number) => number[] = (stop) => [stop]): number[] {
+  const samples = gradient.interpolation === 'oklab' ? 32 : Math.max(2, gradient.stops.length - 1);
+  const offsets = new Set<number>();
+  for (let index = 0; index <= samples; index += 1) offsets.add(index / samples);
+  gradient.stops.forEach((stop, index) => {
+    const isHardEdge = index > 0 && gradient.stops[index - 1]!.offset === stop.offset;
+    for (const offset of place(isHardEdge ? stop.offset + 1e-4 : stop.offset)) {
+      offsets.add(Math.min(1, Math.max(0, offset)));
+    }
+  });
+  return [...offsets].sort((a, b) => a - b);
 }

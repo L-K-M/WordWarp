@@ -8,11 +8,13 @@ import type {
   Effect,
   ExtrudeEffect,
   FillEffect,
+  Gradient,
   InnerGlowEffect,
   InnerShadowEffect,
   LongShadowEffect,
   OuterGlowEffect,
   Paint,
+  Point,
   PostEffect,
   ReflectionEffect,
   Rgba,
@@ -47,6 +49,33 @@ const gradient = (
     stops: colors.map((color, index) => ({ offset: index / (colors.length - 1), color: hexColor(color) })),
     angle,
     center: [0.5, 0.5],
+    scale: 1,
+    dither: true,
+    interpolation: 'oklab',
+  },
+});
+
+/**
+ * A gradient with hand-placed stops.
+ *
+ * `gradient` above spaces its colours evenly, which is right for a wash and wrong for a lit
+ * surface: metal is bands. The horizon in an airbrushed chrome logo is two stops almost touching,
+ * the glare above it is wide and the shade below it narrow, and sliding stops apart like that is
+ * what turns a wash into a reflection. Offsets are explicit and must be in ascending order, since
+ * the schema refuses a document whose stops are shuffled.
+ */
+const bandedGradient = (
+  stops: Array<[number, string]>,
+  angle = 180,
+  type: Gradient['type'] = 'linear',
+  center: Point = [0.5, 0.5],
+): Paint => ({
+  kind: 'gradient',
+  gradient: {
+    type,
+    stops: stops.map(([offset, color]) => ({ offset, color: hexColor(color) })),
+    angle,
+    center,
     scale: 1,
     dither: true,
     interpolation: 'oklab',
@@ -416,9 +445,95 @@ export const BUILT_IN_PRESETS: Preset[] = [
     fill(gradient(['#ff6ec7', '#6ec7ff', '#6effb8', '#fff36e', '#ff6ec7'], 35, 'angular')), bevel(10), stroke(2, '#ffffff'),
   ], none(), ['iridescent', 'rainbow']),
 
+  // ## Gradient metals
+  //
+  // The airbrushed half of the metal shelf. The ramp and matcap metals above simulate a material;
+  // these reproduce a *print* of one -- the chrome logo on an arcade flyer, the steel nameplate on
+  // a synth -- which was laid down as bands of colour meeting on a horizon. Every fill here is a
+  // hand-banded gradient, so each is also a live demonstration of the inspector's gradient editor:
+  // the stops these were built from are the ones its swatches edit. Between them the four drawable
+  // gradient geometries all appear -- banded linear, reflected, angular, radial -- so the picker
+  // shows what each one is for.
+  definePreset('meltorama', 'Meltorama', 'metallic', ['#eef2fc', '#8890b4', '#2b3050', '#e0447e'], [
+    // The magenta plate is registration drift rather than light: hard-edged, on its own angle,
+    // under everything -- which is what keeps the steel face reading as steel and not as pink-lit.
+    vhsShadow('#e0447e', 315),
+    extrude(14, '#141a30', 270),
+    fill(bandedGradient([
+      [0, '#2b3050'], [0.1, '#c9d2ee'], [0.3, '#eef2fc'], [0.55, '#8890b4'],
+      [0.72, '#4d5478'], [0.88, '#7a83ac'], [1, '#c3cbe8'],
+    ])),
+    bevel(6, 'inner', 130),
+    stroke(2, '#10142a'),
+  ], none(), ['metal', 'steel', 'banded', 'airbrush', 'poster']),
+  definePreset('airbrush-chrome', 'Airbrush Chrome', 'metallic', ['#dff3ff', '#8fc7ee', '#5c3a1e', '#e8c390'], [
+    // The canonical logo chrome: sky above, desert below, meeting on a horizon of two stops
+    // nearly touching. Everything else on the letter exists to sell that reflection.
+    shadow('#101319', 12, 10, 0.6),
+    fill(bandedGradient([
+      [0, '#dff3ff'], [0.16, '#8fc7ee'], [0.42, '#f2faff'], [0.49, '#ffffff'],
+      [0.52, '#5c3a1e'], [0.62, '#a97848'], [0.78, '#e8c390'], [1, '#fdf3dc'],
+    ])),
+    bevel(9, 'inner', 150),
+    stroke(2, '#1c1108'),
+  ], none(), ['chrome', 'airbrush', 'horizon', '80s']),
+  definePreset('molten-gold', 'Molten Gold', 'metallic', ['#fff8d8', '#f2c14e', '#8a5a17', '#f7d878'], [
+    // Gold Bar above is the Office ramp; this is the airbrushed reading of the same material,
+    // with the dark horizon band sitting just under centre the way a poured ingot catches it.
+    shadow('#2e1c04', 12, 10, 0.6),
+    fill(bandedGradient([
+      [0, '#fff8d8'], [0.12, '#ffe9a3'], [0.38, '#f2c14e'], [0.5, '#8a5a17'],
+      [0.56, '#c98f2d'], [0.75, '#f7d878'], [1, '#fff3c4'],
+    ])),
+    bevel(10, 'inner', 160),
+    innerShadow('#4a2d08', 4, 8),
+    stroke(2, '#5c3c10'),
+  ], none(), ['gold', 'banded', 'luxury']),
+  definePreset('sterling-mirror', 'Sterling Mirror', 'metallic', ['#ffffff', '#c7d0e2', '#8b93a8', '#3c4358'], [
+    // The reflected geometry is the polished-bar effect in one move: a bright spine across the
+    // middle of the word, falling away identically to both edges.
+    shadow('#0b0e16', 10, 10, 0.55),
+    fill(gradient(['#3c4358', '#8b93a8', '#e8edf6', '#ffffff'], 180, 'reflected')),
+    bevel(8, 'inner', 140),
+    stroke(1.5, '#232838'),
+  ], none(), ['silver', 'polished', 'mirror', 'bar']),
+  definePreset('turbine', 'Turbine', 'metallic', ['#f2f4f8', '#9aa0ae', '#7c8292', '#e8eaf0'], [
+    // Spun metal: an angular sweep of alternating silver tones is what a machined face does to
+    // light, and the specular sweep drags the glint around it.
+    shadow('#0d0f14', 10, 8, 0.55),
+    fill(gradient(['#e8eaf0', '#9aa0ae', '#f2f4f8', '#7c8292', '#e8eaf0', '#a6acba', '#f5f7fa', '#878d9c', '#e8eaf0'], 0, 'angular')),
+    bevel(8, 'inner', 150),
+    stroke(2, '#1a1d26'),
+  ], none(), ['spun', 'machined', 'silver', 'animated'], [
+    { id: 'turbine-sweep', kind: 'specularSweep', enabled: true, duration: 4, params: {}, seed: 8 },
+  ]),
+  definePreset('chrome-dome', 'Chrome Dome', 'metallic', ['#ffffff', '#dfe5ef', '#9099ac', '#2e3342'], [
+    // A radial silver with the highlight pushed off-centre reads as a domed stud; the centre
+    // parameter is the whole trick, and it is what the radial geometry is for.
+    shadow('#0b0d13', 10, 10, 0.5),
+    fill(bandedGradient([
+      [0, '#ffffff'], [0.25, '#dfe5ef'], [0.55, '#9099ac'], [0.8, '#4c5266'], [1, '#2e3342'],
+    ], 0, 'radial', [0.38, 0.3])),
+    bevel(12, 'pillow', 170),
+    innerGlow('#ffffff', 8, 0.4),
+    stroke(1.5, '#1b1f2b'),
+  ], none(), ['dome', 'stud', 'polished', 'silver']),
+
   definePreset('outrun-sunset', 'Outrun Sunset', 'synthwave', ['#ff00ff', '#ff1493', '#ff7f50', '#ffd700'], [
     shadow('#00e5ff', 12, 5, 0.8), glow('#ff00d4', 28, 0.75), fill(gradient(['#ffd700', '#ff7f50', '#ff1493', '#6b1ad6'])), bevel(7),
   ], warp('textSlantUp', 0.42), ['sunset', 'retro']),
+  definePreset('chrome-sunset', 'Chrome Sunset', 'synthwave', ['#7fdbff', '#ffffff', '#ff2d95', '#5c1a8a'], [
+    // The gradient metals' horizon chrome dressed for the grid: night sky over neon ground, the
+    // reflection line at the same near-touching pair of stops, and the pink plate offset below.
+    glow('#00e5ff', 24, 0.5),
+    vhsShadow('#ff2d95', 270),
+    fill(bandedGradient([
+      [0, '#0e1836'], [0.08, '#7fdbff'], [0.3, '#eaffff'], [0.48, '#ffffff'],
+      [0.52, '#ff2d95'], [0.68, '#b3186e'], [0.85, '#5c1a8a'], [1, '#2a0f4e'],
+    ])),
+    bevel(7, 'inner', 140),
+    stroke(2, '#120826'),
+  ], warp('textSlantUp', 0.35), ['chrome', 'outrun', 'horizon', 'banded']),
   definePreset('neon-grid', 'Neon Grid', 'synthwave', ['#00ffff', '#ff00ff', '#191970', '#0d0221'], [
     glow('#ff00ff', 38, 0.65), glow('#00ffff', 17, 0.95), fill(solid('#102037', 0.3)), stroke(4, '#00ffff'),
   ], none(), ['neon', 'cyan']),
@@ -441,6 +556,19 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('web20-gloss', 'Web 2.0 Gloss', 'y2k', ['#ffffff', '#d0e8ff', '#5aa9e6', '#1b6ca8'], [
     glow('#7ec8ff', 15, 0.4), fill(gradient(['#ffffff', '#d0e8ff', '#5aa9e6', '#1b6ca8'])), innerGlow('#ffffff', 13, 0.6), reflection(),
   ], none(), ['gloss', 'web']),
+  definePreset('millennium-chrome', 'Millennium Chrome', 'y2k', ['#f4fbff', '#c2d8ea', '#7d95ad', '#f0f8ff'], [
+    // Frutiger-era brushed aluminium: the same banded construction as the metal shelf, washed
+    // toward white and blue so it reads as a device bezel rather than an arcade flyer.
+    shadow('#12202e', 10, 12, 0.45),
+    fill(bandedGradient([
+      [0, '#f4fbff'], [0.2, '#c2d8ea'], [0.45, '#eef7ff'], [0.55, '#7d95ad'],
+      [0.8, '#b8cede'], [1, '#f0f8ff'],
+    ])),
+    bevel(10, 'inner', 150),
+    innerGlow('#ffffff', 10, 0.5),
+    stroke(1.5, '#4a6a85'),
+    reflection(0.4, 0.25),
+  ], none(), ['aluminium', 'aero', 'banded', 'gloss']),
   definePreset('bubble-inflate', 'Bubble Inflate', 'y2k', ['#ff9ec7', '#ff5fa2', '#d61f69', '#ffffff'], [
     shadow('#8f174c', 8, 12, 0.45), fill(gradient(['#ffffff', '#ff9ec7', '#d61f69'])), bevel(24, 'pillow', 190), innerGlow('#ffffff', 12, 0.65),
   ], warp('textInflate', 0.88, 0.7), ['bubble', 'pink']),

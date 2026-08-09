@@ -2,12 +2,20 @@ import { describe, expect, it } from 'vitest';
 
 import { createDefaultDocument } from '../model/defaults';
 import { documentSchema } from '../model/schema';
+import type { Gradient } from '../model/types';
 import { applyPresetToElement, BUILT_IN_PRESETS } from './library';
 import { OFFICE_RAMPS } from './office-ramps';
 import { PRESET_CATEGORY_TABS } from './types';
 
+function gradientFillPaint(presetId: string): Gradient | undefined {
+  const fill = BUILT_IN_PRESETS.find((preset) => preset.id === presetId)
+    ?.apply.effects.find((effect) => effect.kind === 'fill');
+  if (fill?.kind !== 'fill' || fill.paint.kind !== 'gradient') return undefined;
+  return fill.paint.gradient;
+}
+
 /** Bump deliberately when a style is added or removed, so neither happens by accident. */
-const PRESET_COUNT = 113;
+const PRESET_COUNT = 121;
 
 describe('preset library', () => {
   it('ships every named style across the core and themed categories', () => {
@@ -140,6 +148,29 @@ describe('preset library', () => {
         expect(shadow.kind === 'dropShadow' && shadow.distance, id).toBeGreaterThan(0);
       }
     }
+  });
+
+  it('builds the gradient metals from hand-placed bands', () => {
+    // A metal fill is bands, not a wash: stops must arrive unevenly spaced at their own offsets,
+    // or the horizon these styles are built around dissolves into a blend. Uneven spacing is also
+    // what exercises the renderer's exact-offset sampling, which even-stop gradients cannot.
+    for (const id of ['meltorama', 'airbrush-chrome', 'molten-gold', 'chrome-sunset', 'millennium-chrome']) {
+      const paint = gradientFillPaint(id);
+      expect(paint, id).toBeDefined();
+      const offsets = paint!.stops.map((stop) => stop.offset);
+      expect(offsets.length, id).toBeGreaterThanOrEqual(5);
+      const gaps = offsets.slice(1).map((offset, index) => offset - offsets[index]!);
+      expect(new Set(gaps.map((gap) => gap.toFixed(3))).size, id).toBeGreaterThan(1);
+    }
+  });
+
+  it('shows every drawable gradient geometry somewhere on the metal shelf', () => {
+    expect(gradientFillPaint('meltorama')?.type).toBe('linear');
+    expect(gradientFillPaint('sterling-mirror')?.type).toBe('reflected');
+    expect(gradientFillPaint('turbine')?.type).toBe('angular');
+    expect(gradientFillPaint('chrome-dome')?.type).toBe('radial');
+    // The dome only reads as a dome because its highlight sits off-centre.
+    expect(gradientFillPaint('chrome-dome')?.center).not.toEqual([0.5, 0.5]);
   });
 
   it('ships all 24 Office ramp names with 20 stops each', () => {

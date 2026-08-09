@@ -1394,6 +1394,36 @@ button:disabled {
   background: #03262c;
 }
 
+.effect-paint-controls {
+  display: grid;
+  grid-column: 2 / -1;
+  gap: 9px;
+}
+
+/* The app-wide pill select is a 48px form field; inside an effect row it drops to the row's own
+   scale so the paint switch reads as a chip beside the swatches rather than as a field. */
+.effect-paint-controls .paint-kind-select {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* Up to eight stop swatches plus the two steppers: allowed to wrap rather than shrink, so every
+   chip keeps its full touch target at the narrow panel width. */
+.effect-color-controls.gradient-stops {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.effect-paint-controls .paint-row-name {
+  color: var(--mint);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .effect-adder {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 96px;

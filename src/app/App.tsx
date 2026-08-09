@@ -2,6 +2,9 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 import { documentAnimationDuration, evaluateDocumentAtTime, hasEnabledAnimationTracks } from '../animation/evaluate';
 import { createEffect, EFFECT_KINDS, type EffectKind } from '../effects/defaults';
+import {
+  MAX_GRADIENT_STOPS, MIN_GRADIENT_STOPS, toGradientPaint, toSolidPaint, withAddedStop, withRemovedStop,
+} from '../effects/paint-edit';
 import { downloadAnimation, exportAnimation } from '../export/animation';
 import { exportErrorMessage } from '../export/errors';
 import { downloadPng, exportPng } from '../export/png';
@@ -9,8 +12,8 @@ import { createDefaultDocument, createDefaultTextElement, createStampElement, ST
 import { createId } from '../lib/id';
 import {
   PRESET_WARP_IDS, STAMP_GROUPS, STAMP_IDS, STAMP_IDS_BY_GROUP,
-  type Effect, type Paint, type Point, type Rgba, type ShapeElement, type StampId, type TextElement,
-  type Transform,
+  type Effect, type Gradient, type Paint, type Point, type Rgba, type ShapeElement, type StampId,
+  type TextElement, type Transform,
 } from '../model/types';
 import { stampAspect, stampOutline } from '../geometry/stamps';
 import { startAutosave, type AutosaveController } from '../persistence/autosave';
@@ -563,6 +566,16 @@ export function App() {
                 <button type="button" onClick={() => removeEffect(effect.id)} aria-label={`Remove ${effectLabel(effect.kind)}`}>✕</button>
               </span>
               <EffectQuickControl effect={effect} onChange={(value) => updateEffectPrimary(effect.id, value)} />
+              <EffectPaintControls
+                effect={effect}
+                onKindChange={(kind) => setEffectPaintKind(effect.id, kind)}
+                onSolidChange={(hex) => updateEffectColor(effect.id, 'paint', hex)}
+                onStopChange={(stopIndex, hex) => updateGradientStopColor(effect.id, stopIndex, hex)}
+                onAddStop={() => addGradientStop(effect.id)}
+                onRemoveStop={() => removeGradientStop(effect.id)}
+                onTypeChange={(type) => updateGradientType(effect.id, type)}
+                onAngleChange={(angle) => updateGradientAngle(effect.id, angle)}
+              />
               <EffectColorControls effect={effect} onChange={(target, hex) => updateEffectColor(effect.id, target, hex)} />
             </li>
           ))}
@@ -660,6 +673,57 @@ export function App() {
         slot.color = [rgb[0], rgb[1], rgb[2], slot.color[3]];
       }
     }, `effect-color:${effectId}:${target}`);
+  };
+
+  const setEffectPaintKind = (effectId: string, kind: 'solid' | 'gradient') => {
+    if (!selectedElement) return;
+    updateDocument(kind === 'gradient' ? 'Make paint a gradient' : 'Make paint solid', (draft) => {
+      const element = draft.elements.find((candidate) => candidate.id === selectedElement.id);
+      const effect = element?.effects.find((candidate) => candidate.id === effectId);
+      if (!effect || !('paint' in effect) || effect.paint.kind === kind) return;
+      effect.paint = kind === 'gradient' ? toGradientPaint(effect.paint) : toSolidPaint(effect.paint);
+    });
+  };
+
+  const updateEffectGradient = (
+    effectId: string,
+    label: string,
+    change: (gradient: Gradient) => Gradient | void,
+    mergeKey?: string,
+  ) => {
+    if (!selectedElement) return;
+    updateDocument(label, (draft) => {
+      const element = draft.elements.find((candidate) => candidate.id === selectedElement.id);
+      const effect = element?.effects.find((candidate) => candidate.id === effectId);
+      if (!effect || !('paint' in effect) || effect.paint.kind !== 'gradient') return;
+      effect.paint.gradient = change(effect.paint.gradient) ?? effect.paint.gradient;
+    }, mergeKey);
+  };
+
+  const updateGradientStopColor = (effectId: string, stopIndex: number, hex: string) => {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return;
+    updateEffectGradient(effectId, 'Change gradient stop', (gradient) => {
+      const stop = gradient.stops[stopIndex];
+      if (stop) stop.color = [rgb[0], rgb[1], rgb[2], stop.color[3]];
+    }, `gradient-stop:${effectId}:${stopIndex}`);
+  };
+
+  const updateGradientAngle = (effectId: string, angle: number) => {
+    updateEffectGradient(effectId, 'Turn gradient', (gradient) => { gradient.angle = angle; },
+      `gradient-angle:${effectId}`);
+  };
+
+  const updateGradientType = (effectId: string, type: Gradient['type']) => {
+    updateEffectGradient(effectId, 'Change gradient shape', (gradient) => { gradient.type = type; });
+  };
+
+  const addGradientStop = (effectId: string) => {
+    updateEffectGradient(effectId, 'Add gradient stop', withAddedStop);
+  };
+
+  const removeGradientStop = (effectId: string) => {
+    updateEffectGradient(effectId, 'Remove gradient stop', withRemovedStop);
   };
 
   const handleExport = async () => {
@@ -1423,9 +1487,6 @@ type ColorTarget = 'paint' | 'color' | 'highlight' | 'shadow';
 
 function EffectColorControls({ effect, onChange }: { effect: Effect; onChange: (target: ColorTarget, hex: string) => void }) {
   const swatches: Array<{ target: ColorTarget; label: string; value: string }> = [];
-  if ('paint' in effect && effect.paint.kind === 'solid') {
-    swatches.push({ target: 'paint', label: 'Color', value: rgbaToHex(effect.paint.color) });
-  }
   if ('color' in effect) {
     swatches.push({ target: 'color', label: 'Color', value: rgbaToHex(effect.color) });
   }
@@ -1448,6 +1509,129 @@ function EffectColorControls({ effect, onChange }: { effect: Effect; onChange: (
         </label>
       ))}
     </span>
+  );
+}
+
+/**
+ * The paint block of an effect row: what the effect draws with, as opposed to what colour a
+ * single-colour effect is.
+ *
+ * Any paint-bearing effect can switch between a solid and a gradient here, which is what makes a
+ * gradient authorable at all -- before this, gradients only ever arrived via presets. The other
+ * paint kinds (ramp, matcap, texture) have no authoring UI, so the switch shows them truthfully
+ * and converts away from them on the first pick.
+ */
+function EffectPaintControls({ effect, onKindChange, onSolidChange, onStopChange, onAddStop, onRemoveStop, onTypeChange, onAngleChange }: {
+  effect: Effect;
+  onKindChange: (kind: 'solid' | 'gradient') => void;
+  onSolidChange: (hex: string) => void;
+  onStopChange: (stopIndex: number, hex: string) => void;
+  onAddStop: () => void;
+  onRemoveStop: () => void;
+  onTypeChange: (type: Gradient['type']) => void;
+  onAngleChange: (angle: number) => void;
+}) {
+  if (!('paint' in effect)) return null;
+  const paint = effect.paint;
+  const name = effectLabel(effect.kind);
+  return (
+    <div className="effect-paint-controls">
+      <span className="effect-color-controls">
+        <label title={`${name} paint style`}>
+          <span>Paint</span>
+          <select
+            className="jelly-select paint-kind-select"
+            value={paint.kind}
+            aria-label={`${name} paint style`}
+            onChange={(event) => {
+              const kind = event.target.value;
+              if (kind === 'solid' || kind === 'gradient') onKindChange(kind);
+            }}
+          >
+            <option value="solid">Solid</option>
+            <option value="gradient">Gradient</option>
+            {paint.kind !== 'solid' && paint.kind !== 'gradient' && (
+              <option value={paint.kind}>{paint.kind.replace(/^./, (character) => character.toUpperCase())}</option>
+            )}
+          </select>
+        </label>
+        {paint.kind === 'solid' && (
+          <label title={`${name} color`}>
+            <span>Color</span>
+            <input
+              type="color"
+              value={rgbaToHex(paint.color)}
+              aria-label={`${name} color`}
+              onInput={(event) => onSolidChange(event.currentTarget.value)}
+            />
+          </label>
+        )}
+      </span>
+      {paint.kind === 'gradient' && (
+        <>
+          <span className="effect-color-controls gradient-stops">
+            <span className="paint-row-name">Stops</span>
+            {paint.gradient.stops.map((stop, stopIndex) => (
+              <input
+                key={stopIndex}
+                type="color"
+                value={rgbaToHex(stop.color)}
+                aria-label={`${name} gradient stop ${stopIndex + 1}`}
+                title={`Stop ${stopIndex + 1}`}
+                onInput={(event) => onStopChange(stopIndex, event.currentTarget.value)}
+              />
+            ))}
+            <button
+              type="button"
+              onClick={onRemoveStop}
+              disabled={paint.gradient.stops.length <= MIN_GRADIENT_STOPS}
+              aria-label={`Remove ${name.toLowerCase()} gradient stop`}
+            >−</button>
+            <button
+              type="button"
+              onClick={onAddStop}
+              disabled={paint.gradient.stops.length >= MAX_GRADIENT_STOPS}
+              aria-label={`Add ${name.toLowerCase()} gradient stop`}
+            >+</button>
+          </span>
+          <span className="effect-color-controls">
+            <label title="Gradient shape">
+              <span>Shape</span>
+              <select
+                className="jelly-select paint-kind-select"
+                value={paint.gradient.type}
+                aria-label={`${name} gradient shape`}
+                onChange={(event) => onTypeChange(event.target.value as Gradient['type'])}
+              >
+                <option value="linear">Linear</option>
+                <option value="reflected">Mirror</option>
+                <option value="radial">Radial</option>
+                <option value="angular">Sweep</option>
+                {/* Diamond can arrive in a shared document but currently draws as linear, so it
+                    is shown when present rather than offered. */}
+                {paint.gradient.type === 'diamond' && <option value="diamond">Diamond</option>}
+              </select>
+            </label>
+          </span>
+          {/* A radial gradient has no axis to turn, so no angle is advertised for it. */}
+          {paint.gradient.type !== 'radial' && (
+            <label className="effect-quick-control">
+              <span>Angle</span>
+              <input
+                className="goo-range"
+                type="range"
+                min="0"
+                max="360"
+                step="1"
+                value={paint.gradient.angle}
+                onChange={(event) => onAngleChange(Number(event.target.value))}
+              />
+              <output>{Math.round(paint.gradient.angle)}</output>
+            </label>
+          )}
+        </>
+      )}
+    </div>
   );
 }
 
