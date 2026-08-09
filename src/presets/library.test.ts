@@ -15,7 +15,7 @@ function gradientFillPaint(presetId: string): Gradient | undefined {
 }
 
 /** Bump deliberately when a style is added or removed, so neither happens by accident. */
-const PRESET_COUNT = 121;
+const PRESET_COUNT = 122;
 
 describe('preset library', () => {
   it('ships every named style across the core and themed categories', () => {
@@ -162,6 +162,28 @@ describe('preset library', () => {
       const gaps = offsets.slice(1).map((offset, index) => offset - offsets[index]!);
       expect(new Set(gaps.map((gap) => gap.toFixed(3))).size, id).toBeGreaterThan(1);
     }
+  });
+
+  it('melts Meltorama II smoothly and drops both Meltorama plates below the letter', () => {
+    // The sibling is the same steel with the bands relaxed: few stops, no bright horizon, and no
+    // keyline, so the pink rim sits directly against the face.
+    expect(gradientFillPaint('meltorama-ii')?.stops).toHaveLength(4);
+    for (const id of ['meltorama', 'meltorama-ii']) {
+      const preset = BUILT_IN_PRESETS.find((candidate) => candidate.id === id);
+      const plate = preset?.apply.effects.find((effect) => effect.kind === 'dropShadow');
+      const depth = preset?.apply.effects.find((effect) => effect.kind === 'extrude');
+      // Shadow angles point at the light source (90..270 casts downward or across, never up-left),
+      // and extrude angles point where the depth goes (near 90 is straight down). Both presets were
+      // once authored with the conventions inverted, which hung the plate and the depth above the
+      // word instead of below it.
+      expect(plate?.kind === 'dropShadow' && plate.useGlobalLight, id).toBe(false);
+      expect(plate?.kind === 'dropShadow' && plate.angle, id).toBeGreaterThanOrEqual(90);
+      expect(plate?.kind === 'dropShadow' && plate.angle, id).toBeLessThanOrEqual(270);
+      expect(depth?.kind === 'extrude' && depth.angle, id).toBeGreaterThanOrEqual(45);
+      expect(depth?.kind === 'extrude' && depth.angle, id).toBeLessThanOrEqual(135);
+    }
+    expect(BUILT_IN_PRESETS.find((candidate) => candidate.id === 'meltorama-ii')
+      ?.apply.effects.some((effect) => effect.kind === 'stroke')).toBe(false);
   });
 
   it('shows every drawable gradient geometry somewhere on the metal shelf', () => {

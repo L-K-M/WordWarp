@@ -457,8 +457,10 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('meltorama', 'Meltorama', 'metallic', ['#eef2fc', '#8890b4', '#2b3050', '#e0447e'], [
     // The magenta plate is registration drift rather than light: hard-edged, on its own angle,
     // under everything -- which is what keeps the steel face reading as steel and not as pink-lit.
-    vhsShadow('#e0447e', 315),
-    extrude(14, '#141a30', 270),
+    // Shadow angles point at the light, so 135 casts the plate down-right; extrude angles point
+    // where the depth goes, so 90 drops it straight below.
+    vhsShadow('#e0447e', 135),
+    extrude(14, '#141a30', 90),
     fill(bandedGradient([
       [0, '#2b3050'], [0.1, '#c9d2ee'], [0.3, '#eef2fc'], [0.55, '#8890b4'],
       [0.72, '#4d5478'], [0.88, '#7a83ac'], [1, '#c3cbe8'],
@@ -466,6 +468,17 @@ export const BUILT_IN_PRESETS: Preset[] = [
     bevel(6, 'inner', 130),
     stroke(2, '#10142a'),
   ], none(), ['metal', 'steel', 'banded', 'airbrush', 'poster']),
+  definePreset('meltorama-ii', 'Meltorama II', 'metallic', ['#e8ecf8', '#aab1cf', '#565c85', '#d6428e'], [
+    // The same steel as Meltorama with the bands relaxed into one slow melt: pale crown fading
+    // through slate into a blue-violet base, no bright horizon anywhere. The pink rides the top
+    // edge as a rim rather than trailing below, and the depth is a plain dark drop.
+    vhsShadow('#d6428e', 205),
+    extrude(10, '#0c102b', 85),
+    fill(bandedGradient([
+      [0, '#e8ecf8'], [0.28, '#a6adcc'], [0.62, '#5d6389'], [1, '#3d4166'],
+    ])),
+    bevel(4, 'inner', 110),
+  ], none(), ['metal', 'steel', 'satin', 'melt', 'poster']),
   definePreset('airbrush-chrome', 'Airbrush Chrome', 'metallic', ['#dff3ff', '#8fc7ee', '#5c3a1e', '#e8c390'], [
     // The canonical logo chrome: sky above, desert below, meeting on a horizon of two stops
     // nearly touching. Everything else on the letter exists to sell that reflection.
