@@ -100,8 +100,16 @@ test('authors a gradient fill in the inspector and exports the sweep', async ({ 
   // The floor is two stops; the editor must refuse to hollow a gradient out entirely.
   await expect(removeStop).toBeDisabled();
 
-  await page.getByLabel('Fill gradient stop 1').fill('#ff0000');
-  await page.getByLabel('Fill gradient stop 2').fill('#0000ff');
+  await page.getByLabel('Fill gradient stop 1', { exact: true }).fill('#ff0000');
+  await page.getByLabel('Fill gradient stop 2', { exact: true }).fill('#0000ff');
+
+  // The waist of a metal profile is placed, not implied: every stop has a position handle that
+  // answers the keyboard, so complex bright-dark-bright runs are authorable without a pointer.
+  const handle = page.getByRole('slider', { name: 'Fill gradient stop 2 position' });
+  await handle.focus();
+  const before = Number(await handle.getAttribute('aria-valuenow'));
+  for (let press = 0; press < 5; press += 1) await page.keyboard.press('ArrowRight');
+  await expect(handle).toHaveAttribute('aria-valuenow', String(before + 5));
   await expect(page.locator('.render-error')).toHaveCount(0);
 
   await page.getByLabel('Export resolution').selectOption('2');

@@ -16,6 +16,7 @@ import {
   type TextElement, type Transform,
 } from '../model/types';
 import { stampAspect, stampOutline } from '../geometry/stamps';
+import { rgbaToCss } from '../render/color';
 import { startAutosave, type AutosaveController } from '../persistence/autosave';
 import { loadActiveDocument, saveDocument } from '../persistence/database';
 import { applyPresetToElement, BUILT_IN_PRESETS } from '../presets/library';
@@ -571,6 +572,7 @@ export function App() {
                 onKindChange={(kind) => setEffectPaintKind(effect.id, kind)}
                 onSolidChange={(hex) => updateEffectColor(effect.id, 'paint', hex)}
                 onStopChange={(stopIndex, hex) => updateGradientStopColor(effect.id, stopIndex, hex)}
+                onStopOffsetChange={(stopIndex, offset) => updateGradientStopOffset(effect.id, stopIndex, offset)}
                 onAddStop={() => addGradientStop(effect.id)}
                 onRemoveStop={() => removeGradientStop(effect.id)}
                 onTypeChange={(type) => updateGradientType(effect.id, type)}
@@ -707,6 +709,18 @@ export function App() {
       const stop = gradient.stops[stopIndex];
       if (stop) stop.color = [rgb[0], rgb[1], rgb[2], stop.color[3]];
     }, `gradient-stop:${effectId}:${stopIndex}`);
+  };
+
+  const updateGradientStopOffset = (effectId: string, stopIndex: number, offset: number) => {
+    updateEffectGradient(effectId, 'Move gradient stop', (gradient) => {
+      const stop = gradient.stops[stopIndex];
+      if (!stop) return;
+      // Neighbours bound the move, inclusively: stops may meet -- two stops sharing an offset are
+      // the model's hard edge -- but never pass each other, since the schema requires order.
+      const low = gradient.stops[stopIndex - 1]?.offset ?? 0;
+      const high = gradient.stops[stopIndex + 1]?.offset ?? 1;
+      stop.offset = Math.min(high, Math.max(low, offset));
+    }, `gradient-offset:${effectId}:${stopIndex}`);
   };
 
   const updateGradientAngle = (effectId: string, angle: number) => {
@@ -1521,11 +1535,12 @@ function EffectColorControls({ effect, onChange }: { effect: Effect; onChange: (
  * paint kinds (ramp, matcap, texture) have no authoring UI, so the switch shows them truthfully
  * and converts away from them on the first pick.
  */
-function EffectPaintControls({ effect, onKindChange, onSolidChange, onStopChange, onAddStop, onRemoveStop, onTypeChange, onAngleChange }: {
+function EffectPaintControls({ effect, onKindChange, onSolidChange, onStopChange, onStopOffsetChange, onAddStop, onRemoveStop, onTypeChange, onAngleChange }: {
   effect: Effect;
   onKindChange: (kind: 'solid' | 'gradient') => void;
   onSolidChange: (hex: string) => void;
   onStopChange: (stopIndex: number, hex: string) => void;
+  onStopOffsetChange: (stopIndex: number, offset: number) => void;
   onAddStop: () => void;
   onRemoveStop: () => void;
   onTypeChange: (type: Gradient['type']) => void;
@@ -1569,6 +1584,7 @@ function EffectPaintControls({ effect, onKindChange, onSolidChange, onStopChange
       </span>
       {paint.kind === 'gradient' && (
         <>
+          <GradientStopBar name={name} gradient={paint.gradient} onStopOffsetChange={onStopOffsetChange} />
           <span className="effect-color-controls gradient-stops">
             <span className="paint-row-name">Stops</span>
             {paint.gradient.stops.map((stop, stopIndex) => (
@@ -1631,6 +1647,66 @@ function EffectPaintControls({ effect, onKindChange, onSolidChange, onStopChange
           )}
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * The gradient run with a draggable handle per stop.
+ *
+ * Colour alone cannot author a metal: the polished-bar profile is bright-dark-bright with the
+ * waist placed, and *where* a stop sits is as much of the design as what colour it is. Handles
+ * drag along the bar and answer arrow keys, and neighbours bound every move inclusively -- stops
+ * may meet, which is the model's hard edge, but never pass each other.
+ */
+function GradientStopBar({ name, gradient, onStopOffsetChange }: {
+  name: string;
+  gradient: Gradient;
+  onStopOffsetChange: (stopIndex: number, offset: number) => void;
+}) {
+  const barRef = useRef<HTMLDivElement>(null);
+  const run = gradient.stops
+    .map((stop) => `${rgbaToCss(stop.color)} ${(stop.offset * 100).toFixed(1)}%`)
+    .join(', ');
+  const moveTo = (stopIndex: number, clientX: number) => {
+    const bar = barRef.current;
+    if (!bar) return;
+    const bounds = bar.getBoundingClientRect();
+    if (bounds.width === 0) return;
+    onStopOffsetChange(stopIndex, (clientX - bounds.left) / bounds.width);
+  };
+  return (
+    <div ref={barRef} className="gradient-stop-bar" style={{ background: `linear-gradient(90deg, ${run})` }}>
+      {gradient.stops.map((stop, stopIndex) => (
+        <button
+          key={stopIndex}
+          type="button"
+          className="gradient-stop-handle"
+          style={{ left: `${stop.offset * 100}%` }}
+          role="slider"
+          aria-label={`${name} gradient stop ${stopIndex + 1} position`}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(stop.offset * 100)}
+          onPointerDown={(event) => {
+            event.preventDefault();
+            event.currentTarget.setPointerCapture(event.pointerId);
+          }}
+          onPointerMove={(event) => {
+            if (event.currentTarget.hasPointerCapture(event.pointerId)) moveTo(stopIndex, event.clientX);
+          }}
+          onKeyDown={(event) => {
+            const step = event.shiftKey ? 0.05 : 0.01;
+            if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
+              event.preventDefault();
+              onStopOffsetChange(stopIndex, stop.offset - step);
+            } else if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
+              event.preventDefault();
+              onStopOffsetChange(stopIndex, stop.offset + step);
+            }
+          }}
+        />
+      ))}
     </div>
   );
 }

@@ -15,7 +15,7 @@ function gradientFillPaint(presetId: string): Gradient | undefined {
 }
 
 /** Bump deliberately when a style is added or removed, so neither happens by accident. */
-const PRESET_COUNT = 121;
+const PRESET_COUNT = 123;
 
 describe('preset library', () => {
   it('ships every named style across the core and themed categories', () => {
@@ -162,6 +162,41 @@ describe('preset library', () => {
       const gaps = offsets.slice(1).map((offset, index) => offset - offsets[index]!);
       expect(new Set(gaps.map((gap) => gap.toFixed(3))).size, id).toBeGreaterThan(1);
     }
+  });
+
+  it('gives every polished metal a bright-dark-bright luminance V', () => {
+    // A polished bar reflects sky at both ends and the dark room at its waist, so the profile is
+    // a V: a fill that merely slopes from light to dark reads as shading, not as metal.
+    for (const id of ['meltorama', 'meltorama-ii', 'molten-gold', 'showroom-chrome']) {
+      const stops = gradientFillPaint(id)?.stops ?? [];
+      const luma = (index: number) => {
+        const [red, green, blue] = stops[index]!.color;
+        return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+      };
+      const interior = stops.slice(1, -1).map((_, offset) => luma(offset + 1));
+      expect(stops.length, id).toBeGreaterThanOrEqual(5);
+      expect(luma(0), id).toBeGreaterThan(Math.min(...interior) + 0.3);
+      expect(luma(stops.length - 1), id).toBeGreaterThan(Math.min(...interior) + 0.3);
+    }
+  });
+
+  it('melts Meltorama II smoothly and drops both Meltorama plates below the letter', () => {
+    for (const id of ['meltorama', 'meltorama-ii']) {
+      const preset = BUILT_IN_PRESETS.find((candidate) => candidate.id === id);
+      const plate = preset?.apply.effects.find((effect) => effect.kind === 'dropShadow');
+      const depth = preset?.apply.effects.find((effect) => effect.kind === 'extrude');
+      // Shadow angles point at the light source (90..270 casts downward or across, never up-left),
+      // and extrude angles point where the depth goes (near 90 is straight down). Both presets were
+      // once authored with the conventions inverted, which hung the plate and the depth above the
+      // word instead of below it.
+      expect(plate?.kind === 'dropShadow' && plate.useGlobalLight, id).toBe(false);
+      expect(plate?.kind === 'dropShadow' && plate.angle, id).toBeGreaterThanOrEqual(90);
+      expect(plate?.kind === 'dropShadow' && plate.angle, id).toBeLessThanOrEqual(270);
+      expect(depth?.kind === 'extrude' && depth.angle, id).toBeGreaterThanOrEqual(45);
+      expect(depth?.kind === 'extrude' && depth.angle, id).toBeLessThanOrEqual(135);
+    }
+    expect(BUILT_IN_PRESETS.find((candidate) => candidate.id === 'meltorama-ii')
+      ?.apply.effects.some((effect) => effect.kind === 'stroke')).toBe(false);
   });
 
   it('shows every drawable gradient geometry somewhere on the metal shelf', () => {
