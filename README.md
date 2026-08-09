@@ -1,15 +1,19 @@
 # WordWarp
 
-**Latest release:** v<!-- version -->0.1.0<!-- /version -->
+<img src="./src/assets/brand/wordwarp-logo.png" alt="Word Warp — Your Gooey Type Lab" width="640" />
+
+**Your Gooey Type Lab** · **Latest release:** v<!-- version -->0.1.0<!-- /version -->
 
 WordWarp is a browser-based studio for warped, metallic, dimensional text with alpha-correct image
-export. The product and rendering decisions are documented in [`PLAN.md`](./PLAN.md).
+export. The logo above is a WordWarp export: two text layers, a gradient fill, a glow and a wave
+warp, straight out of the app's own pipeline. The product and rendering decisions are documented
+in [`PLAN.md`](./PLAN.md).
 
 ## Features
 
 - 41 envelope warp presets plus path, mesh, and perspective mapping primitives
 - Editable fill, stroke, bevel, glow, shadow, extrusion, texture, reflection, and post effects
-- 113 built-in styles and 24 Office-compatible color ramps
+- 125 built-in styles and 24 Office-compatible color ramps
 - 65 procedural decoration stamps, themed from Memphis marks to pumpkins and rockets, taking the same effect
   stack and styles as text
 - Transparent or solid canvas background

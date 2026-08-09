@@ -17,6 +17,7 @@ import {
 } from '../model/types';
 import { stampAspect, stampOutline } from '../geometry/stamps';
 import { rgbaToCss } from '../render/color';
+import brandLogo from '../assets/brand/wordwarp-logo.png';
 import { startAutosave, type AutosaveController } from '../persistence/autosave';
 import { loadActiveDocument, saveDocument } from '../persistence/database';
 import { applyPresetToElement, BUILT_IN_PRESETS } from '../presets/library';
@@ -866,14 +867,13 @@ export function App() {
         <button
           className="brand"
           type="button"
-          aria-label="WordWarp GOO TYPE LAB"
+          aria-label="WordWarp Your Gooey Type Lab"
           onClick={() => pushToast('WordWarp goo is fresh and wobbly')}
         >
-          <span className="brand-mark" aria-hidden="true">W</span>
-          <span className="brand-word">
-            <strong>WordWarp</strong>
-            <small>GOO TYPE LAB</small>
-          </span>
+          {/* The lockup is itself a WordWarp export -- warped gradient text out of the app's own
+              pipeline -- so the logo can never show an effect the product cannot make. The words
+              live in the button's label; at header size the baked-in claim is decorative. */}
+          <img className="brand-logo" src={brandLogo} alt="" />
           <span className="beads" aria-hidden="true" />
         </button>
 
