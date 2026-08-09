@@ -15,7 +15,7 @@ function gradientFillPaint(presetId: string): Gradient | undefined {
 }
 
 /** Bump deliberately when a style is added or removed, so neither happens by accident. */
-const PRESET_COUNT = 123;
+const PRESET_COUNT = 125;
 
 describe('preset library', () => {
   it('ships every named style across the core and themed categories', () => {
@@ -167,7 +167,7 @@ describe('preset library', () => {
   it('gives every polished metal a bright-dark-bright luminance V', () => {
     // A polished bar reflects sky at both ends and the dark room at its waist, so the profile is
     // a V: a fill that merely slopes from light to dark reads as shading, not as metal.
-    for (const id of ['meltorama', 'meltorama-ii', 'molten-gold', 'showroom-chrome']) {
+    for (const id of ['meltorama', 'meltorama-ii', 'molten-gold', 'showroom-chrome', 'trophy-gold', 'gel-gloss']) {
       const stops = gradientFillPaint(id)?.stops ?? [];
       const luma = (index: number) => {
         const [red, green, blue] = stops[index]!.color;

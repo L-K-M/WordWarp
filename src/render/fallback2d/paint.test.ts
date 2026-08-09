@@ -13,6 +13,8 @@ import type { TextContext } from '../../text/layout';
 class StubGradient {
   stops: Array<{ offset: number; color: string }> = [];
 
+  constructor(public args: number[]) {}
+
   addColorStop(offset: number, color: string): void {
     this.stops.push({ offset, color });
   }
@@ -20,8 +22,8 @@ class StubGradient {
 
 function stubContext(): { context: TextContext; created: StubGradient[] } {
   const created: StubGradient[] = [];
-  const make = () => {
-    const gradient = new StubGradient();
+  const make = (...args: number[]) => {
+    const gradient = new StubGradient(args);
     created.push(gradient);
     return gradient;
   };
@@ -55,6 +57,21 @@ function gradientPaint(gradient: Partial<Gradient>): Paint {
     },
   };
 }
+
+describe('createPaintStyle gradient geometry', () => {
+  it('spans a linear run across the bounds projection, not the diagonal', () => {
+    const wide: Bounds = { x: 0, y: 0, width: 1000, height: 200 };
+    const { context, created } = stubContext();
+    // Vertical on a wide word: the run must cover exactly the height, so a bright-dark-bright
+    // metal shows both bright ends on the glyphs instead of cropping them past the text box.
+    const rounded = (gradient: StubGradient) => gradient.args.map((value) => Math.round(value) || 0);
+    createPaintStyle(context, gradientPaint({ angle: 180 }), wide);
+    expect(rounded(created[0]!)).toEqual([500, 0, 500, 200]);
+
+    createPaintStyle(context, gradientPaint({ angle: 90 }), wide);
+    expect(rounded(created[1]!)).toEqual([0, 100, 1000, 100]);
+  });
+});
 
 describe('createPaintStyle gradient sampling', () => {
   it('keeps an evenly spaced sRGB gradient on its own stops', () => {
