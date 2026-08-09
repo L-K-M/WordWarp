@@ -30,7 +30,7 @@ test('picks a bundled display font and still exports a PNG', async ({ page }, te
 test('edits text, applies a preset, and exports transparent PNG', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium');
   await page.goto('./');
-  await expect(page.getByRole('button', { name: 'WordWarp GOO TYPE LAB' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'WordWarp Your Gooey Type Lab' })).toBeVisible();
 
   const content = page.getByLabel('Content');
   await content.fill('Chrome test');
@@ -58,7 +58,7 @@ test('places a stamp, styles it from the rack, and exports it over a background'
   test.skip(testInfo.project.name !== 'chromium');
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('./');
-  await expect(page.getByRole('button', { name: 'WordWarp GOO TYPE LAB' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'WordWarp Your Gooey Type Lab' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Stamp', exact: true }).click();
   await page.locator('.stamp-choice', { hasText: /^Bolt$/ }).click();
@@ -98,7 +98,7 @@ test('groups the stamp menu by theme and places a pierced figure at its own prop
   test.skip(testInfo.project.name !== 'chromium');
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('./');
-  await expect(page.getByRole('button', { name: 'WordWarp GOO TYPE LAB' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'WordWarp Your Gooey Type Lab' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Stamp', exact: true }).click();
   const menu = page.locator('#stamp-menu');
@@ -235,7 +235,7 @@ test('resizes, slants and rotates the selection from its handles', async ({ page
   test.skip(testInfo.project.name !== 'chromium');
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('./');
-  await expect(page.getByRole('button', { name: 'WordWarp GOO TYPE LAB' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'WordWarp Your Gooey Type Lab' })).toBeVisible();
 
   // Eight resize handles, one rotate knob and the two slants -- one per degree of freedom the
   // transform has, all of them on screen at once rather than behind a mode.
@@ -567,7 +567,7 @@ test('loads from the production service worker while offline', async ({ page, co
   await context.setOffline(true);
   try {
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('button', { name: 'WordWarp GOO TYPE LAB' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'WordWarp Your Gooey Type Lab' })).toBeVisible();
   } finally {
     await context.setOffline(false);
   }
@@ -610,7 +610,7 @@ test('style library scrolls to every preset and previews the real render', async
   test.skip(testInfo.project.name !== 'chromium');
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('./');
-  await expect(page.getByRole('button', { name: 'WordWarp GOO TYPE LAB' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'WordWarp Your Gooey Type Lab' })).toBeVisible();
 
   const panel = page.locator('.preset-panel');
   const cards = page.locator('.preset-card');
