@@ -28,7 +28,13 @@ export function createPaintStyle(context: TextContext, paint: Paint, bounds: Bou
     const radians = ((gradient.angle - 90) * Math.PI) / 180;
     const centerX = bounds.x + bounds.width / 2;
     const centerY = bounds.y + bounds.height / 2;
-    const radius = Math.hypot(bounds.width, bounds.height) * 0.5 * gradient.scale;
+    // The run spans the bounds' projection onto the gradient axis -- a vertical gradient runs
+    // exactly the height, a horizontal one exactly the width -- so the first and last stops land
+    // on the shape's edges whatever its proportions. The old diagonal span stretched a vertical
+    // run on a wide word far past the glyphs, which left the letters sampling only the middle of
+    // the profile: a bright-dark-bright metal arrived with both bright ends cropped off.
+    const radius = (Math.abs(Math.cos(radians)) * bounds.width + Math.abs(Math.sin(radians)) * bounds.height)
+      * 0.5 * gradient.scale;
     const dx = Math.cos(radians) * radius;
     const dy = Math.sin(radians) * radius;
     const canvasGradient = context.createLinearGradient(centerX - dx, centerY - dy, centerX + dx, centerY + dy);

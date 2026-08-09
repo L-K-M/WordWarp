@@ -497,6 +497,19 @@ export const BUILT_IN_PRESETS: Preset[] = [
     bevel(7, 'inner', 150),
     stroke(2, '#878d95'),
   ], none(), ['chrome', 'gloss', 'showroom', 'badge', 'silver']),
+  definePreset('trophy-gold', 'Trophy Gold', 'metallic', ['#fdf6d8', '#d4a93f', '#7a5210', '#f0d070'], [
+    // The studio-logo gold -- the shield, the channel initial, the game crest. Same luminance V
+    // as the chromes, in metal-leaf yellows, with a hard chisel doing the cut-serif facets those
+    // marks are stamped with and a deep umber keyline holding it against any ground.
+    shadow('#1a1206', 10, 8, 0.6),
+    fill(bandedGradient([
+      [0, '#fdf6d8'], [0.16, '#f7e28a'], [0.42, '#d4a93f'], [0.5, '#7a5210'],
+      [0.56, '#c08a26'], [0.78, '#f0d070'], [1, '#fdf0b8'],
+    ])),
+    chiselBevel(9, 180),
+    innerShadow('#4a3006', 3, 6, 0.4),
+    stroke(2.5, '#5c3d0c'),
+  ], none(), ['trophy', 'gold', 'logo', 'badge', 'emblem']),
   definePreset('airbrush-chrome', 'Airbrush Chrome', 'metallic', ['#dff3ff', '#8fc7ee', '#5c3a1e', '#e8c390'], [
     // The canonical logo chrome: sky above, desert below, meeting on a horizon of two stops
     // nearly touching. Everything else on the letter exists to sell that reflection.
@@ -600,6 +613,19 @@ export const BUILT_IN_PRESETS: Preset[] = [
     stroke(1.5, '#4a6a85'),
     reflection(0.4, 0.25),
   ], none(), ['aluminium', 'aero', 'banded', 'gloss']),
+  definePreset('gel-gloss', 'Gel Gloss', 'y2k', ['#e8fdff', '#4fc4da', '#0d8ba6', '#d6fbff'], [
+    // The two-zone button gloss: a pale tint washing down the top half, a hard highlight line at
+    // the equator, the saturated body below it, and the rim bouncing bright again at the bottom
+    // edge. The 0.49/0.51 pair is the equator; the pillow bevel is the swell that makes the line
+    // read as a reflection on a curved surface rather than a stripe.
+    shadow('#063540', 8, 12, 0.45),
+    fill(bandedGradient([
+      [0, '#e8fdff'], [0.22, '#9fe7f2'], [0.49, '#4fc4da'], [0.51, '#0d8ba6'],
+      [0.75, '#0fa9c4'], [1, '#d6fbff'],
+    ])),
+    bevel(14, 'pillow', 170),
+    innerGlow('#ffffff', 8, 0.5),
+  ], none(), ['gel', 'gloss', 'button', 'aqua', 'two-tone']),
   definePreset('bubble-inflate', 'Bubble Inflate', 'y2k', ['#ff9ec7', '#ff5fa2', '#d61f69', '#ffffff'], [
     shadow('#8f174c', 8, 12, 0.45), fill(gradient(['#ffffff', '#ff9ec7', '#d61f69'])), bevel(24, 'pillow', 190), innerGlow('#ffffff', 12, 0.65),
   ], warp('textInflate', 0.88, 0.7), ['bubble', 'pink']),
