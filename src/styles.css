@@ -441,20 +441,6 @@ button:disabled {
   transition: transform 140ms ease;
 }
 
-.beads {
-  width: 74px;
-  height: 22px;
-  margin-left: 16px;
-  background-image:
-    radial-gradient(circle 4.5px at 8px 12px, #ff5fb0 90%, transparent 100%),
-    radial-gradient(circle 4.5px at 24px 7px, #ffd23f 90%, transparent 100%),
-    radial-gradient(circle 4.5px at 40px 12px, #4fdcf2 90%, transparent 100%),
-    radial-gradient(circle 4.5px at 56px 7px, #8fe34f 90%, transparent 100%),
-    radial-gradient(circle 4.5px at 72px 12px, #a06bff 90%, transparent 100%);
-  background-repeat: no-repeat;
-  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 35%));
-}
-
 .history-actions,
 .topbar-actions,
 .tool-group,
@@ -1818,10 +1804,6 @@ button:disabled {
 
   .topbar-actions .panel-toggle {
     display: inline-flex;
-  }
-
-  .beads {
-    display: none;
   }
 
   .workspace {

@@ -5,9 +5,7 @@
 **Your Gooey Type Lab** · **Latest release:** v<!-- version -->0.1.0<!-- /version -->
 
 WordWarp is a browser-based studio for warped, metallic, dimensional text with alpha-correct image
-export. The logo above is a WordWarp export: two text layers, a gradient fill, a glow and a wave
-warp, straight out of the app's own pipeline. The product and rendering decisions are documented
-in [`PLAN.md`](./PLAN.md).
+export. The product and rendering decisions are documented in [`PLAN.md`](./PLAN.md).
 
 ## Features
 

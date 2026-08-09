@@ -870,11 +870,9 @@ export function App() {
           aria-label="WordWarp Your Gooey Type Lab"
           onClick={() => pushToast('WordWarp goo is fresh and wobbly')}
         >
-          {/* The lockup is itself a WordWarp export -- warped gradient text out of the app's own
-              pipeline -- so the logo can never show an effect the product cannot make. The words
-              live in the button's label; at header size the baked-in claim is decorative. */}
+          {/* The official lockup, byte-identical to media-sources/logo.png. The words live in the
+              button's label; at header size the baked-in claim is decorative. */}
           <img className="brand-logo" src={brandLogo} alt="" />
-          <span className="beads" aria-hidden="true" />
         </button>
 
         <div className="history-actions" aria-label="History controls">
