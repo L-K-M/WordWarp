@@ -1,6 +1,6 @@
 <img src="./src/assets/brand/wordwarp-logo.png" alt="Word Warp — Your Gooey Type Lab" width="640" />
 
-**Latest release:** v<!-- version -->0.1.0<!-- /version -->
+**Latest release:** v<!-- version -->0.1.0<!-- /version --> · [Download](https://github.com/L-K-M/WordWarp/releases/latest)
 
 WordWarp is a browser-based studio for warped, metallic, dimensional text with alpha-correct image
 export. The product and rendering decisions are documented in [`PLAN.md`](./PLAN.md).
