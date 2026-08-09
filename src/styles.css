@@ -432,11 +432,12 @@ button:disabled {
   transform: rotate(-2deg) scale(1.04);
 }
 
-/* The lockup carries its own glow and shadows, so the header adds nothing but a size: tall
-   enough for the wordmark to read, with the baked-in claim riding along as decoration. */
+/* The lockup carries its own glow and shadows, so the header adds nothing but a size: the asset
+   is trimmed to its visible pixels, so the height here is the height the artwork stands in the
+   88px header row. */
 .brand-logo {
   display: block;
-  height: 58px;
+  height: 76px;
   width: auto;
   transition: transform 140ms ease;
 }
@@ -827,15 +828,6 @@ button:disabled {
   gap: 12px;
   padding: 0 16px;
   border-bottom: 2px dashed rgb(23 183 189 / 35%);
-}
-
-.tool-group button.active {
-  filter: brightness(1.18) saturate(1.25);
-  box-shadow:
-    inset 0 2px 4px rgb(255 255 255 / 45%),
-    inset 0 -6px 10px rgb(0 0 0 / 28%),
-    0 5px 0 var(--orb-edge),
-    0 0 16px rgb(79 220 242 / 55%);
 }
 
 /* The readout is the one part of the toolbar that may shrink. Without `min-width: 0` a flex item
@@ -1856,7 +1848,7 @@ button:disabled {
   /* The lockup is wide, so at phone width it shrinks rather than collapsing to a square mark --
      there is no square crop of a wordmark that stays the wordmark. */
   .brand-logo {
-    height: 38px;
+    height: 52px;
   }
 
   .topbar-actions button {
