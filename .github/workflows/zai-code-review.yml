@@ -44,7 +44,7 @@ jobs:
     steps:
       - name: Z.ai Code Review
         if: ${{ env.ZAI_API_KEY != '' }}
-        uses: L-K-M/zai-code-review@7d0ce7b0c226c70eed194615130fa5b632ba4798
+        uses: L-K-M/zai-code-review@de35f1ea45de6cb7e59ea83c69503340f8c4906e
         with:
           ZAI_API_KEY: ${{ env.ZAI_API_KEY }}
           ZAI_MODEL: glm-5.2
