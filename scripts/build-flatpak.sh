@@ -28,7 +28,7 @@ STAGE="artifacts/flatpak/stage"
 rm -rf "$STAGE" artifacts/flatpak/build artifacts/flatpak/repo
 mkdir -p "$STAGE/bin" "$STAGE/share/wordwarp" \
   "$STAGE/share/applications" \
-  "$STAGE/share/icons/hicolor/scalable/apps" \
+  "$STAGE/share/icons/hicolor/512x512/apps" \
   "$STAGE/share/mime/packages" "$STAGE/share/doc/wordwarp"
 
 # /app prefix inside the sandbox; the launcher resolves the shell next to it.
@@ -40,7 +40,17 @@ printf '%s\n' "$VERSION" > "$STAGE/share/wordwarp/VERSION"
 cp -R dist-native/. "$STAGE/share/wordwarp/web/"
 cp native/linux/app.wordwarp.WordWarp.desktop "$STAGE/share/applications/"
 cp native/linux/wordwarp.xml "$STAGE/share/mime/packages/"
-cp public/wordwarp-icon.svg "$STAGE/share/icons/hicolor/scalable/apps/app.wordwarp.WordWarp.svg"
+# flatpak-builder's icon validation needs a raster (the SVG loader may not be
+# present on the runner); render the source SVG at 512px.
+if command -v rsvg-convert >/dev/null; then
+  rsvg-convert -w 512 -h 512 public/wordwarp-icon.svg \
+    -o "$STAGE/share/icons/hicolor/512x512/apps/app.wordwarp.WordWarp.png"
+elif command -v magick >/dev/null; then
+  magick -background none -size 512x512 public/wordwarp-icon.svg \
+    "$STAGE/share/icons/hicolor/512x512/apps/app.wordwarp.WordWarp.png"
+else
+  die "need librsvg2-bin (rsvg-convert) or ImageMagick to render the app icon"
+fi
 cp native/linux/README.md "$STAGE/share/doc/wordwarp/"
 
 flatpak remote-add --user --if-not-exists flathub \

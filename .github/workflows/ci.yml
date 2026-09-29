@@ -153,7 +153,7 @@ jobs:
         run: |
           set -euo pipefail
           APP=native/macos/build/WordWarp.app
-          lipo -verify_arch "$WORDWARP_MACOS_ARCH" "$APP/Contents/MacOS/WordWarp"
+          lipo "$APP/Contents/MacOS/WordWarp" -verify_arch "$WORDWARP_MACOS_ARCH"
           codesign --verify --deep --strict "$APP"
           "$APP/Contents/MacOS/WordWarp" \
             --self-test "$RUNNER_TEMP/wordwarp-macos.png" \
@@ -209,7 +209,7 @@ jobs:
             native/android/gradle/wrapper/gradle-wrapper.properties
 
       - name: Ensure required Android SDK packages
-        run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+        run: "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager 'platforms;android-36' 'build-tools;35.0.0'"
 
       - name: Install locked dependencies, build APK, and lint
         run: |
@@ -279,6 +279,9 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE: '1'
           WEBKIT_DISABLE_DMABUF_RENDERER: '1'
         run: |
+          # WebKitGTK's subprocess sandbox uses bwrap; Ubuntu 24.04 AppArmor
+          # denies unprivileged user namespaces unless this knob is off.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
           python3 native/linux/test_recovery.py
           timeout 180 dbus-run-session -- xvfb-run -a \
             /usr/bin/wordwarp --self-test "$RUNNER_TEMP/wordwarp-linux.png"
@@ -327,7 +330,7 @@ jobs:
       - name: Install Flatpak tooling
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends -y flatpak flatpak-builder elfutils
+          sudo apt-get install --no-install-recommends -y flatpak flatpak-builder elfutils librsvg2-bin
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true   # absent on kernels without the knob
 
       - name: Build Flatpak bundle
