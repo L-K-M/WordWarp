@@ -20,8 +20,8 @@ if [[ $# -ne 0 ]]; then
   exit 2
 fi
 
-command -v flatpak-builder >/dev/null 2>&1 ||
-  { echo "flatpak-builder not found: install flatpak and flatpak-builder" >&2; exit 1; }
+command -v flatpak-builder >/dev/null 2>&1 && command -v flatpak >/dev/null 2>&1 ||
+  { echo "flatpak/flatpak-builder not found: install both" >&2; exit 1; }
 
 VERSION="$(node -p 'require("./package.json").version')"
 STAGE="artifacts/flatpak/stage"
@@ -49,7 +49,7 @@ elif command -v magick >/dev/null; then
   magick -background none -size 512x512 public/wordwarp-icon.svg \
     "$STAGE/share/icons/hicolor/512x512/apps/app.wordwarp.WordWarp.png"
 else
-  die "need librsvg2-bin (rsvg-convert) or ImageMagick to render the app icon"
+  { echo "need librsvg2-bin (rsvg-convert) or ImageMagick to render the app icon" >&2; exit 1; }
 fi
 cp native/linux/README.md "$STAGE/share/doc/wordwarp/"
 
