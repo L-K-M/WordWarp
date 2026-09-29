@@ -2,6 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 import { VitePWA } from 'vite-plugin-pwa';
+import { licenseNotices } from './src/build/licenses';
 
 const configuredBase = process.env.VITE_BASE_PATH ?? './';
 const base = configuredBase.endsWith('/') ? configuredBase : `${configuredBase}/`;
@@ -13,6 +14,7 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(appVersion),
   },
   plugins: [
+    licenseNotices(),
     react(),
     tailwindcss(),
     VitePWA({
@@ -36,7 +38,7 @@ export default defineConfig({
       workbox: {
         cleanupOutdatedCaches: true,
         navigateFallback: 'index.html',
-        globPatterns: ['**/*.{html,js,css,wasm,webmanifest,svg,png,webp,woff,woff2}'],
+        globPatterns: ['**/*.{html,js,css,wasm,webmanifest,svg,png,webp,woff,woff2,txt,md,json}'],
       },
     }),
   ],

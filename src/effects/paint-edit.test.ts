@@ -46,9 +46,9 @@ describe('toGradientPaint', () => {
     expect(paintSchema.safeParse(paint).success).toBe(true);
     expect(paint.gradient.angle).toBe(45);
     expect(paint.gradient.stops).toHaveLength(7);
-    // Chrome's first ramp entry is near-white; the conversion must carry the ramp's colours
-    // rather than substituting a default.
-    expect(paint.gradient.stops[0]!.color[0]).toBeGreaterThan(0.9);
+    // The independently authored Chrome palette starts at #dcecf7; conversion must preserve
+    // that colour rather than substituting a default.
+    expect(paint.gradient.stops[0]!.color).toEqual([220 / 255, 236 / 255, 247 / 255, 1]);
   });
 
   it('leaves an existing gradient untouched', () => {

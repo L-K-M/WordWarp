@@ -5,6 +5,16 @@
 WordWarp is a browser-based studio for warped, metallic, dimensional text with alpha-correct image
 export. The product and rendering decisions are documented in [`PLAN.md`](./PLAN.md).
 
+WordWarp's original code and artwork use the [Unlicense](LICENSE), with explicit
+[third-party exclusions](LICENSING.md). Fonts, libraries and platform components
+retain their own licenses; see [third-party attribution](THIRD_PARTY.md).
+
+Native macOS, Android and Ubuntu builds provide platform-native layer, typography,
+warp, effect and animation controls, editable document files, and PNG/APNG/GIF export.
+The desktop apps use a Layers/Styles sidebar, Select/Pan tool strip and contextual
+Object/Effects/Motion/Canvas inspectors. The web editor shares their semantic controls
+and compact effect/animation headers. See [native build instructions](./native/README.md).
+
 
 [
 ![screenshot.png](media-sources/screenshot.png)
@@ -29,12 +39,19 @@ scripts/check.sh
 
 On a new machine, `scripts/check.sh --install-browsers` also downloads the Playwright browsers.
 Linux CI uses Playwright's `--with-deps` mode to install required system packages. Individual checks
-remain available as `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, and
-`npm run test:e2e`.
+remain available as `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`,
+`npm run test:e2e`, and `npm run test:native`. The complete gate includes the native
+canvas bridge in Chromium and WebKit; actual native host tests run separately.
 
 `scripts/build.sh` performs a clean locked install and creates a portable static site under `dist/`.
 Serve that directory over HTTPS (or localhost); service workers and installable PWA behavior do not
 work from `file://` URLs.
+
+Native packaging commands are `npm run build:macos`, `npm run build:android`, and
+`npm run build:linux`. They create Mac app archives, an Android debug APK, and an
+Ubuntu 24.04 `.deb` under `artifacts/native/`. Each platform has its own SDK/runtime
+requirements, described in the native build instructions. CI builds all three
+targets, including Apple silicon and Intel Mac variants, with downloadable checksums.
 
 ## Deployment
 
@@ -71,10 +88,8 @@ The first GHCR package may be private until its package visibility is changed.
 ### GitHub Pages
 
 `pages.yml` builds WordWarp for `/WordWarp/` and deploys only a successfully tested `main` commit.
-Deployment is guarded by the repository variable `WORDWARP_PAGES_ENABLED=true`. The repository is
-currently private and its GitHub plan does not provide Pages; leave the variable false until the
-repository becomes public or the plan supports private Pages, then enable Pages with GitHub Actions
-as its source and set the variable to true.
+Deployment is opt-in through the repository variable `WORDWARP_PAGES_ENABLED=true`.
+To enable it, configure Pages with GitHub Actions as its source and set the variable to true.
 
 ## Releases
 
@@ -88,6 +103,12 @@ The helper updates `package.json`, `package-lock.json`, and this README marker t
 bump, and creates `v0.2.0`. The tag workflow independently verifies the versions and `main` history,
 re-runs CI, publishes a portable `.tar.gz` plus SHA-256 checksum, publishes the GHCR image, and
 creates the GitHub Release. Do not create release tags by hand.
+
+Native packages are currently downloadable CI artifacts, retained for 14 days;
+the release workflow does not attach them to GitHub Releases. Mac builds are
+ad-hoc signed and Android builds are debug signed. The separate
+[native publication proposal](./native/RELEASE-PROPOSAL.md) describes a future
+change that requires authorization.
 
 The shared release engine currently requires BSD `sed`; the WordWarp wrapper refuses release mutation
 on GNU/Linux before changing files. `scripts/release.sh --check` remains portable.

@@ -420,19 +420,19 @@ function definePreset(
 }
 
 export const BUILT_IN_PRESETS: Preset[] = [
-  definePreset('chrome-classic', 'Chrome Classic', 'metallic', ['#f5f7f7', '#343634', '#efefef', '#636563'], [
+  definePreset('chrome-classic', 'Chrome Classic', 'metallic', ['#dcecf7', '#13253c', '#fcffff', '#234762'], [
     shadow('#0a0c12', 12, 12, 0.62), fill(ramp('chrome')), bevel(8, 'inner', 140), stroke(2, '#1a1a1a'),
   ], none(), ['chrome', 'office', 'metal']),
   definePreset('liquid-chrome', 'Liquid Chrome', 'metallic', ['#f8ffff', '#b7d0e8', '#4a4a52', '#10131c'], [
     shadow('#172134', 10, 18, 0.5), fill(matcap('liquid-mercury')), bevel(16, 'pillow', 180), satin('#d7f0ff', 0.2), innerGlow('#ffffff', 8, 0.55),
   ], none(), ['mercury', 'gloss']),
-  definePreset('gold-bar', 'Gold Bar', 'metallic', ['#f3e0ac', '#b6903e', '#7f6625', '#ecdfb3'], [
+  definePreset('gold-bar', 'Gold Bar', 'metallic', ['#fbe6a9', '#bb8c39', '#6f4823', '#fff3c9'], [
     shadow('#3b2808', 14, 12), fill(ramp('gold-ii')), bevel(12, 'inner', 160), innerShadow('#4a2d08', 4, 8), stroke(2, '#6b4f18'),
   ], none(), ['gold', 'luxury']),
-  definePreset('brass-plaque', 'Brass Plaque', 'metallic', ['#7e5f1c', '#f2aa3c', '#8d6720', '#dca137'], [
+  definePreset('brass-plaque', 'Brass Plaque', 'metallic', ['#503d2c', '#f3d481', '#786038', '#efe0a9'], [
     fill(ramp('brass')), bevel(14, 'emboss', 150), texture('noise', 0.12), innerShadow('#3d2507', 5, 7),
   ], none(), ['brass', 'engraved']),
-  definePreset('cold-steel', 'Cold Steel', 'metallic', ['#ffffff', '#afb6bc', '#7d8693', '#d1dfde'], [
+  definePreset('cold-steel', 'Cold Steel', 'metallic', ['#f3f7ff', '#becadd', '#506582', '#d6e1ef'], [
     fill(ramp('silver')), texture('grain', 0.16), bevel(9, 'inner', 130), stroke(1.5, '#313844'),
   ], none(), ['silver', 'brushed']),
   definePreset('gunmetal', 'Gunmetal', 'metallic', ['#2b2d33', '#5a5f6b', '#c3c8d2', '#111318'], [
@@ -584,7 +584,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
   definePreset('miami-vice', 'Miami Vice', 'synthwave', ['#40e0d0', '#ff7f50', '#fc8eac', '#98fb98'], [
     glow('#ff8ac6', 16, 0.45), longShadow(72, '#293078', 45), fill(gradient(['#40e0d0', '#ff7f50', '#fc8eac'], 45)), stroke(2, '#ffffff'),
   ], none(), ['pastel', '80s']),
-  definePreset('chrome-magenta', 'Chrome & Magenta', 'synthwave', ['#dedfde', '#2a2c29', '#ff0090', '#00e7ff'], [
+  definePreset('chrome-magenta', 'Chrome & Magenta', 'synthwave', ['#eff9fa', '#172c45', '#ff0090', '#00e7ff'], [
     shadow('#00e7ff', 12, 5, 0.75), glow('#ff0090', 30, 0.75), fill(ramp('chrome-ii')), bevel(8),
   ], warp('textSlantUp', 0.32), ['chrome', 'pink']),
   definePreset('laser-beam', 'Laser Beam', 'synthwave', ['#39ff14', '#00ffff', '#ffffff', '#071018'], [
@@ -636,7 +636,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
     glow('#ff69d4', 18, 0.55), fill(gradient(['#ff69b4', '#ffd700', '#ffffff', '#b437ff'], 25)), texture('grain', 0.45),
   ], none(), ['glitter', 'animated'], [sparkleTrack()]),
 
-  definePreset('wordart-classic', 'WordArt Classic', 'nineties', ['#ff0000', '#ffff00', '#00c853', '#3d3dff'], [
+  definePreset('wordart-classic', 'WordArt Classic', 'nineties', ['#ef426b', '#f4df63', '#65ca78', '#496ecb'], [
     extrude(28, '#274087', 320), fill(ramp('rainbow')), stroke(2, '#17214f'),
   ], warp('textSlantUp', 0.55), ['office', 'rainbow']),
   definePreset('memphis-party', 'Memphis Party', 'nineties', ['#ffd93d', '#ff6b6b', '#4ecdc4', '#1a1a2e'], [
@@ -849,7 +849,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
     glow('#7a5cff', 26, 0.7), fill(gradient(['#00ffc8', '#3ea7ff', '#ff2bd6'], 140)),
     bevel(14, 'inner', 200), stroke(3, '#120a2b'), pixelate(8),
   ], warp('textSlantUp', 0.28), ['pixel', 'lo-fi', 'mosaic', 'glitch']),
-  definePreset('pixel-chrome', 'Pixel Chrome', 'nineties', ['#efefef', '#8c8e8c', '#2a2c29', '#0b0d12'], [
+  definePreset('pixel-chrome', 'Pixel Chrome', 'nineties', ['#fcffff', '#8da9bc', '#13253c', '#0b0d12'], [
     // Chrome is the library's signature look and it is built entirely out of smooth tonal
     // transitions, so putting it through the block pass is the sharpest demonstration of what the
     // effect does: the ramp survives as a stepped palette instead of a gradient.
@@ -1029,7 +1029,7 @@ export const BUILT_IN_PRESETS: Preset[] = [
   ], warp('textArchUp', 0.28), ['comic', 'pop-art', 'halftone']),
   // Lava in motion, off the Office `fire` ramp, with a specular sweep for the crawl. The other two
   // fire styles are both still: this is the one that flows.
-  definePreset('lava-flow', 'Lava Flow', 'texture', ['#fcef50', '#ee7d30', '#ad2718', '#52140e'], [
+  definePreset('lava-flow', 'Lava Flow', 'texture', ['#fff1bd', '#f59c37', '#9b3037', '#481f33'], [
     shadow('#2b0a02', 10, 8, 0.6), glow('#ff5e00', 30, 0.7), fill(ramp('fire')), bevel(8, 'inner', 110), texture('grain', 0.18),
   ], warp('textDeflateInflate', 0.45), ['lava', 'fire', 'animated'], [
     { id: 'molten-flow', kind: 'specularSweep', enabled: true, duration: 6, params: {}, seed: 5 },

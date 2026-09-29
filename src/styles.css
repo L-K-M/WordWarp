@@ -187,6 +187,7 @@ select:focus-visible,
 
 .orb-xs { min-height: 40px; padding: 0 18px; font-size: 13px; }
 .orb-sm { min-height: 48px; padding: 0 22px; font-size: 15px; }
+.licenses-link { display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; color: inherit; font-size: 13px; text-underline-offset: 3px; }
 .orb-lg { min-height: 58px; padding: 0 28px; font-size: 17px; }
 
 .orb-grape     { --orb-hi: #d9baff; --orb: #a06bff; --orb-lo: #7440d6; --orb-edge: #4a21a0; }
@@ -1199,117 +1200,152 @@ button:disabled {
   list-style: none;
 }
 
-/* The row's own line is the grip, the swatch and the effect's name; everything else -- the action
-   buttons, the quick slider, the colour swatches -- stacks underneath, indented past the grip.
-   Sharing the line with four buttons left the name about 40px of a 352px panel, so every effect
-   read as "Inne..." / "Stro...". */
-.effect-list li {
+/* Focused sections keep the canvas visible while the complete editor remains one tab away. */
+.inspector-panel [hidden] { display: none !important; }
+.inspector-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 4;
   display: grid;
-  grid-template-columns: 14px 34px minmax(0, 1fr);
-  min-height: 62px;
-  align-items: center;
-  gap: 9px;
-  padding: 10px;
-  border: 2px solid rgb(23 183 189 / 40%);
-  border-radius: 18px;
-  background: linear-gradient(170deg, rgb(9 82 89 / 70%), rgb(3 38 44 / 85%));
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 3px;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgb(23 183 189 / 35%);
+  background: #07383f;
 }
-
-.effect-actions {
-  display: flex;
-  grid-column: 2 / -1;
-  gap: 6px;
+.inspector-tabs button {
+  min-width: 0;
+  min-height: 38px;
+  padding: 6px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: var(--mint);
+  font-size: 13px;
+  font-weight: 700;
+  background: transparent;
 }
-
-.drag-grip {
-  color: rgb(184 240 226 / 72%);
-  font-size: 14px;
-  font-weight: 800;
-}
-
-.effect-chip {
-  width: 34px;
-  height: 34px;
-  border: 2px solid rgb(255 255 255 / 40%);
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 32% 24%, rgb(255 255 255 / 90%) 0 7%, transparent 32%),
-    linear-gradient(160deg, #fff, var(--cyan) 35%, #7440d6 70%, var(--pink));
-  box-shadow:
-    inset 0 -3px 5px rgb(0 0 0 / 28%),
-    0 3px 6px rgb(0 0 0 / 40%);
-}
-
-.effect-list strong,
-.effect-list small {
-  display: block;
-}
-
-.effect-list strong {
-  overflow: hidden;
+.inspector-tabs button[aria-selected="true"] {
+  border-color: rgb(79 220 242 / 65%);
   color: var(--cream);
-  font-size: 15px;
-  font-weight: 800;
+  background: #115660;
+}
+.inspector-tabs button:focus-visible,
+.inspector-stack-header button:focus-visible,
+.metadata-section summary:focus-visible {
+  outline: 2px solid var(--yellow);
+  outline-offset: 1px;
+}
+.inspector-panel .effects-section { padding: 12px 8px; }
+.effects-section > .section-title-row,
+.effects-section > .foundation-note { margin-inline: 5px; }
+.inspector-stack-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgb(23 183 189 / 40%);
+  border-radius: 12px;
+  background: rgb(3 38 44 / 55%);
+}
+.inspector-stack-header {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 3px;
+  padding: 5px;
+}
+.inspector-stack-header input[type="checkbox"] {
+  width: 20px;
+  min-height: 24px;
+  height: 24px;
+  padding: 0;
+  margin: 0;
+  accent-color: var(--lime);
+  cursor: pointer;
+}
+.effect-list button,
+.metadata-action {
+  min-width: 28px;
+  min-height: 32px;
+  padding: 4px 6px;
+  border: 1px solid rgb(23 183 189 / 35%);
+  border-radius: 7px;
+  color: var(--mint);
+  font-size: 13px;
+  font-weight: 700;
+  background: #07333a;
+}
+.effect-list button:disabled { opacity: .35; }
+.inspector-stack-header .inspector-stack-disclosure {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  padding-inline: 0;
+  border: 0;
+  color: var(--cream);
+  text-align: left;
+  background: transparent;
+}
+.inspector-stack-title {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 750;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-.effect-list small {
-  margin-top: 3px;
-  color: rgb(184 240 226 / 75%);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
-
-.effect-list button {
-  min-width: 40px;
-  min-height: 36px;
-  padding: 4px 8px;
-  border: 2px solid rgb(23 183 189 / 45%);
-  border-radius: 999px;
-  color: var(--mint);
-  font-size: 11px;
-  font-weight: 800;
-  background: linear-gradient(180deg, #04333a, #03262c);
-  box-shadow: inset 0 -2px 4px rgb(0 0 0 / 35%);
-}
-
-.effect-list button.enabled {
-  border-color: #8fe34f;
-  color: #d6ffa3;
-  background: linear-gradient(180deg, #1d5c1a, #123f10);
-  box-shadow:
-    inset 0 -2px 4px rgb(0 0 0 / 35%),
-    0 0 10px rgb(143 227 79 / 40%);
-}
-
-.effect-quick-control {
+.disclosure-chevron { width: 12px; flex: 0 0 12px; font-size: 20px; text-align: center; }
+.inspector-stack-actions { display: flex; gap: 2px; }
+.inspector-stack-actions button { border-color: transparent; font-size: 17px; background: transparent; }
+.inspector-stack-body {
   display: grid;
-  grid-column: 2 / -1;
-  grid-template-columns: 58px minmax(0, 1fr) 40px;
+  gap: 12px;
+  padding: 12px 9px;
+  border-top: 1px solid rgb(23 183 189 / 25%);
+}
+.is-disabled .inspector-stack-title { color: rgb(184 240 226 / 65%); }
+.metadata-fields { display: grid; gap: 10px; min-width: 0; }
+.metadata-field {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(90px, 1fr) minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
-  color: rgb(184 240 226 / 70%);
+  gap: 8px;
+  color: var(--mint);
   font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
 }
-
-.effect-quick-control input {
+.inspector-panel .metadata-field > span { margin: 0; color: inherit; font-size: 12px; text-transform: none; }
+.inspector-panel .metadata-field input:not([type="checkbox"]),
+.inspector-panel .metadata-field select,
+.inspector-panel .metadata-field textarea {
   width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  padding: 5px 7px;
+  border: 1px solid rgb(23 183 189 / 45%);
+  border-radius: 6px;
+  color: var(--cream);
+  font: inherit;
+  background: #052c32;
 }
-
-.effect-quick-control output {
-  color: var(--yellow);
-  font-size: 13px;
-  text-align: right;
-}
+.metadata-checkbox { display: flex; gap: 8px; }
+.metadata-checkbox input { width: 20px; min-height: 24px; height: 24px; margin: 0; accent-color: var(--lime); }
+.metadata-multiline { grid-template-columns: 1fr; }
+.metadata-color { grid-template-columns: minmax(0, 1fr) 38px 83px; }
+.inspector-panel .metadata-color input[type="color"] { padding: 2px; }
+.metadata-alpha { display: flex; align-items: center; gap: 4px; }
+.metadata-section { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgb(23 183 189 / 25%); }
+.metadata-section summary { color: var(--cream); font-size: 13px; font-weight: 700; cursor: pointer; }
+.metadata-section[open] > summary { margin-bottom: 12px; }
+.metadata-curve { min-width: 0; margin: 0; padding: 8px; border: 1px solid rgb(23 183 189 / 35%); border-radius: 7px; }
+.metadata-curve legend { color: var(--mint); font-size: 12px; }
+.metadata-curve svg { display: block; width: 100%; height: 64px; margin-bottom: 10px; overflow: visible; background: #052c32; }
+.metadata-curve path { fill: none; stroke: var(--cyan); stroke-width: 2; }
+.metadata-curve circle { fill: var(--yellow); }
+.metadata-curve .metadata-field + .metadata-field { margin-top: 8px; }
+.inspector-empty { padding: 14px; color: var(--mint); font-size: 13px; line-height: 1.5; }
+.inspector-hint { margin: 4px 5px 12px; color: var(--mint); font-size: 12px; line-height: 1.5; }
 
 .effect-color-controls {
   display: flex;
-  grid-column: 2 / -1;
   gap: 14px;
 }
 
@@ -1337,7 +1373,6 @@ button:disabled {
 
 .effect-paint-controls {
   display: grid;
-  grid-column: 2 / -1;
   gap: 9px;
 }
 
@@ -1932,17 +1967,25 @@ button:disabled {
   }
 
   .workspace .inspector-panel {
+    display: none;
     visibility: hidden;
     overflow: hidden;
   }
 
+  .workspace.left-closed .preset-panel {
+    display: none;
+  }
+
   .workspace:not(.right-closed) .inspector-panel {
+    display: block;
     position: fixed;
     right: 0;
     bottom: 84px;
     left: 0;
     z-index: 35;
     visibility: visible;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     max-height: 60vh;
     border-top: 3px solid var(--gel-bright);
     border-radius: 26px 26px 0 0;
@@ -1994,9 +2037,13 @@ button:disabled {
     min-height: 48px;
   }
 
-  .effect-list button {
-    min-width: 44px;
+  .inspector-stack-header .inspector-stack-actions button {
+    min-width: 30px;
+    padding-inline: 6px;
   }
+  .inspector-panel .metadata-field input:not([type="checkbox"]),
+  .inspector-panel .metadata-field select,
+  .inspector-panel .metadata-field textarea { min-height: 44px; }
 
   .font-picker-list {
     max-height: 46vh;

@@ -94,6 +94,8 @@ test('authors a gradient fill in the inspector and exports the sweep', async ({ 
 
   // The default fill arrives as the chrome ramp, so the switch also proves the conversion path:
   // the ramp becomes editable stops rather than being replaced by a default.
+  await page.getByRole('tab', { name: 'Effects', exact: true }).click();
+  await page.getByRole('button', { name: 'Fill', exact: true }).click();
   await page.getByLabel('Fill paint style').selectOption('gradient');
   const removeStop = page.getByRole('button', { name: 'Remove fill gradient stop' });
   for (let clicks = 0; clicks < 5; clicks += 1) await removeStop.click();

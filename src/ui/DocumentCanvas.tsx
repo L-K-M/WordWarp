@@ -35,6 +35,8 @@ interface DocumentCanvasProps {
   onTransformStart?: (id: string, gesture: GestureKind) => void;
   onTransform?: (id: string, transform: Transform) => void;
   onTransformEnd?: () => void;
+  interactionEnabled?: boolean;
+  onRendered?: (width: number, height: number) => void;
 }
 
 interface DragState {
@@ -68,10 +70,14 @@ export function DocumentCanvas({
   onTransformStart,
   onTransform,
   onTransformEnd,
+  interactionEnabled = true,
+  onRendered,
 }: DocumentCanvasProps) {
   const deferredDocument = useDeferredValue(document);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dragRef = useRef<DragState | null>(null);
+  const renderedRef = useRef(onRendered);
+  useLayoutEffect(() => { renderedRef.current = onRendered; }, [onRendered]);
   const [frames, setFrames] = useState<Record<string, ElementFrame>>({});
   const rendererRef = useRef<PreviewRenderer | null>(null);
   const [backend, setBackend] = useState<'webgl2' | 'canvas2d'>('canvas2d');
@@ -123,6 +129,14 @@ export function DocumentCanvas({
     drag.finish?.();
   }, []);
 
+  useEffect(() => {
+    if (interactionEnabled || !dragRef.current) return;
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (canvasRef.current?.hasPointerCapture(drag.pointerId)) canvasRef.current.releasePointerCapture(drag.pointerId);
+    drag.finish?.();
+  }, [interactionEnabled]);
+
   // Measured before the first paint rather than waiting for the observer. Both the render pass
   // that fills `frames` and the observer's callback reach React as ordinary updates, and React is
   // free to commit them in separate frames -- so the handles could reach the screen once at the
@@ -151,6 +165,7 @@ export function DocumentCanvas({
         if (!result) return;
         setFrames(Object.fromEntries(result.elementFrames));
         setError(null);
+        renderedRef.current?.(deferredDocument.canvas.width, deferredDocument.canvas.height);
       } catch (renderError) {
         setError(renderError instanceof Error ? renderError.message : 'Preview render failed');
       }
@@ -160,7 +175,7 @@ export function DocumentCanvas({
 
   const selectedElement = document.elements.find((element) => element.id === selectedElementId);
   const selectedFrame = selectedElementId ? frames[selectedElementId] : undefined;
-  const interactive = Boolean(onTransform) && selectedElement !== undefined && !selectedElement.locked;
+  const interactive = interactionEnabled && Boolean(onTransform) && selectedElement !== undefined && !selectedElement.locked;
   const unitsPerPixel = layoutWidth > 0 && zoom > 0
     ? document.canvas.width / (layoutWidth * zoom)
     : 1;
@@ -185,7 +200,7 @@ export function DocumentCanvas({
     const canvas = canvasRef.current;
     // A second finger must not take over a gesture that is already running: replacing the drag
     // would strand the first pointer's transaction open, and an open transaction blocks undo.
-    if (!frame || !canvas || !onTransform || element.locked || dragRef.current) return;
+    if (!interactionEnabled || !frame || !canvas || !onTransform || element.locked || dragRef.current) return;
     // Captured on the canvas even when the drag started on a handle, because the canvas is the one
     // node in here that cannot go away mid-gesture. A handle can: shrink an element past the width
     // its edge handles need and `handleFits` drops the very handle under the pointer, which would
@@ -254,7 +269,7 @@ export function DocumentCanvas({
           // A gesture in flight owns the canvas. Capture only redirects the pointer that opened
           // it, so a second finger still lands here -- and reselecting would unmount the handle
           // holding that capture out from under the drag.
-          if (dragRef.current) return;
+          if (!interactionEnabled || dragRef.current) return;
           const point = canvasPoint(event);
           const selected = [...document.elements].reverse().find((element) => {
             const frame = frames[element.id];
@@ -266,6 +281,7 @@ export function DocumentCanvas({
         onPointerMove={continueDrag}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
+        onLostPointerCapture={endDrag}
       />
       <svg
         className="selection-overlay"

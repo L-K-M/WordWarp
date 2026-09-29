@@ -5,6 +5,7 @@
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
@@ -12,5 +13,5 @@
   },
   // Browser tests build fixture documents from the application's own model helpers, so src has to
   // be visible here as well as to tsconfig.app.json.
-  "include": ["vite.config.ts", "playwright.config.ts", "tests/**/*.ts", "eslint.config.js", "src/**/*.ts"]
+  "include": ["vite.config.ts", "vite.native.config.ts", "playwright.config.ts", "playwright.native.config.ts", "tests/**/*.ts", "eslint.config.js", "src/**/*.ts", "src/**/*.tsx"]
 }

@@ -107,47 +107,19 @@ for "more powerful/creative".
 
 ### 2.2 wordart97.net
 
-The most technically interesting competitor, and a genuinely careful reimplementation. Its bundle
-(`index-CFouf1EP.js`, ~406 KB) contains the actual Microsoft Office asset names, which makes it a
-useful specification source. Its render settings object:
+[WordArt97](https://wordart97.net/) was a reference for the broad capabilities and appearance
+of 1990s text editors. The research snapshot found controls for typography, outlines, named
+colour ramps, textures, baseline-following shapes, and offset extrusion.
 
-```js
-{ font:"Arial Black", isBold, isItalic, wordSpacing:100, characterSpacing:100, size:100,
-  color:"#ffffff", color2:"#0000ff", darkness:0.5, fillOpacity:100, hasOutline:false,
-  shape:"none", shapeFactor:0.5, gradientType:"oneColor", shadingStyle:"horizontal",
-  variant:1, texture:"01", colorRamp:"Rainbow", stretchWidth:100, stretchHeight:100,
-  rotation:0, showBorders:false, lineColor:"#000000", lineDashStyle:"none", lineWeight:1,
-  radialGradientMode:"glossy", effectType:"simple",
-  depth3DOffsetX:13, depth3DOffsetY:-11, depth3DDistance:0.955,
-  depth3DColor:"#c23a00", depth3DAutoColor:false, depth3DLighting:true }
-```
+Its baseline-following shapes suggested an opportunity for WordWarp's two-curve envelope model:
+moving a text baseline cannot independently deform the top and bottom of each glyph. The
+observed offset extrusion also informed the comparison with perspective extrusion.
 
-It carries all 24 Office **preset colour ramps** (Rainbow, Rainbow II, Early Sunset, Late Sunset,
-Nightfall, Daybreak, Horizon, Desert, Ocean, Calm Water, Fire, Fog, Moss, Peacock, Wheat,
-Parchment, Mahogany, Gold, Gold II, Brass, Chrome, Chrome II, Silver, Sapphire) at 20 stops each,
-and all 24 Office **fill textures** (Papyrus, Canvas, Denim, Woven mat, Water droplets, Paper bag,
-Fish fossil, Sand, Green marble, White marble, Brown marble, Granite, Newsprint, Recycled paper,
-Parchment, Stationery, Blue tissue paper, Pink tissue paper, Purple mesh, Bouquet, Cork, Walnut
-wood, Oak wood, Medium wood). Those ramps are reproduced in [Appendix A](#appendix-a-office-preset-colour-ramps).
-
-**Its ceiling is the warp.** The shape dispatcher implements exactly seven shapes:
-
-```js
-switch (shape) {
-  case "arch-up": … case "arch-down": … case "circle": …
-  case "wave-1": … case "wave-2": … case "double-wave-1": … case "double-wave-2": …
-  case "none": default: return null
-}
-```
-
-Each returns an SVG **path for `textPath`** — arcs built from `A` commands, waves from ~100–200
-sampled `L` segments. `slant-up`/`slant-down` are implemented as a skew of ±`shapeFactor × 45°`.
-So: baseline-following only. Glyphs never deform. Real WordArt has 40 warps, most of which
-(Inflate, Deflate, Can, Triangle, Chevron, Fade, Button, Ring, Cascade, Stop) are *impossible*
-with `textPath` because they require the top and bottom of each glyph to move independently.
-
-The 3-D effect is a fixed offset-repeat (`depth3DOffsetX/Y`, `depth3DDistance`) — no vanishing
-point, no per-face shading. Shadows are a single `feGaussianBlur`.
+Earlier revisions of this plan reproduced settings code and colour tables from the site's
+shipped bundle. No redistribution grant was established during the licensing review. Those
+excerpts have been removed, and WordWarp's named ramps are now independently authored palettes
+(see [Appendix A](#appendix-a-wordwarp-named-colour-ramps)). The site is credited as a research
+reference, not as a licensed source of bundled code or artwork.
 
 ### 2.3 cooltext.com
 
@@ -229,20 +201,21 @@ Nobody currently offers any one of the three, let alone all three.
 The style catalogue drives the preset library (§15) and is the product's soul. Each entry lists a
 palette and the effect stack that reproduces it.
 
-> Provenance: metallic ramps marked ⟨MS⟩ are the exact Microsoft Office preset gradients extracted
-> from wordart97.net's bundle ([Appendix A](#appendix-a-office-preset-colour-ramps)). Palettes
-> marked ⟨R⟩ are researched community-standard values. Unmarked palettes are designed for this
-> project and should be reviewed by a designer before shipping.
+> Provenance: WordWarp's 24 named ramps are independently authored palettes, inspired by general
+> metal, landscape, and rainbow themes ([Appendix A](#appendix-a-wordwarp-named-colour-ramps)).
+> The historic ramp IDs preserve document compatibility; they do not promise a reproduction of
+> Microsoft Office assets. Palettes marked ⟨R⟩ identify researched period colour themes; the
+> references in this plan are attribution, not a grant to copy third-party artwork.
 
 ### 4.1 Metallic
 
 | # | Style | Palette | Stack |
 |---|---|---|---|
-| M1 | **Chrome Classic** ⟨MS⟩ | Office *Chrome*: `#efefef #b5b6b5 #6b6d6b #323431 #efefef … #8c8e8c` (20 stops) | Vertical banded ramp fill → bevel (chisel hard, size 8) → stroke 2px `#1a1a1a` → drop shadow |
+| M1 | **Chrome Classic** | Original cool silver-blue reflected bands (`chrome`) | Vertical banded ramp fill → bevel (chisel hard, size 8) → stroke 2px `#1a1a1a` → drop shadow |
 | M2 | **Liquid Chrome** | Env-map matcap, blue-grey sky `#c8d8ea` → horizon `#ffffff` → ground `#4a4a52` | Matcap fill (normals from SDF) → high-gloss contour → fresnel rim → soft contact shadow |
-| M3 | **Gold Bar** ⟨MS⟩ | Office *Gold II*: `#f3e0ac #e2c87f #c6a058 #b6903e #7f6625 … #ecdfb3` | Ramp fill (angle 90°) → bevel (smooth, depth 120%) → inner shadow → stroke `#6b4f18` → drop shadow |
-| M4 | **Brass Plaque** ⟨MS⟩ | Office *Brass*: `#7e5f1c #ad7f2a #db9a35 #f2aa3c … #dca137` | Ramp fill → emboss (pillow) → subtle noise texture → engraved inner shadow |
-| M5 | **Cold Steel** ⟨MS⟩ | Office *Silver* + anisotropic brushed noise | Matcap fill → horizontal brushed-metal noise → chisel bevel → hard specular line |
+| M3 | **Gold Bar** | Original warm highlights and dark amber bands (`gold-ii`) | Ramp fill (angle 90°) → bevel (smooth, depth 120%) → inner shadow → stroke `#6b4f18` → drop shadow |
+| M4 | **Brass Plaque** | Original muted bronze and pale brass bands (`brass`) | Ramp fill → emboss (pillow) → subtle noise texture → engraved inner shadow |
+| M5 | **Cold Steel** | Original blue-grey `silver` ramp + anisotropic brushed noise | Matcap fill → horizontal brushed-metal noise → chisel bevel → hard specular line |
 | M6 | **Gunmetal** | `#2b2d33 #3f434c #5a5f6b #8a909c #c3c8d2` | Dark ramp → chisel bevel → thin `#0b0c0e` stroke → tight drop shadow |
 | M7 | **Rose Gold** | `#f7d4c4 #e8a08d #d97f68 #b85c47 #7d3423` | Ramp → smooth bevel → warm inner glow → soft shadow |
 | M8 | **Holographic Foil** | Iridescent hue sweep over normal: `#ff6ec7 #6ec7ff #6effb8 #fff36e` | Iridescence shader (hue = f(normal·view)) → gloss contour → white rim stroke |
@@ -254,7 +227,7 @@ palette and the effect stack that reproduces it.
 | S1 | **Outrun Sunset** ⟨R⟩ | `#ff00ff #ff1493 #ff7f50 #ffd700` over `#191970` | Vertical gradient fill with hard horizontal stripe mask → chrome bevel top → magenta outer glow → cyan offset shadow |
 | S2 | **Neon Grid** ⟨R⟩ | `#00ffff #ff00ff #191970 #0d0221` | Hollow fill → 3px neon stroke → double outer glow (tight `#00ffff`, wide `#ff00ff`) → perspective grid backdrop |
 | S3 | **Miami Vice** ⟨R⟩ | `#40e0d0 #ff7f50 #fc8eac #98fb98 #2d1b4e` | Two-colour diagonal gradient → thin white stroke → long shadow 45° → pastel glow |
-| S4 | **Chrome & Magenta** | Office *Chrome II* body + `#ff0090` glow | Chrome ramp fill → italic skew 12° → magenta outer glow → cyan drop shadow at 180° |
+| S4 | **Chrome & Magenta** | Original `chrome-ii` body + `#ff0090` glow | Chrome ramp fill → italic skew 12° → magenta outer glow → cyan drop shadow at 180° |
 | S5 | **Laser Beam** | `#39ff14 #00ffff #ffffff` | Thin stroke only → intense bloom → scanline post → chromatic aberration 2px |
 | S6 | **VHS Tracking** | `#ff0000 #00ffff #ffffff #1a1a1a` | Flat fill → RGB split ±3px → horizontal jitter bands → noise → soft vertical blur |
 
@@ -272,7 +245,7 @@ palette and the effect stack that reproduces it.
 
 | # | Style | Palette | Stack |
 |---|---|---|---|
-| N1 | **WordArt Classic** ⟨MS⟩ | Office *Rainbow* ramp | Ramp fill → 40° skew → extrude offset (13, −11) → auto-darkened depth colour |
+| N1 | **WordArt Classic** | Original seven-hue `rainbow` ramp | Ramp fill → 40° skew → extrude offset (13, −11) → auto-darkened depth colour |
 | N2 | **Memphis Party** | `#ffd93d #ff6b6b #4ecdc4 #1a1a2e` on `#ffe66d` | Flat fill → thick `#1a1a2e` stroke → hard offset shadow (no blur) → confetti backdrop |
 | N3 | **Nickelodeon Splat** | `#f57d0d #ffffff` | Bold fill → white outline → arch-up warp → splat shape backdrop |
 | N4 | **Extreme Sports** | `#000000 #ff3b00 #ffffff` | Italic skew 20° → chisel bevel → hard drop shadow at 135° → grunge mask |
@@ -542,7 +515,7 @@ export interface Gradient {
 
 Gradient interpolation defaults to **OKLab**. sRGB interpolation between saturated complements
 (the magenta→cyan of every synthwave preset) passes through a desaturated grey; OKLab does not.
-sRGB remains available for exact reproduction of the Office ramps.
+sRGB remains available for interpolating WordWarp's named ramps and user-authored gradients.
 
 ### 5.2 Effects
 
@@ -988,7 +961,7 @@ peaks is exactly how the classic "ringed chrome" look is produced.
 Two mechanisms, both driven by the normal:
 
 **Ramp mapping (1D).** Index a gradient by `n.y` — the sky-to-ground reflection model. This is what
-the Office *Chrome* ramp encodes: alternating light/dark bands producing the illusion of a
+a banded chrome palette encodes: alternating light/dark bands producing the illusion of a
 reflected horizon.
 
 ```glsl
@@ -1432,6 +1405,57 @@ preset is just these — take one apart."*
 
 ## 17. Application architecture
 
+### Native editors (September 2026)
+
+The Android, macOS and Ubuntu apps use native controls around a bundled canvas engine:
+SwiftUI/AppKit on macOS, Kotlin/Jetpack Compose on Android, and GTK4/libadwaita with
+WebKitGTK 6.0 on Ubuntu 24.04 or newer. Ubuntu ships as an architecture-independent
+Python-and-assets `.deb`, with native libraries supplied by apt. This is an additional
+distribution of the static, client-only app; there is no backend, local HTTP server,
+or dependency on a running web deployment. The web PWA remains independently built.
+
+After the first preview milestone, native scope expands to the implemented editor:
+multiple text and stamp layers, visibility/locking/order/duplication, typography,
+transform and warp controls, editable effect stacks and paints, animation tracks,
+canvas/background/global lighting, and editable .wordwarp document interchange.
+The canvas supports selection, moving, scaling, rotation, skew, pan, zoom, and touch
+pinch. PNG (1×–4×), APNG and GIF use shared export bounds and memory budgets; unsupported
+sizes and animations fail visibly. Animation playback and scrubbing use the same
+deterministic evaluator as export. Native text layers permit up to 5000 UTF-16 units.
+
+The desktop editors follow established image-editor organization: layer/style sidebar,
+compact Select/Pan mode strip, separate Insert commands, central artboard, contextual
+inspector with collapsible sections, and native menus/document dialogs. Panel navigation
+stays in the panels. Effects and motion share a single checkbox/disclosure/title/actions
+header, with no reserved body space when collapsed. Android uses a persistent canvas, bottom tool rail,
+focused supporting panels and system file pickers; expanded screens show an inspector
+beside the canvas. No desktop-size form is squeezed into the phone viewport. Semantic
+inspector metadata defines labels, ranges, choices, paints and curves once; each host
+renders platform controls. Stable field IDs resolve against the current document and
+all changes pass schema validation before entering history. Document and DB versions
+are unchanged. This extends implemented rendering features; it does not claim support
+for future image/group layers, imported asset textures or per-character staggering.
+
+The web editor adopts Object/Effects/Motion/Canvas inspectors and the same compact stack
+headers. It reuses semantic control metadata for deeper editing, retains the full web
+font catalog and interactive gradient editor, and exposes existing animation authoring.
+All platforms continue to use the shared document store, history, rendering and exports.
+
+`src/native` exposes a validated command/state bridge; `native/shared/BRIDGE.md`
+defines its versioned protocol. It reuses the existing document store, schemas,
+presets, Canvas2D effects, bounds calculation, and PNG exporter. No document/DB
+version bump is needed. Fonts are bundled for offline use; presets that name an
+unbundled system font use Bungee in native apps. Browser engines may still differ
+in rasterization, so cross-platform verification checks geometry, transparency,
+and expected appearance rather than claiming byte-identical output across engines.
+
+Each host bundles `dist-native/`, limits navigation and bridge access to its own
+local content, saves document snapshots atomically in app storage, and owns native
+document and image delivery. Restored snapshots pass schema validation before use. The separate
+native entry registers no service worker. macOS and Ubuntu load assets through a custom
+WebKit scheme; Android uses WebViewAssetLoader. Builds and browser bridge tests
+must be supplemented by execution inside WKWebView, Android WebView and WebKitGTK.
+
 ### 17.1 Stack
 
 | Concern | Choice | Why |
@@ -1607,7 +1631,7 @@ reference image.
 
 ### Phase 4 — Metal & dimension (weeks 9–10)
 
-Matcap generation + shading, ramp materials, all 24 Office ramps, fresnel, brushed/anisotropic,
+Matcap generation + shading, ramp materials, all 24 WordWarp named ramps, fresnel, brushed/anisotropic,
 iridescence, extrusion (parallel + perspective, silhouette-based, per-face shading), long shadow.
 **Exit:** Chrome Classic, Liquid Chrome, Deep Extrude ship and look genuinely good.
 
@@ -1671,66 +1695,31 @@ WebGPU backend; user-uploaded textures/matcaps; community preset gallery; a Figm
 
 ## 24. Appendices
 
-### Appendix A — Office preset colour ramps
+### Appendix A — WordWarp named colour ramps
 
-Extracted verbatim from wordart97.net's bundle; these are the Microsoft Office "Preset colors"
-gradients. All 24 have 20 stops at 0, 5, 11, 16, 21, 26, 32, 37, 42, 47, 53, 58, 63, 68, 74, 79,
-84, 89, 95, 100 %. The metallic ones are directly useful for WordWarp's core styles.
+The palettes in `src/presets/office-ramps.ts` are original WordWarp colour selections authored
+for this project during the licensing cleanup. They replace the previously transcribed Office
+colour tables; no copied colour sequence is used as an input to their construction.
 
-**Chrome** — `#efefef #b5b6b5 #6b6d6b #323431 #efefef #bdbebd #a5a6a5 #8c8e8c #636563 #8c8e8c
-#bdbebd #cecfce #d6d7d6 #cecfce #6b6d6b #222421 #efefef #c6c7c6 #a5a6a5 #8c8e8c`
+Each palette defines a short sequence of colours. Deterministic interpolation expands it to
+20 uniformly spaced samples. The metal palettes alternate dark, middle, and bright regions to
+suggest reflections; the landscape palettes progress between colours associated with their
+names. These are new interpretations of broad visual themes, not exact Office replicas.
 
-**Chrome II** — `#bdbebd #9c9e9c #7b7d7b #636563 #5b5d5a #6b6d6b #848684 #949694 #adaead #c6c7c6
-#cecfce #efefef #f7f7f7 #adaead #2a2c29 #636563 #7b7d7b #949694 #bdbebd #dedfde`
+The existing 24 identifiers remain available: `rainbow`, `rainbow-ii`, `early-sunset`,
+`late-sunset`, `nightfall`, `daybreak`, `horizon`, `desert`, `ocean`, `calm-water`,
+`fire`, `fog`, `moss`, `peacock`, `wheat`, `parchment`, `mahogany`, `gold`,
+`gold-ii`, `brass`, `chrome`, `chrome-ii`, `silver`, and `sapphire`. The historic
+file and exported function names are retained to avoid unnecessary API churn.
 
-**Silver** — `#ffffff #e7e7e7 #dedfde #c6c7c6 #afb6bc #9c9eac #848693 #8f9eab #bdbecd #e7e7e7
-#dedfde #cecfce #bfc7c6 #adaebc #a5a6b4 #9496a4 #868e9b #7d8693 #b5b6c5 #d1dfde`
+This is an intentional visual change: existing documents that reference a built-in ramp ID
+receive the new palette, while explicitly stored custom gradient stops are unaffected.
+Document structure and versions do not change. Rendering remains deterministic within this
+version and uses the same palettes in previews and exports.
 
-**Gold** — `#e4d8ab #e6dfa4 #e4d895 #dbcf8d #d3c77e #cab768 #c2af5a #cbbf70 #dbcf86 #e4d895
-#dbcf8d #d3c77e #d2bf76 #cbbf70 #cab768 #c2af5a #cab76f #d2bf7d #dbcf94 #e4d8ab`
-
-**Gold II** — `#f3e0ac #e2c87f #c6a058 #b79845 #b6903e #c09f4c #c1a753 #c9af67 #d9bf77 #e2c87f
-#ead095 #ecdfa4 #f4e7ad #b6903e #7f6625 #8f763c #9a8e54 #b2a66c #d3c793 #ecdfb3`
-
-**Brass** — `#7e5f1c #ad7f2a #db9a35 #f2aa3c #bd892e #8d6720 #8d6720 #b4802a #e3a238 #db9a35
-#b4802a #855f1d #9d6f24 #c4892e #eba93b #c49130 #a57727 #7e5f1c #b4802a #dca137`
-
-**Fire** — `#fcef50 #fbe84d #f9d949 #f6c944 #f5c142 #f3b13e #f2aa3c #f19b38 #ee8432 #ee7d30
-#ec682c #eb4e27 #ea4425 #ea3b24 #ea3423 #c42a1c #ad2718 #8f1d11 #69140a #52140e`
-
-**Nightfall** — `#010400 #01040f #01041f #020c2f #020c3f #020c56 #090c66 #0b1476 #0b1486 #0b148e
-#11149e #131ca6 #191cae #191cb5 #191cbe #3416c6 #4b19c6 #6217c6 #7124b6 #7a3997`
-
-**Late Sunset** — `#010400 #01040f #01041f #01042f #01043f #0e043f #15053f #1e063f #2c073f #34083f
-#3c0a40 #4b0d40 #621241 #691441 #791741 #8f243b #ae3f2c #ce6529 #e99335 #f3b13e`
-
-**Sapphire** — `#020c86 #0a23ae #163bd5 #1a44f5 #0e2bc6 #020c8e #04148e #0a23b5 #163be6 #1233de
-#0e2bb6 #020c86 #04149e #0e2bc6 #1a44ee #1233ce #071ba6 #01047e #0a23ae #163be6`
-
-**Ocean** — `#61d4a8 #62d4b6 #63d4be #64d4cd #64d4d5 #66d4dc #60ccdb #5dc4db #57bbe3 #53b3da
-#50abe2 #4ba3e1 #479ce1 #4294e0 #3e8ce0 #3a84d7 #367bd7 #3273cf #2e6bc7 #2a63bf`
-
-**Horizon** — `#d1dfed #a8b6d3 #8dadbb #7a95b2 #829dba #9fadcb #acc6d4 #c0cedc #d1dfed #e8eff6
-#ffffff #956f65 #894136 #a15346 #b85c56 #bb7975 #c4918e #d1b7a7 #e4d8c8 #876e65`
-
-**Daybreak** — `#709df8 #709df8 #78a4f8 #7aacf9 #82b4f9 #82b4f9 #8abcf9 #91bcfa #93c5fa #9fc6f3
-#a5c6f3 #adcef3 #b4ceec #c2d6ed #c9d7ed #d1dfed #d8dff5 #dedfee #eee7f6 #f4e7f6`
-
-**Peacock** — `#539cf0 #54abe9 #53b3da #5ac4cc #5bc4d3 #60bbda #68b4da #6face9 #84a5f1 #969ef8
-#7f8dd8 #4e74a1 #3c6c91 #374caf #3234c6 #2e5ce6 #3573f6 #306bd7 #306bb7 #2e6ba0`
-
-**Mahogany** — `#c9af9e #d0af98 #d0af90 #cfa889 #c8a781 #c6a072 #cfa87a #c5986b #be9062 #bd895b
-#b48053 #a47043 #aa693c #a26135 #9b5933 #8b512b #835025 #7c4829 #6b381a #64371e`
-
-**Desert** — `#eba9c5 #f2aa98 #ecb16f #ecb15d #edb95e #edb96a #eec078 #efc98d #f1d0a2 #f7d1b2
-#f2d8c8 #fae0d8 #fbe8ef #e5619a #b6294c #ae3971 #a84c82 #b96374 #d28a62 #e4a961`
-
-*(Rainbow, Rainbow II, Early Sunset, Calm Water, Fog, Moss, Wheat, Parchment follow the same
-structure and are captured in `src/presets/office-ramps.ts` at implementation time.)*
-
-Note the **Chrome** ramp's structure: sharp light→dark→light transitions at 0–21 % and 68–84 %.
-Those hard bands are the reflected horizon, and they are why the ramp reads as metal rather than as
-a grey gradient. Any hand-authored metal ramp should preserve that discontinuity.
+Earlier Git revisions still contain the removed transcriptions and competitor code excerpts.
+The current project's license cannot grant rights to that historical third-party material;
+publishing the existing Git history requires handling those revisions separately.
 
 ### Appendix B — Office fill textures
 
@@ -1760,7 +1749,10 @@ textSlantDown     textSlantUp       textStop          textTriangle      textTria
 textWave1         textWave2         textWave4
 ```
 
-### Appendix D — Font shortlist (Google Fonts, OFL)
+### Appendix D — Font shortlist (Google Fonts, per-family licenses)
+
+This is a research shortlist, not a blanket license declaration. Bundled families retain their
+individual upstream licenses; see `public/fonts/LICENSE.txt` and the bundled font notices.
 
 **Heavy display / chrome-friendly:** Anton, Archivo Black, Bungee, Bungee Shade, Bungee Inline,
 Bungee Outline, Bungee Spice, Titan One, Passion One, Alfa Slab One, Ultra, Bowlby One,
@@ -1786,7 +1778,7 @@ free-for-personal-use only and cannot be bundled.
 ### Appendix E — Research sources
 
 Tools: [makewordart.com](https://www.makewordart.com/) ·
-[wordart97.net](https://wordart97.net/) (bundle analysis) ·
+[wordart97.net](https://wordart97.net/) (historical feature and appearance research) ·
 [cooltext.com](https://cooltext.com/) and its [Chrome One generator](https://cooltext.com/Logo-Design-Chrome-One) ·
 [inkpx.com](https://inkpx.com/word-art-generator) ·
 [Canva word art](https://www.canva.com/word-art-generator/)

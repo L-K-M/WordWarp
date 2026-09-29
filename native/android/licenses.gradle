@@ -1,0 +1,110 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
+import java.util.zip.ZipInputStream
+
+// The manifest is a reviewed inventory, not a license guess based on a group name.
+// Changed binaries, versions, or new transitive dependencies fail closed until audited.
+def licenseRoot = rootProject.file('licenses')
+def manifestFile = new File(licenseRoot, 'runtime-licenses.json')
+def digest = { byte[] bytes -> MessageDigest.getInstance('SHA-256').digest(bytes).encodeHex().toString() }
+def artifactsFor = { variant ->
+    configurations.getByName("${variant}RuntimeClasspath").resolvedConfiguration.resolvedArtifacts
+        .collectEntries { artifact -> [(artifact.moduleVersion.id.toString()): artifact.file] }.sort()
+}
+
+tasks.register('reportRuntimeLicenseArtifacts') {
+    group = 'verification'
+    description = 'Writes candidate runtime artifact hashes for a dependency license review.'
+    doLast {
+        def report = ['debug', 'release'].collectEntries { variant ->
+            [(variant): artifactsFor(variant).collectEntries { coordinate, file ->
+                [(coordinate): [sha256: digest(file.bytes)]]
+            }]
+        }
+        def output = layout.buildDirectory.file('reports/licenses/runtime-artifacts.json').get().asFile
+        output.parentFile.mkdirs()
+        output.text = JsonOutput.prettyPrint(JsonOutput.toJson(report)) + '\n'
+        logger.lifecycle("License review inventory: ${output}")
+    }
+}
+
+['debug', 'release'].each { variant ->
+    def title = variant.capitalize()
+    def destination = layout.buildDirectory.dir("generated/licenseAssets/${variant}")
+    android.sourceSets.getByName(variant).assets.srcDir(destination)
+    def generate = tasks.register("generate${title}LicenseNotices") {
+        group = 'verification'
+        description = "Verifies and bundles reviewed ${variant} runtime licenses and notices."
+        // Run on every package build so resolution changes cannot reuse stale notices.
+        doLast {
+            def manifest = new JsonSlurper().parse(manifestFile)
+            check(manifest.formatVersion == 1, 'Unsupported Android license inventory format.')
+            def artifacts = artifactsFor(variant)
+            def expected = manifest.artifacts.findAll { coordinate, info -> variant in info.variants }
+            check(artifacts.keySet() == expected.keySet(),
+                "Android ${variant} dependencies changed. Run :app:reportRuntimeLicenseArtifacts, review their upstream licenses, and update licenses/runtime-licenses.json.")
+            def root = destination.get().asFile
+            delete(root)
+            def output = new File(root, 'licenses/android')
+            output.mkdirs()
+            def index = new StringBuilder('WordWarp Android third-party notices\n\n')
+            index.append('These components retain their own licenses and are excluded from the WordWarp Unlicense.\n')
+            index.append("Runtime variant: ${variant}\n\n")
+            def licenseNames = new TreeSet<String>()
+            def texts = new LinkedHashMap<String, byte[]>()
+            artifacts.each { coordinate, file ->
+                def info = expected[coordinate]
+                check(digest(file.bytes) == info.sha256, "Unreviewed Android artifact bytes: ${coordinate}")
+                index.append("${coordinate}\n  License: ${info.license}\n  Attribution: ${info.attribution}\n  Upstream metadata: ${info.pom}\n")
+                info.licenseFiles.each { name ->
+                    check(name == new File(name).name, 'License paths must be plain filenames.')
+                    check(new File(licenseRoot, name).isFile(), "Missing upstream license ${name}")
+                    licenseNames.add(name)
+                    index.append("  License/notice: ${name}\n")
+                }
+                // AARs hold Java resources in classes.jar/libs/*.jar as well as at the
+                // archive root. lint.jar is a build-time checker, never app runtime code.
+                def inspect
+                inspect = { byte[] bytes, String prefix ->
+                    new ZipInputStream(new ByteArrayInputStream(bytes)).withCloseable { zip ->
+                        def entry
+                        while ((entry = zip.nextEntry) != null) {
+                            if (entry.directory) continue
+                            def name = entry.name
+                            def leaf = name.tokenize('/').last().toLowerCase(Locale.ROOT)
+                            if (leaf.matches('.*(license|notice|copying|copyright|al2\\.0|lgpl).*')) {
+                                def contents = zip.readAllBytes()
+                                def target = "embedded/${digest(contents)}.txt"
+                                texts[target] = contents
+                                index.append("  Preserved ${prefix}${name}: ${target}\n")
+                            } else if (name == 'classes.jar' || (name.startsWith('libs/') && name.endsWith('.jar'))) {
+                                inspect(zip.readAllBytes(), "${name}!/")
+                            }
+                        }
+                    }
+                }
+                inspect(file.bytes, '')
+                index.append('\n')
+            }
+            licenseNames.each { name -> new File(output, name).bytes = new File(licenseRoot, name).bytes }
+            texts.each { name, contents ->
+                def target = new File(output, name)
+                target.parentFile.mkdirs()
+                target.bytes = contents
+            }
+            new File(output, 'INDEX.txt').setText(index.toString(), 'UTF-8')
+            def combined = new StringBuilder(index.toString())
+            licenseNames.each { name -> combined.append("\n\n===== ${name} =====\n\n").append(new File(licenseRoot, name).getText('UTF-8')) }
+            texts.each { name, contents -> combined.append("\n\n===== ${name} =====\n\n").append(new String(contents, 'UTF-8')) }
+            new File(output, 'NOTICES.txt').setText(combined.toString(), 'UTF-8')
+            logger.lifecycle("Bundled ${artifacts.size()} Android ${variant} runtime attributions, ${licenseNames.size()} upstream texts, and ${texts.size()} distinct embedded notices.")
+        }
+    }
+    tasks.matching { it.name == "pre${title}Build" }.configureEach { dependsOn(generate) }
+}
+
+// Groovy build scripts have no Kotlin-style check helper.
+void check(boolean condition, String message) {
+    if (!condition) throw new GradleException(message)
+}

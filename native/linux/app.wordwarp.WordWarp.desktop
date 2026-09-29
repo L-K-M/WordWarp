@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=WordWarp
+Comment=Create warped text, layered effects and animation
+Exec=wordwarp %f
+Icon=app.wordwarp.WordWarp
+Terminal=false
+Categories=Graphics;2DGraphics;
+MimeType=application/x-wordwarp;
+StartupNotify=true

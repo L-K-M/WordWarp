@@ -4,7 +4,7 @@ import { createDefaultDocument } from '../model/defaults';
 import { documentSchema } from '../model/schema';
 import type { Gradient } from '../model/types';
 import { applyPresetToElement, BUILT_IN_PRESETS } from './library';
-import { OFFICE_RAMPS } from './office-ramps';
+import { OFFICE_RAMPS, officeRampColors } from './office-ramps';
 import { PRESET_CATEGORY_TABS } from './types';
 
 function gradientFillPaint(presetId: string): Gradient | undefined {
@@ -208,9 +208,35 @@ describe('preset library', () => {
     expect(gradientFillPaint('chrome-dome')?.center).not.toEqual([0.5, 0.5]);
   });
 
-  it('ships all 24 Office ramp names with 20 stops each', () => {
-    expect(Object.keys(OFFICE_RAMPS)).toHaveLength(24);
-    for (const colors of Object.values(OFFICE_RAMPS)) expect(colors).toHaveLength(20);
+  it('preserves all historical ramp IDs with 20 valid samples for existing documents', () => {
+    const ids = [
+      'rainbow', 'rainbow-ii', 'early-sunset', 'late-sunset', 'nightfall', 'daybreak',
+      'horizon', 'desert', 'ocean', 'calm-water', 'fire', 'fog', 'moss', 'peacock',
+      'wheat', 'parchment', 'mahogany', 'gold', 'gold-ii', 'brass', 'chrome', 'chrome-ii',
+      'silver', 'sapphire',
+    ];
+    expect(Object.keys(OFFICE_RAMPS).sort()).toEqual(ids.sort());
+    for (const id of ids) {
+      const colors = officeRampColors(id)!;
+      expect(colors, id).toHaveLength(20);
+      expect(officeRampColors(id.toUpperCase()), id).toEqual(colors);
+      for (const [r, g, b, alpha] of colors) {
+        expect([r, g, b].every((channel) => Number.isFinite(channel) && channel >= 0 && channel <= 1), id).toBe(true);
+        expect(alpha, id).toBe(1);
+      }
+    }
+    expect(officeRampColors('missing-ramp')).toBeNull();
+  });
+
+  it('retains contrasting reflection bands in the original metal palettes', () => {
+    for (const id of ['gold', 'gold-ii', 'brass', 'chrome', 'chrome-ii', 'silver', 'sapphire']) {
+      const lightness = officeRampColors(id)!.map(([r, g, b]) => 0.2126 * r + 0.7152 * g + 0.0722 * b);
+      expect(Math.max(...lightness) - Math.min(...lightness), id).toBeGreaterThan(0.35);
+      // A monotone dark-to-light gradient looks painted; repeated rises and falls imply reflections.
+      const directions = lightness.slice(1).map((value, index) => Math.sign(value - lightness[index]!));
+      const reversals = directions.slice(1).filter((value, index) => value * directions[index]! < 0);
+      expect(reversals.length, id).toBeGreaterThanOrEqual(2);
+    }
   });
 
   it('applies every preset without changing content, placement, or text size', () => {

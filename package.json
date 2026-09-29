@@ -1,6 +1,7 @@
 {
   "name": "wordwarp",
   "private": true,
+  "license": "Unlicense",
   "version": "0.1.0",
   "type": "module",
   "packageManager": "npm@10.9.8",
@@ -11,6 +12,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:native": "tsc -b && vite build --config vite.native.config.ts",
+    "build:macos": "bash scripts/build-macos.sh",
+    "build:android": "bash scripts/build-android.sh",
+    "build:linux": "bash scripts/build-linux.sh",
+    "test:native": "playwright test --config playwright.native.config.ts",
     "check": "npm run lint && npm run typecheck && npm run test:unit && npm run build",
     "lint": "eslint .",
     "preview": "vite preview",

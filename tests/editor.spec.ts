@@ -76,6 +76,7 @@ test('places a stamp, styles it from the rack, and exports it over a background'
 
   // A background turns the export opaque and stops it cropping to the artwork, so the exported
   // frame should now be the full canvas rather than a tight crop around the content.
+  await page.getByRole('tab', { name: 'Canvas', exact: true }).click();
   await page.locator('.background-swatch', { hasText: 'Violet' }).click();
   await expect(page.locator('.canvas-status')).toContainText('GROUND');
 
@@ -233,6 +234,9 @@ test('outlines the element box itself rather than a rectangle around it', async 
 
 test('resizes, slants and rotates the selection from its handles', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium');
+  // Keep the selection taller than the 46 CSS-pixel secondary-handle cutoff. The default wide
+  // preset rack legitimately makes n/s/skew-x disappear on this viewport.
+  await page.addInitScript(() => localStorage.setItem('wordwarp:rack-width', '320'));
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('./');
   await expect(page.getByRole('button', { name: 'WordWarp Your Gooey Type Lab' })).toBeVisible();
@@ -290,6 +294,8 @@ test('resizes, slants and rotates the selection from its handles', async ({ page
 
 test('keeps hold of a gesture whose handle is dropped under the pointer', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium');
+  // Begin above the secondary-handle cutoff so the squash gesture crosses it during the drag.
+  await page.addInitScript(() => localStorage.setItem('wordwarp:rack-width', '320'));
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('./');
   await expect(page.locator('[data-handle="n"]')).toHaveCount(1);
@@ -568,6 +574,17 @@ test('loads from the production service worker while offline', async ({ page, co
   try {
     await page.reload({ waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('button', { name: 'WordWarp Your Gooey Type Lab' })).toBeVisible();
+    const [licenses] = await Promise.all([
+      context.waitForEvent('page'),
+      page.getByRole('link', { name: 'Licenses', exact: true }).click(),
+    ]);
+    await licenses.waitForLoadState('domcontentloaded');
+    await expect(licenses.getByRole('heading', { name: 'WordWarp', exact: true })).toBeVisible();
+    await expect(licenses.getByText('Luckiest Guy — Apache-2.0', { exact: true })).toBeVisible();
+    await licenses.getByText('The Unlicense — original WordWarp material', { exact: true }).click();
+    await expect(licenses.getByText('This is free and unencumbered software released into the public domain.', { exact: false })).toBeVisible();
+    expect(new URL(licenses.url()).pathname).toBe(new URL('licenses/index.html', page.url()).pathname);
+    await licenses.close();
   } finally {
     await context.setOffline(false);
   }

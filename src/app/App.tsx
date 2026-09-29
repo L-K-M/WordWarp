@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import { documentAnimationDuration, evaluateDocumentAtTime, hasEnabledAnimationTracks } from '../animation/evaluate';
 import { createEffect, EFFECT_KINDS, type EffectKind } from '../effects/defaults';
@@ -11,10 +11,13 @@ import { downloadPng, exportPng } from '../export/png';
 import { createDefaultDocument, createDefaultTextElement, createStampElement, STAMP_LABELS } from '../model/defaults';
 import { createId } from '../lib/id';
 import {
-  PRESET_WARP_IDS, STAMP_GROUPS, STAMP_IDS, STAMP_IDS_BY_GROUP,
-  type Effect, type Gradient, type Paint, type Point, type Rgba, type ShapeElement, type StampId,
+  STAMP_GROUPS, STAMP_IDS, STAMP_IDS_BY_GROUP,
+  type AnimationTrack, type Effect, type Gradient, type Paint, type Point, type Rgba, type ShapeElement, type StampId,
   type TextElement, type Transform,
 } from '../model/types';
+import { parseDocument } from '../model/schema';
+import { applyInspectorAction, applyInspectorValue, buildInspector, createNativeAnimation, nativeAnimationKinds, type InspectorValue } from '../native/inspector';
+import { InspectorFields, InspectorSectionControls, InspectorStackCard } from '../ui/InspectorControls';
 import { stampAspect, stampOutline } from '../geometry/stamps';
 import { rgbaToCss } from '../render/color';
 import brandLogo from '../assets/brand/wordwarp-logo.png';
@@ -33,7 +36,6 @@ import { DocumentCanvas, type GestureKind } from '../ui/DocumentCanvas';
 import { FontPicker } from '../ui/FontPicker';
 import { PresetPreview } from '../ui/PresetPreview';
 import { RackResizer } from '../ui/RackResizer';
-import { warpDisplayName } from '../warp';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 
 const presetCategories = PRESET_CATEGORY_TABS;
@@ -64,6 +66,9 @@ type ExportFormat = 'png' | 'apng' | 'gif';
 
 export function App() {
   const [isExporting, setIsExporting] = useState(false);
+  const [inspectorTab, setInspectorTab] = useState<'object' | 'effects' | 'motion' | 'canvas'>('object');
+  const [newAnimationKind, setNewAnimationKind] = useState<AnimationTrack['kind']>('pulse');
+  const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const [newEffectKind, setNewEffectKind] = useState<EffectKind>('stroke');
   const [stampMenuOpen, setStampMenuOpen] = useState(false);
   const [presetQuery, setPresetQuery] = useState('');
@@ -257,6 +262,58 @@ export function App() {
   const selectedElement = document.elements.find((element) => element.id === selectedElementId);
   const selectedText = selectedElement?.type === 'text' ? selectedElement : null;
   const selectedShape = selectedElement?.type === 'shape' ? selectedElement : null;
+
+  const inspectorSections = useMemo(() => buildInspector(document, selectedElementId), [document, selectedElementId]);
+  const objectInspector = inspectorSections.find((section) => section.category === 'object');
+  const effectInspector = inspectorSections.find((section) => section.category === 'effects');
+  const motionInspector = inspectorSections.find((section) => section.category === 'animation');
+  const canvasInspector = inspectorSections.find((section) => section.category === 'document')!;
+
+  const changeInspectorField = (id: string, value: InspectorValue) => {
+    try {
+      updateDocument('Adjust property', (draft) => {
+        applyInspectorValue(draft, selectedElementId, id, value);
+        parseDocument(draft);
+        documentAnimationDuration(draft);
+      }, `inspector:${id}`);
+    } catch (error) {
+      pushToast(error instanceof Error ? error.message : 'This property could not be changed.', 'error');
+    }
+  };
+  const performInspectorAction = (id: string) => {
+    try {
+      updateDocument('Edit property', (draft) => {
+        applyInspectorAction(draft, selectedElementId, id);
+        parseDocument(draft);
+      });
+    } catch (error) {
+      pushToast(error instanceof Error ? error.message : 'This property could not be changed.', 'error');
+    }
+  };
+  const inspectorControls = { onChange: changeInspectorField, onAction: performInspectorAction };
+
+  const changeAnimation = (id: string, action: 'toggle' | 'remove') => {
+    updateDocument(action === 'toggle' ? 'Toggle animation' : 'Remove animation', (draft) => {
+      const element = draft.elements.find((candidate) => candidate.id === selectedElementId);
+      const index = element?.animations.findIndex((track) => track.id === id) ?? -1;
+      if (!element || index < 0) return;
+      if (action === 'remove') element.animations.splice(index, 1);
+      else element.animations[index]!.enabled = !element.animations[index]!.enabled;
+    });
+  };
+  const addAnimation = () => {
+    if (!selectedElement) return;
+    const track = createNativeAnimation(newAnimationKind);
+    try {
+      updateDocument('Add animation', (draft) => {
+        draft.elements.find((element) => element.id === selectedElement.id)!.animations.push(track);
+        documentAnimationDuration(draft);
+      });
+      setExpandedItem(track.id);
+    } catch (error) {
+      pushToast(error instanceof Error ? error.message : 'This animation could not be added.', 'error');
+    }
+  };
 
   const removeSelected = () => {
     if (!selectedElementId) return;
@@ -545,29 +602,15 @@ export function App() {
           <span>{effects.length}</span>
         </div>
         <ol className="effect-list">
-          {effects.map((effect, index) => (
-            <li key={effect.id}>
-              <span className="drag-grip" aria-hidden="true">::</span>
-              <span className={`effect-chip effect-${effect.kind}`} aria-hidden="true" />
-              <span>
-                <strong>{effectLabel(effect.kind)}</strong>
-                <small>{effect.slot.toUpperCase()} / {index + 1}</small>
-              </span>
-              <span className="effect-actions">
-                <button type="button" onClick={() => moveEffect(effect.id, -1)} aria-label="Move effect up">▲</button>
-                <button type="button" onClick={() => moveEffect(effect.id, 1)} aria-label="Move effect down">▼</button>
-                <button
-                  className={effect.enabled ? 'enabled' : ''}
-                  type="button"
-                  aria-label={`${effect.enabled ? 'Disable' : 'Enable'} ${effectLabel(effect.kind)}`}
-                  aria-pressed={effect.enabled}
-                  onClick={() => toggleEffect(effect.id)}
-                >
-                  {effect.enabled ? 'ON' : 'OFF'}
-                </button>
-                <button type="button" onClick={() => removeEffect(effect.id)} aria-label={`Remove ${effectLabel(effect.kind)}`}>✕</button>
-              </span>
-              <EffectQuickControl effect={effect} onChange={(value) => updateEffectPrimary(effect.id, value)} />
+          {effects.map((effect, index) => {
+            const section = effectInspector?.children?.find((item) => item.id === effect.id);
+            return <InspectorStackCard key={effect.id} title={effectLabel(effect.kind)} enabled={effect.enabled}
+              initiallyExpanded={expandedItem === effect.id} onToggle={() => toggleEffect(effect.id)} actions={<>
+                <button type="button" disabled={index === 0} onClick={() => moveEffect(effect.id, -1)} aria-label="Move effect up" title="Move up">↑</button>
+                <button type="button" disabled={index === effects.length - 1} onClick={() => moveEffect(effect.id, 1)} aria-label="Move effect down" title="Move down">↓</button>
+                <button type="button" onClick={() => removeEffect(effect.id)} aria-label={`Remove ${effectLabel(effect.kind)}`} title="Remove effect">×</button>
+              </>}>
+              {section && <InspectorFields fields={section.fields.filter((field) => field.path.at(-1) !== 'enabled')} {...inspectorControls} />}
               <EffectPaintControls
                 effect={effect}
                 onKindChange={(kind) => setEffectPaintKind(effect.id, kind)}
@@ -579,12 +622,15 @@ export function App() {
                 onTypeChange={(type) => updateGradientType(effect.id, type)}
                 onAngleChange={(angle) => updateGradientAngle(effect.id, angle)}
               />
-              <EffectColorControls effect={effect} onChange={(target, hex) => updateEffectColor(effect.id, target, hex)} />
-            </li>
-          ))}
+              {section?.children?.map((child) => <details className="metadata-section" key={child.id}>
+                <summary>{child.label === 'Paint' ? 'More paint controls' : child.label}</summary>
+                <InspectorSectionControls section={child} {...inspectorControls} />
+              </details>)}
+            </InspectorStackCard>;
+          })}
         </ol>
         <div className="effect-adder">
-          <select className="jelly-select" value={newEffectKind} onChange={(event) => setNewEffectKind(event.target.value as EffectKind)}>
+          <select className="jelly-select" aria-label="New effect" value={newEffectKind} onChange={(event) => setNewEffectKind(event.target.value as EffectKind)}>
             {EFFECT_KINDS.map((kind) => <option key={kind} value={kind}>{effectLabel(kind)}</option>)}
           </select>
           <button className="add-effect orb orb-xs orb-lime" type="button" onClick={addEffect}>+ Add</button>
@@ -611,6 +657,7 @@ export function App() {
   const addEffect = () => {
     if (!selectedElement) return;
     const effect = createEffect(newEffectKind);
+    setExpandedItem(effect.id);
     updateDocument('Add effect', (draft) => {
       const element = draft.elements.find((candidate) => candidate.id === selectedElement.id);
       element?.effects.push(effect);
@@ -638,25 +685,6 @@ export function App() {
       const [effect] = element.effects.splice(index, 1);
       element.effects.splice(nextIndex, 0, effect!);
     });
-  };
-
-  const updateEffectPrimary = (effectId: string, value: number) => {
-    if (!selectedElement) return;
-    updateDocument('Adjust effect', (draft) => {
-      const element = draft.elements.find((candidate) => candidate.id === selectedElement.id);
-      const effect = element?.effects.find((candidate) => candidate.id === effectId);
-      if (!effect) return;
-      if (effect.kind === 'stroke') effect.width = value;
-      else if (effect.kind === 'bevel') effect.size = value;
-      else if (effect.kind === 'extrude') effect.depth = value;
-      else if (effect.kind === 'innerShadow' || effect.kind === 'innerGlow') effect.size = value;
-      else if (effect.kind === 'outerGlow' || effect.kind === 'dropShadow' || effect.kind === 'satin') effect.size = value;
-      else if (effect.kind === 'longShadow') effect.length = value;
-      else if (effect.kind === 'textureOverlay') effect.scale = value;
-      else if (effect.kind === 'reflection') effect.height = value;
-      else if (effect.kind === 'post') effect.params.amount = value;
-      else effect.opacity = value;
-    }, `effect:${effectId}`);
   };
 
   const updateEffectColor = (effectId: string, target: 'paint' | 'color' | 'highlight' | 'shadow', hex: string) => {
@@ -924,6 +952,7 @@ export function App() {
           <button className="export-button orb orb-lg orb-sun" type="button" onClick={() => void handleExport()} disabled={isExporting}>
             {isExporting ? `${Math.round(exportProgress * 100)}%` : `Export ${exportFormat.toUpperCase()}`} <span aria-hidden="true">✦</span>
           </button>
+          <a className="licenses-link" href={`${import.meta.env.BASE_URL}licenses/index.html`} target="_blank" rel="noopener">Licenses</a>
         </div>
       </header>
 
@@ -1095,6 +1124,21 @@ export function App() {
             <span>GOO CONTROLS</span>
             <span className="selection-dot" aria-hidden="true" />
           </div>
+          <div className="inspector-tabs" role="tablist" aria-label="Editor sections">
+            {(['object', 'effects', 'motion', 'canvas'] as const).map((tab, index, tabs) => (
+              <button key={tab} id={`inspector-tab-${tab}`} type="button" role="tab"
+                aria-selected={inspectorTab === tab} aria-controls={`inspector-${tab}`} tabIndex={inspectorTab === tab ? 0 : -1}
+                onClick={() => setInspectorTab(tab)} onKeyDown={(event) => {
+                  const next = event.key === 'ArrowRight' ? tabs[(index + 1) % tabs.length]
+                    : event.key === 'ArrowLeft' ? tabs[(index + tabs.length - 1) % tabs.length]
+                      : event.key === 'Home' ? tabs[0] : event.key === 'End' ? tabs[tabs.length - 1] : undefined;
+                  if (!next) return;
+                  event.preventDefault(); setInspectorTab(next);
+                  event.currentTarget.parentElement?.querySelector<HTMLButtonElement>(`#inspector-tab-${next}`)?.focus();
+                }}>{tab.charAt(0).toUpperCase() + tab.slice(1)}</button>
+            ))}
+          </div>
+          <div id="inspector-object" role="tabpanel" aria-labelledby="inspector-tab-object" hidden={inspectorTab !== 'object'}>
           {selectedText ? (
             <>
               <section className="inspector-section open">
@@ -1168,111 +1212,12 @@ export function App() {
 
               <section className="inspector-section warp-section">
                 <h2>Warp <span>{selectedText.warp.kind.toUpperCase()}</span></h2>
-                <label>
-                  <span>Envelope</span>
-                  <select
-                    className="jelly-select"
-                    value={selectedText.warp.kind === 'preset' ? selectedText.warp.preset : 'none'}
-                    onChange={(event) => {
-                      const preset = event.target.value;
-                      updateDocument('Change warp', (draft) => {
-                        const element = draft.elements.find((item) => item.id === selectedText.id);
-                        if (element?.type !== 'text') return;
-                        if (preset === 'none') {
-                          element.warp.kind = 'none';
-                          element.warp.preset = undefined;
-                          element.warp.bend = 0;
-                        } else {
-                          element.warp.kind = 'preset';
-                          element.warp.preset = preset as (typeof PRESET_WARP_IDS)[number];
-                          if (Math.abs(element.warp.bend) < 0.01) element.warp.bend = 0.78;
-                        }
-                      });
-                    }}
-                  >
-                    <option value="none">No warp</option>
-                    {PRESET_WARP_IDS.filter((preset) => preset !== 'textNoShape' && preset !== 'textPlain').map((preset) => (
-                      <option key={preset} value={preset}>{warpDisplayName(preset)}</option>
-                    ))}
-                  </select>
-                </label>
-                {selectedText.warp.kind === 'preset' && (
-                  <>
-                    <label className="range-field">
-                      <span>Bend <output>{selectedText.warp.bend.toFixed(2)}</output></span>
-                      <input
-                        className="goo-range"
-                        type="range"
-                        min="-2"
-                        max="2"
-                        step="0.01"
-                        value={selectedText.warp.bend}
-                        onChange={(event) => {
-                          const bend = Number(event.target.value);
-                          updateDocument('Adjust warp bend', (draft) => {
-                            const element = draft.elements.find((item) => item.id === selectedText.id);
-                            if (element?.type === 'text') element.warp.bend = bend;
-                          }, `warp:${selectedText.id}`);
-                        }}
-                      />
-                    </label>
-                    <label className="range-field">
-                      <span>Shape <output>{selectedText.warp.adj[0].toFixed(2)}</output></span>
-                      <input
-                        className="goo-range"
-                        type="range"
-                        min="0"
-                        max="2"
-                        step="0.01"
-                        value={selectedText.warp.adj[0]}
-                        onChange={(event) => {
-                          const adjustment = Number(event.target.value);
-                          updateDocument('Adjust warp shape', (draft) => {
-                            const element = draft.elements.find((item) => item.id === selectedText.id);
-                            if (element?.type === 'text') element.warp.adj[0] = adjustment;
-                          }, `warp-adj:${selectedText.id}`);
-                        }}
-                      />
-                    </label>
-                  </>
-                )}
+                <InspectorSectionControls section={objectInspector!.children!.find((section) => section.label === 'Warp')!} {...inspectorControls} />
               </section>
 
               {renderTransformSection(selectedText)}
 
-              {renderEffectsSection(selectedText.effects)}
 
-              <section className="inspector-section light-section">
-                <h2>Global light <span>{Math.round(document.globalLight.angle)} DEG</span></h2>
-                <label className="range-field">
-                  <span>Angle <output>{Math.round(document.globalLight.angle)}</output></span>
-                  <input
-                    className="goo-range"
-                    type="range"
-                    min="0"
-                    max="360"
-                    value={document.globalLight.angle}
-                    onChange={(event) => {
-                      const angle = Number(event.target.value);
-                      updateDocument('Adjust global light', (draft) => { draft.globalLight.angle = angle; }, 'global-light');
-                    }}
-                  />
-                </label>
-                <label className="range-field">
-                  <span>Altitude <output>{Math.round(document.globalLight.altitude)}</output></span>
-                  <input
-                    className="goo-range"
-                    type="range"
-                    min="0"
-                    max="90"
-                    value={document.globalLight.altitude}
-                    onChange={(event) => {
-                      const altitude = Number(event.target.value);
-                      updateDocument('Adjust global light', (draft) => { draft.globalLight.altitude = altitude; }, 'global-light');
-                    }}
-                  />
-                </label>
-              </section>
             </>
           ) : selectedShape ? (
             <>
@@ -1343,7 +1288,6 @@ export function App() {
                 </p>
               </section>
               {renderTransformSection(selectedShape)}
-              {renderEffectsSection(selectedShape.effects)}
             </>
           ) : (
             <div className="no-selection">
@@ -1352,6 +1296,51 @@ export function App() {
             </div>
           )}
 
+          {objectInspector && <section className="inspector-section object-details">
+            <h2>Layer properties</h2>
+            <InspectorFields fields={objectInspector.fields} {...inspectorControls} />
+            {objectInspector.children?.filter((section) => section.label !== 'Warp').map((section) => {
+              const filtered = { ...section, fields: section.fields.filter((field) => !['Content', 'Font family', 'Weight', 'Font size', 'Stamp'].includes(field.label)) };
+              if (!filtered.fields.length && !filtered.children?.length) return null;
+              return <details className="metadata-section" key={section.id}>
+                <summary>{section.label === 'Text & font' ? 'Typography' : section.label === 'Position & transform' ? 'Exact position & transform' : section.label}</summary>
+                <InspectorSectionControls section={filtered} {...inspectorControls} />
+              </details>;
+            })}
+          </section>}
+          </div>
+          <div id="inspector-effects" role="tabpanel" aria-labelledby="inspector-tab-effects" hidden={inspectorTab !== 'effects'}>
+            {selectedText || selectedShape ? renderEffectsSection(selectedElement!.effects) : <p className="inspector-empty">Select a layer to edit its effects.</p>}
+          </div>
+          <div id="inspector-motion" role="tabpanel" aria-labelledby="inspector-tab-motion" hidden={inspectorTab !== 'motion'}>
+            {selectedText || selectedShape ? <section className="effects-section">
+              <div className="section-title-row"><h2>Animation tracks</h2><span>{selectedElement!.animations.length}</span></div>
+              <p className="inspector-hint">Combine tracks, then use Play below the canvas to preview the loop.</p>
+              <ol className="effect-list motion-list">
+                {selectedElement!.animations.map((track) => {
+                  const section = motionInspector?.children?.find((item) => item.id === track.id);
+                  return <InspectorStackCard key={track.id} title={section?.label ?? track.kind} enabled={track.enabled}
+                    initiallyExpanded={expandedItem === track.id} onToggle={() => changeAnimation(track.id, 'toggle')}
+                    actions={<button type="button" onClick={() => changeAnimation(track.id, 'remove')} aria-label={`Remove ${section?.label ?? track.kind}`} title="Remove animation">×</button>}>
+                    {section && <InspectorFields fields={section.fields.filter((field) => field.path.at(-1) !== 'enabled')} {...inspectorControls} />}
+                  </InspectorStackCard>;
+                })}
+              </ol>
+              {!selectedElement!.animations.length && <p className="inspector-empty">Add motion to this layer.</p>}
+              <div className="effect-adder">
+                <select className="jelly-select" aria-label="New animation" value={newAnimationKind}
+                  onChange={(event) => setNewAnimationKind(event.target.value as AnimationTrack['kind'])}>
+                  {nativeAnimationKinds.map((kind) => <option key={kind.value} value={kind.value}>{kind.label}</option>)}
+                </select>
+                <button className="add-effect orb orb-xs orb-lime" type="button" onClick={addAnimation}>+ Add</button>
+              </div>
+            </section> : <p className="inspector-empty">Select a layer to edit its motion.</p>}
+          </div>
+          <div id="inspector-canvas" role="tabpanel" aria-labelledby="inspector-tab-canvas" hidden={inspectorTab !== 'canvas'}>
+          <section className="inspector-section">
+            <h2>Document & canvas</h2>
+            <InspectorSectionControls section={{ ...canvasInspector, children: canvasInspector.children?.filter((section) => section.label !== 'Background') }} {...inspectorControls} />
+          </section>
           <section className="inspector-section background-section">
             <h2>Background <span>{backgroundLabel(document.canvas.background)}</span></h2>
             <div className="background-swatches">
@@ -1393,7 +1382,12 @@ export function App() {
               A background fills the frame, so exports stop being transparent and stop cropping to
               the artwork. Set it back to None to get both behaviours back.
             </p>
+            <details className="metadata-section">
+              <summary>Background paint</summary>
+              <InspectorSectionControls section={canvasInspector.children!.find((section) => section.label === 'Background')!} {...inspectorControls} />
+            </details>
           </section>
+          </div>
         </aside>
       </div>
 
@@ -1473,54 +1467,6 @@ export function App() {
 
 function swatchGradient(colors: readonly string[]): string {
   return `linear-gradient(145deg, ${colors.join(', ')})`;
-}
-
-function EffectQuickControl({ effect, onChange }: { effect: Effect; onChange: (value: number) => void }) {
-  const control = effectControl(effect);
-  return (
-    <label className="effect-quick-control">
-      <span>{control.label}</span>
-      <input
-        className="goo-range"
-        type="range"
-        min={control.min}
-        max={control.max}
-        step={control.step}
-        value={control.value}
-        onChange={(event) => onChange(Number(event.target.value))}
-      />
-      <output>{control.value.toFixed(control.step < 1 ? 2 : 0)}</output>
-    </label>
-  );
-}
-
-type ColorTarget = 'paint' | 'color' | 'highlight' | 'shadow';
-
-function EffectColorControls({ effect, onChange }: { effect: Effect; onChange: (target: ColorTarget, hex: string) => void }) {
-  const swatches: Array<{ target: ColorTarget; label: string; value: string }> = [];
-  if ('color' in effect) {
-    swatches.push({ target: 'color', label: 'Color', value: rgbaToHex(effect.color) });
-  }
-  if (effect.kind === 'bevel') {
-    swatches.push({ target: 'highlight', label: 'Hi', value: rgbaToHex(effect.highlight.color) });
-    swatches.push({ target: 'shadow', label: 'Sh', value: rgbaToHex(effect.shadow.color) });
-  }
-  if (swatches.length === 0) return null;
-  return (
-    <span className="effect-color-controls">
-      {swatches.map((swatch) => (
-        <label key={swatch.target} title={`${effectLabel(effect.kind)} ${swatch.label.toLowerCase()}`}>
-          <span>{swatch.label}</span>
-          <input
-            type="color"
-            value={swatch.value}
-            aria-label={`${effectLabel(effect.kind)} ${swatch.label.toLowerCase()}`}
-            onInput={(event) => onChange(swatch.target, event.currentTarget.value)}
-          />
-        </label>
-      ))}
-    </span>
-  );
 }
 
 /**
@@ -1787,28 +1733,6 @@ function hexToRgb(hex: string): [number, number, number] | null {
   if (!match) return null;
   const value = Number.parseInt(match[1]!, 16);
   return [((value >> 16) & 255) / 255, ((value >> 8) & 255) / 255, (value & 255) / 255];
-}
-
-function effectControl(effect: Effect): { label: string; min: number; max: number; step: number; value: number } {
-  if (effect.kind === 'stroke') return { label: 'Width', min: 0, max: 80, step: 1, value: effect.width };
-  if (effect.kind === 'bevel') return { label: 'Size', min: 1, max: 80, step: 1, value: effect.size };
-  if (effect.kind === 'extrude') return { label: 'Depth', min: 0, max: 180, step: 1, value: effect.depth };
-  if (effect.kind === 'innerShadow' || effect.kind === 'innerGlow') {
-    return { label: 'Size', min: 0, max: 80, step: 1, value: effect.size };
-  }
-  if (effect.kind === 'outerGlow' || effect.kind === 'dropShadow' || effect.kind === 'satin') {
-    return { label: 'Size', min: 0, max: 100, step: 1, value: effect.size };
-  }
-  if (effect.kind === 'longShadow') {
-    return { label: 'Length', min: 0, max: 300, step: 1, value: effect.length === 'toEdge' ? 300 : effect.length };
-  }
-  if (effect.kind === 'textureOverlay') return { label: 'Scale', min: 0.2, max: 5, step: 0.1, value: effect.scale };
-  if (effect.kind === 'reflection') return { label: 'Height', min: 0.05, max: 1, step: 0.05, value: effect.height };
-  if (effect.kind === 'post') {
-    const amount = effect.params.amount;
-    return { label: 'Amount', min: 0, max: 1, step: 0.01, value: typeof amount === 'number' ? amount : 0.2 };
-  }
-  return { label: 'Opacity', min: 0, max: 1, step: 0.01, value: effect.opacity };
 }
 
 function effectLabel(kind: TextElement['effects'][number]['kind']): string {
