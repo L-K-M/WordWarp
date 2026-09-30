@@ -73,6 +73,7 @@ export function DocumentCanvas({
   onTransformEnd,
   interactionEnabled = true,
   onRendered,
+  onRendererError,
 }: DocumentCanvasProps) {
   const deferredDocument = useDeferredValue(document);
   const canvasRef = useRef<HTMLCanvasElement>(null);
