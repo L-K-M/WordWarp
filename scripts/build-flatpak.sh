@@ -38,16 +38,16 @@ chmod 755 "$STAGE/bin/wordwarp"
 cp native/linux/wordwarp.py "$STAGE/share/wordwarp/wordwarp.py"
 printf '%s\n' "$VERSION" > "$STAGE/share/wordwarp/VERSION"
 cp -R dist-native/. "$STAGE/share/wordwarp/web/"
-cp native/linux/app.wordwarp.WordWarp.desktop "$STAGE/share/applications/"
+cp native/linux/ch.lkmc.wordwarp.WordWarp.desktop "$STAGE/share/applications/"
 cp native/linux/wordwarp.xml "$STAGE/share/mime/packages/"
 # flatpak-builder's icon validation needs a raster (the SVG loader may not be
 # present on the runner); render the source SVG at 512px.
 if command -v rsvg-convert >/dev/null; then
   rsvg-convert -w 512 -h 512 public/wordwarp-icon.svg \
-    -o "$STAGE/share/icons/hicolor/512x512/apps/app.wordwarp.WordWarp.png"
+    -o "$STAGE/share/icons/hicolor/512x512/apps/ch.lkmc.wordwarp.WordWarp.png"
 elif command -v magick >/dev/null; then
   magick -background none -size 512x512 public/wordwarp-icon.svg \
-    "$STAGE/share/icons/hicolor/512x512/apps/app.wordwarp.WordWarp.png"
+    "$STAGE/share/icons/hicolor/512x512/apps/ch.lkmc.wordwarp.WordWarp.png"
 else
   { echo "need librsvg2-bin (rsvg-convert) or ImageMagick to render the app icon" >&2; exit 1; }
 fi
@@ -60,9 +60,9 @@ flatpak remote-add --user --if-not-exists flathub \
 flatpak-builder --user --install-deps-from=flathub --force-clean \
   --disable-rofiles-fuse --state-dir=artifacts/flatpak/state \
   --repo=artifacts/flatpak/repo \
-  artifacts/flatpak/build native/linux/app.wordwarp.WordWarp.yml
+  artifacts/flatpak/build native/linux/ch.lkmc.wordwarp.WordWarp.yml
 
 mkdir -p artifacts/native
 flatpak build-bundle artifacts/flatpak/repo \
-  "artifacts/native/WordWarp-linux.flatpak" app.wordwarp.WordWarp --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+  "artifacts/native/WordWarp-linux.flatpak" ch.lkmc.wordwarp.WordWarp --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
 printf 'Flatpak: %s/artifacts/native/WordWarp-linux.flatpak\n' "$ROOT"

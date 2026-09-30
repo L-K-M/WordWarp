@@ -1,4 +1,4 @@
-package app.wordwarp.android
+package ch.lkmc.wordwarp.android
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas

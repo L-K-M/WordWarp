@@ -1,4 +1,4 @@
-package app.wordwarp.android
+package ch.lkmc.wordwarp.android
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Context
@@ -223,7 +223,7 @@ class NativeEditorTest {
         waitForFiles()
         clickSystemText("SAVE")
         compose.waitUntil(30_000) {
-            automation.rootInActiveWindow?.packageName == "app.wordwarp.android" && engine.ready &&
+            automation.rootInActiveWindow?.packageName == "ch.lkmc.wordwarp.android" && engine.ready &&
                 !compose.activity.delivery.busy && compose.activity.delivery.completedSave == null &&
                 engine.documentName == filename && engine.layers.size == 3 && !engine.dirty
         }
@@ -242,7 +242,7 @@ class NativeEditorTest {
         waitForFiles()
         clickSystemText("$filename.wordwarp")
         try { compose.waitUntil(30_000) {
-            automation.rootInActiveWindow?.packageName == "app.wordwarp.android" && engine.ready &&
+            automation.rootInActiveWindow?.packageName == "ch.lkmc.wordwarp.android" && engine.ready &&
                 !compose.activity.delivery.opening && !compose.activity.delivery.busy &&
                 engine.documentName == filename && engine.layers.size == 3
         } }
@@ -307,7 +307,7 @@ class NativeEditorTest {
         compose.onNodeWithTag("confirm-export").performClick()
         waitForFiles()
         automation.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
-        compose.waitUntil(10_000) { automation.rootInActiveWindow?.packageName == "app.wordwarp.android" }
+        compose.waitUntil(10_000) { automation.rootInActiveWindow?.packageName == "ch.lkmc.wordwarp.android" }
         compose.onNodeWithTag("export").assertIsEnabled()
         compose.onNodeWithText("Save cancelled").assertExists()
     }
