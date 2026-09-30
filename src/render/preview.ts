@@ -18,8 +18,13 @@ export class PreviewRenderer {
     this.stagingContext = get2dContext(this.staging);
 
     // Both branches assign, so an initialiser here would only ever be discarded.
+    // The probe runs on a throwaway canvas: a WebGL context that dies after
+    // creation (blacklisted driver, shader-compile failure) taints the canvas's
+    // context mode — getContext('2d') then returns null and the fallback is gone.
     let presenter: WebGlPresenter | null;
     try {
+      const probe = new WebGlPresenter(document.createElement('canvas'));
+      probe.dispose();
       presenter = new WebGlPresenter(target);
     } catch {
       presenter = null;

@@ -272,7 +272,7 @@ struct CurveControl: View {
                 guard !samples.isEmpty else { return }
                 var edited = samples
                 let index = min(samples.count - 1, max(0, Int((position.location.x / geometry.size.width * Double(samples.count - 1)).rounded())))
-                edited[index] = min(1, max(0, 1 - position.location.y / geometry.size.height))
+                edited[index] = min(1, max(0, 1 - Double(position.location.y / geometry.size.height)))
                 change(edited)
             })
         }

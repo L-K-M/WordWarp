@@ -365,6 +365,7 @@ function NativeCanvas({
                 height,
               })
             }
+            onRendererError={(message) => postToHost({ type: 'render-failed', message })}
           />
         </div>
       )}

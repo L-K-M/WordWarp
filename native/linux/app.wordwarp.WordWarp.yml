@@ -1,0 +1,27 @@
+# Flatpak manifest. scripts/build-flatpak.sh builds the web bundle outside
+# the sandbox (the GNOME SDK has no Node.js), stages the Linux tree in
+# artifacts/flatpak/stage, and builds from that.
+id: app.wordwarp.WordWarp
+runtime: org.gnome.Platform
+runtime-version: '50'
+sdk: org.gnome.Sdk
+command: wordwarp
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  # X11 only on a desktop without Wayland.
+  - --socket=fallback-x11
+  # WebKit's GPU rendering.
+  - --device=dri
+  # Open/save/export go through GTK's portal file chooser; the app is
+  # client-only, so no filesystem or network permissions.
+modules:
+  - name: wordwarp
+    buildsystem: simple
+    sources:
+      - type: dir
+        path: ../../artifacts/flatpak/stage
+    build-commands:
+      - cp -R bin share /app/
+      # /app is read-only once installed: compile the shell now.
+      - python3 -m compileall -q /app/share/wordwarp

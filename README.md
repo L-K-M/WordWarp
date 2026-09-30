@@ -1,5 +1,8 @@
 <img src="./src/assets/brand/wordwarp-logo.png" alt="Word Warp — Your Gooey Type Lab" width="640" />
 
+> [!IMPORTANT]
+> LLM disclosure: This codebase was written with substantial help from large language models: AI coding agents working from the [`AGENTS.md`](AGENTS.md) brief in this repo.
+
 **Latest release:** v<!-- version -->0.1.0<!-- /version --> · [Download](https://github.com/L-K-M/WordWarp/releases/latest)
 
 WordWarp is a browser-based studio for warped, metallic, dimensional text with alpha-correct image
@@ -47,10 +50,12 @@ canvas bridge in Chromium and WebKit; actual native host tests run separately.
 Serve that directory over HTTPS (or localhost); service workers and installable PWA behavior do not
 work from `file://` URLs.
 
-Native packaging commands are `npm run build:macos`, `npm run build:android`, and
-`npm run build:linux`. They create Mac app archives, an Android debug APK, and an
-Ubuntu 24.04 `.deb` under `artifacts/native/`. Each platform has its own SDK/runtime
-requirements, described in the native build instructions. CI builds all three
+Native packaging commands are `npm run build:macos`, `npm run build:android`,
+`npm run build:linux`, and `npm run build:flatpak`. They create Mac app archives,
+an Android debug APK, an Ubuntu 24.04 `.deb`, and a GNOME-runtime `.flatpak`
+bundle under `artifacts/native/` (`scripts/build-linux.sh --flatpak` builds both
+Linux packages in one go). Each platform has its own SDK/runtime
+requirements, described in the native build instructions. CI builds all
 targets, including Apple silicon and Intel Mac variants, with downloadable checksums.
 
 ## Deployment

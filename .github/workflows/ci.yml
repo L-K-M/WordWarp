@@ -153,7 +153,7 @@ jobs:
         run: |
           set -euo pipefail
           APP=native/macos/build/WordWarp.app
-          lipo -verify_arch "$WORDWARP_MACOS_ARCH" "$APP/Contents/MacOS/WordWarp"
+          lipo "$APP/Contents/MacOS/WordWarp" -verify_arch "$WORDWARP_MACOS_ARCH"
           codesign --verify --deep --strict "$APP"
           "$APP/Contents/MacOS/WordWarp" \
             --self-test "$RUNNER_TEMP/wordwarp-macos.png" \
@@ -209,7 +209,7 @@ jobs:
             native/android/gradle/wrapper/gradle-wrapper.properties
 
       - name: Ensure required Android SDK packages
-        run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+        run: "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager 'platforms;android-36' 'build-tools;35.0.0'"
 
       - name: Install locked dependencies, build APK, and lint
         run: |
@@ -279,6 +279,9 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE: '1'
           WEBKIT_DISABLE_DMABUF_RENDERER: '1'
         run: |
+          # WebKitGTK's subprocess sandbox uses bwrap; Ubuntu 24.04 AppArmor
+          # denies unprivileged user namespaces unless this knob is off.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
           python3 native/linux/test_recovery.py
           timeout 180 dbus-run-session -- xvfb-run -a \
             /usr/bin/wordwarp --self-test "$RUNNER_TEMP/wordwarp-linux.png"
@@ -307,6 +310,47 @@ jobs:
           path: ${{ runner.temp }}/wordwarp-linux.png*
           if-no-files-found: ignore
           retention-days: 7
+
+  native-flatpak:
+    name: Linux Flatpak bundle
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # Ubuntu 24.04 denies the unprivileged user namespaces bubblewrap
+      # (flatpak's sandbox helper) builds in.
+      - name: Install Flatpak tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y flatpak flatpak-builder elfutils librsvg2-bin
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true   # absent on kernels without the knob
+
+      - name: Build Flatpak bundle
+        run: |
+          npm ci
+          bash scripts/build-flatpak.sh
+
+      - name: Checksum Flatpak bundle
+        working-directory: artifacts/native
+        run: sha256sum WordWarp-linux.flatpak > WordWarp-linux.flatpak.sha256
+
+      - name: Upload verified Flatpak bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wordwarp-native-flatpak-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            artifacts/native/WordWarp-linux.flatpak
+            artifacts/native/WordWarp-linux.flatpak.sha256
+          if-no-files-found: error
+          retention-days: 14
 
   container:
     name: Docker Compose smoke test
