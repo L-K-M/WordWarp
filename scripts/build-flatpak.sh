@@ -60,7 +60,7 @@ flatpak remote-add --user --if-not-exists flathub \
 flatpak-builder --user --install-deps-from=flathub --force-clean \
   --disable-rofiles-fuse --state-dir=artifacts/flatpak/state \
   --repo=artifacts/flatpak/repo \
-  artifacts/flatpak/build native/linux/ch.lkmc.wordwarp.WordWarp.yml
+  artifacts/flatpak/build native/linux/ch.lkmc.wordwarp.yml
 
 mkdir -p artifacts/native
 flatpak build-bundle artifacts/flatpak/repo \
