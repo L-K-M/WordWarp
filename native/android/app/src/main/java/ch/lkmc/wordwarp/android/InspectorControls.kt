@@ -1,4 +1,4 @@
-package app.wordwarp.android
+package ch.lkmc.wordwarp.android
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background

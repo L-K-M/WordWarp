@@ -1,7 +1,7 @@
 # Flatpak manifest. scripts/build-flatpak.sh builds the web bundle outside
 # the sandbox (the GNOME SDK has no Node.js), stages the Linux tree in
 # artifacts/flatpak/stage, and builds from that.
-id: app.wordwarp.WordWarp
+id: ch.lkmc.wordwarp.WordWarp
 runtime: org.gnome.Platform
 runtime-version: '50'
 sdk: org.gnome.Sdk
