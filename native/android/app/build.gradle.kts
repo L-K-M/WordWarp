@@ -51,7 +51,7 @@ val verifyNativeAssets by tasks.registering {
 tasks.named("preBuild").configure { dependsOn(verifyNativeAssets) }
 
 dependencies {
-    implementation(platform("androidx.compose:compose-bom:2025.12.00"))
+    implementation(platform("androidx.compose:compose-bom:2026.09.00"))
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.4")
@@ -63,7 +63,7 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test:core:1.6.1")
-    androidTestImplementation(platform("androidx.compose:compose-bom:2025.12.00"))
+    androidTestImplementation(platform("androidx.compose:compose-bom:2026.09.00"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
