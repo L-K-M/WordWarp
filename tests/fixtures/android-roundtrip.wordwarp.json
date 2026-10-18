@@ -1,0 +1,389 @@
+{
+  "version": 3,
+  "id": "android-roundtrip-document",
+  "name": "Android roundtrip fixture",
+  "canvas": {
+    "width": 1200,
+    "height": 630,
+    "background": null,
+    "autoFit": true,
+    "exportPadding": 48
+  },
+  "elements": [
+    {
+      "id": "roundtrip-layer-0",
+      "name": "Heart copy",
+      "visible": false,
+      "locked": true,
+      "opacity": 1,
+      "blendMode": "normal",
+      "transform": {
+        "x": 504,
+        "y": 307.5,
+        "rotation": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "skewX": 0,
+        "skewY": 0,
+        "originX": 0.5,
+        "originY": 0.5
+      },
+      "effects": [
+        {
+          "id": "roundtrip-effect-0-0",
+          "enabled": true,
+          "opacity": 1,
+          "blendMode": "normal",
+          "slot": "body",
+          "kind": "fill",
+          "paint": {
+            "kind": "solid",
+            "color": [
+              1,
+              0.37,
+              0.24,
+              1
+            ]
+          }
+        },
+        {
+          "id": "roundtrip-effect-0-1",
+          "enabled": true,
+          "opacity": 1,
+          "blendMode": "normal",
+          "slot": "front",
+          "kind": "stroke",
+          "width": 5,
+          "position": "outside",
+          "paint": {
+            "kind": "solid",
+            "color": [
+              0.08,
+              0.08,
+              0.14,
+              1
+            ]
+          },
+          "join": "round",
+          "miterLimit": 4,
+          "dash": null,
+          "dashOffset": 0
+        }
+      ],
+      "animations": [],
+      "type": "shape",
+      "shape": "heart",
+      "width": 180,
+      "height": 167.39999999999998,
+      "path": null
+    },
+    {
+      "id": "roundtrip-layer-1",
+      "name": "WordWarp",
+      "visible": true,
+      "locked": false,
+      "opacity": 1,
+      "blendMode": "normal",
+      "transform": {
+        "x": 600,
+        "y": 315,
+        "rotation": -2,
+        "scaleX": 1,
+        "scaleY": 1,
+        "skewX": -7,
+        "skewY": 0,
+        "originX": 0.5,
+        "originY": 0.5
+      },
+      "effects": [
+        {
+          "id": "roundtrip-effect-1-0",
+          "enabled": true,
+          "opacity": 0.68,
+          "blendMode": "multiply",
+          "slot": "back",
+          "color": [
+            0.23137254901960785,
+            0.1568627450980392,
+            0.03137254901960784,
+            1
+          ],
+          "angle": 120,
+          "distance": 14,
+          "size": 12,
+          "contour": [
+            0,
+            0.25,
+            0.5,
+            0.75,
+            1
+          ],
+          "noise": 0,
+          "kind": "dropShadow",
+          "spread": 0.08,
+          "useGlobalLight": true,
+          "knockout": true
+        },
+        {
+          "id": "roundtrip-effect-1-1",
+          "enabled": true,
+          "opacity": 1,
+          "blendMode": "normal",
+          "slot": "body",
+          "kind": "fill",
+          "paint": {
+            "kind": "ramp",
+            "rampId": "gold-ii",
+            "angle": 90,
+            "variant": 1
+          }
+        },
+        {
+          "id": "roundtrip-effect-1-2",
+          "enabled": true,
+          "opacity": 1,
+          "blendMode": "normal",
+          "slot": "body",
+          "kind": "bevel",
+          "style": "inner",
+          "technique": "smooth",
+          "depth": 160,
+          "direction": "up",
+          "size": 12,
+          "soften": 1,
+          "angle": 120,
+          "altitude": 35,
+          "useGlobalLight": true,
+          "glossContour": [
+            0,
+            0.25,
+            0.5,
+            0.75,
+            1
+          ],
+          "highlight": {
+            "color": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "blendMode": "screen",
+            "opacity": 0.8
+          },
+          "shadow": {
+            "color": [
+              0.03,
+              0.04,
+              0.08,
+              1
+            ],
+            "blendMode": "multiply",
+            "opacity": 0.65
+          }
+        },
+        {
+          "id": "roundtrip-effect-1-3",
+          "enabled": true,
+          "opacity": 0.55,
+          "blendMode": "normal",
+          "slot": "body",
+          "color": [
+            0.2901960784313726,
+            0.17647058823529413,
+            0.03137254901960784,
+            1
+          ],
+          "angle": 120,
+          "distance": 4,
+          "size": 8,
+          "contour": [
+            0,
+            0.25,
+            0.5,
+            0.75,
+            1
+          ],
+          "noise": 0,
+          "kind": "innerShadow",
+          "choke": 0.05
+        },
+        {
+          "id": "roundtrip-effect-1-4",
+          "enabled": true,
+          "opacity": 1,
+          "blendMode": "normal",
+          "slot": "front",
+          "kind": "stroke",
+          "width": 2,
+          "position": "outside",
+          "paint": {
+            "kind": "solid",
+            "color": [
+              0.4196078431372549,
+              0.30980392156862746,
+              0.09411764705882353,
+              1
+            ]
+          },
+          "join": "round",
+          "miterLimit": 4,
+          "dash": null,
+          "dashOffset": 0
+        },
+        {
+          "id": "roundtrip-effect-1-5",
+          "enabled": true,
+          "opacity": 1,
+          "blendMode": "screen",
+          "slot": "back",
+          "paint": {
+            "kind": "solid",
+            "color": [
+              1,
+              0.26666666666666666,
+              0.4,
+              1
+            ]
+          },
+          "noise": 0,
+          "technique": "softer",
+          "size": 14,
+          "contour": [
+            0,
+            0.25,
+            0.5,
+            0.75,
+            1
+          ],
+          "range": 0.75,
+          "jitter": 0,
+          "kind": "outerGlow",
+          "spread": 0.08
+        }
+      ],
+      "animations": [
+        {
+          "id": "roundtrip-animation-1-0",
+          "kind": "pulse",
+          "enabled": true,
+          "duration": 0.5,
+          "params": {
+            "amount": 0.15
+          },
+          "seed": 1337
+        }
+      ],
+      "type": "text",
+      "text": "ANDROID PRO",
+      "font": {
+        "family": "Bungee",
+        "source": "bundled",
+        "weight": 400,
+        "italic": false,
+        "features": {
+          "liga": true,
+          "kern": true
+        }
+      },
+      "layout": {
+        "size": 164,
+        "align": "center",
+        "lineHeight": 1,
+        "letterSpacing": -0.055,
+        "wordSpacing": 0,
+        "transform": "none",
+        "direction": "ltr",
+        "curveSpacing": "arc-length"
+      },
+      "warp": {
+        "kind": "none",
+        "adj": [
+          0.5,
+          0.5
+        ],
+        "bend": 0,
+        "distortH": 0,
+        "distortV": 0,
+        "keepUpright": false
+      }
+    },
+    {
+      "id": "roundtrip-layer-2",
+      "name": "Heart",
+      "visible": true,
+      "locked": false,
+      "opacity": 1,
+      "blendMode": "normal",
+      "transform": {
+        "x": 480,
+        "y": 283.5,
+        "rotation": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "skewX": 0,
+        "skewY": 0,
+        "originX": 0.5,
+        "originY": 0.5
+      },
+      "effects": [
+        {
+          "id": "roundtrip-effect-2-0",
+          "enabled": true,
+          "opacity": 1,
+          "blendMode": "normal",
+          "slot": "body",
+          "kind": "fill",
+          "paint": {
+            "kind": "solid",
+            "color": [
+              1,
+              0.37,
+              0.24,
+              1
+            ]
+          }
+        },
+        {
+          "id": "roundtrip-effect-2-1",
+          "enabled": true,
+          "opacity": 1,
+          "blendMode": "normal",
+          "slot": "front",
+          "kind": "stroke",
+          "width": 5,
+          "position": "outside",
+          "paint": {
+            "kind": "solid",
+            "color": [
+              0.08,
+              0.08,
+              0.14,
+              1
+            ]
+          },
+          "join": "round",
+          "miterLimit": 4,
+          "dash": null,
+          "dashOffset": 0
+        }
+      ],
+      "animations": [],
+      "type": "shape",
+      "shape": "heart",
+      "width": 180,
+      "height": 167.39999999999998,
+      "path": null
+    }
+  ],
+  "assets": {},
+  "globalLight": {
+    "angle": 120,
+    "altitude": 35
+  },
+  "meta": {
+    "created": "2026-01-01T00:00:00.000Z",
+    "modified": "2026-01-01T00:00:01.000Z",
+    "app": "WordWarp/0.1.0"
+  }
+}
