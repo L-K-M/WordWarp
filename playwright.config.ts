@@ -6,6 +6,7 @@ const normalizedBasePath = basePath.endsWith('/') ? basePath : `${basePath}/`;
 
 export default defineConfig({
   testDir: './tests',
+  testIgnore: 'native.spec.ts',
   timeout: 60_000,
   expect: { timeout: 10_000 },
   fullyParallel: true,

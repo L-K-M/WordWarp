@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WordWarp</string>
+    <string name="tagline">Make your words shine</string>
+    <string name="your_text">Your text</string>
+    <string name="text_hint">Type something wonderful</string>
+    <string name="text_count">%1$d / 200</string>
+    <string name="style">Style</string>
+    <string name="choose_style">Choose a style</string>
+    <string name="search_styles">Search styles</string>
+    <plurals name="style_count">
+        <item quantity="one">%1$d style · tap to apply</item>
+        <item quantity="other">%1$d styles · tap to apply</item>
+    </plurals>
+    <string name="no_styles">No styles match your search</string>
+    <string name="undo">Undo</string>
+    <string name="redo">Redo</string>
+    <string name="export_png">Save PNG</string>
+    <string name="export_detail">Transparent background</string>
+    <string name="export_resolution">PNG resolution</string>
+    <string name="preparing_png">Preparing PNG…</string>
+    <string name="saving_png">Saving PNG…</string>
+    <string name="saved_png">PNG saved</string>
+    <string name="cancelled_png">Save cancelled</string>
+    <string name="save_failed">Could not save PNG: %1$s</string>
+    <string name="canvas_preview">Text effect preview</string>
+    <string name="preview_label">PREVIEW</string>
+    <string name="loading_preview">Loading your canvas…</string>
+    <string name="preview_size">Canvas: %1$d × %2$d</string>
+    <string name="retry">Retry</string>
+    <string name="static_style">Still frame</string>
+    <string name="engine_load_failed">The canvas could not load. Tap Retry to reopen it.</string>
+    <string name="engine_crashed">The canvas stopped responding. Your latest saved text will be restored when you retry.</string>
+    <string name="engine_timeout">The canvas is taking too long to start. Tap Retry.</string>
+    <string name="export_timeout">PNG export took too long. Please try again.</string>
+    <string name="invalid_bridge">The renderer returned an invalid response.</string>
+    <string name="invalid_export">The renderer returned an invalid PNG.</string>
+    <string name="autosave_failed">Your changes could not be saved on this device.</string>
+    <string name="restore_failed">The saved document could not be read. A fresh canvas is open.</string>
+</resources>
