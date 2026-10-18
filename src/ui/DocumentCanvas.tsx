@@ -37,6 +37,7 @@ interface DocumentCanvasProps {
   onTransformEnd?: () => void;
   interactionEnabled?: boolean;
   onRendered?: (width: number, height: number) => void;
+  onRendererError?: (message: string) => void;
 }
 
 interface DragState {
@@ -72,12 +73,15 @@ export function DocumentCanvas({
   onTransformEnd,
   interactionEnabled = true,
   onRendered,
+  onRendererError,
 }: DocumentCanvasProps) {
   const deferredDocument = useDeferredValue(document);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dragRef = useRef<DragState | null>(null);
   const renderedRef = useRef(onRendered);
+  const rendererErrorRef = useRef(onRendererError);
   useLayoutEffect(() => { renderedRef.current = onRendered; }, [onRendered]);
+  useLayoutEffect(() => { rendererErrorRef.current = onRendererError; }, [onRendererError]);
   const [frames, setFrames] = useState<Record<string, ElementFrame>>({});
   const rendererRef = useRef<PreviewRenderer | null>(null);
   const [backend, setBackend] = useState<'webgl2' | 'canvas2d'>('canvas2d');
@@ -115,7 +119,9 @@ export function DocumentCanvas({
         rendererRef.current = null;
       };
     } catch (renderError) {
-      setError(renderError instanceof Error ? renderError.message : 'Canvas renderer failed');
+      const message = renderError instanceof Error ? renderError.message : 'Canvas renderer failed';
+      setError(message);
+      rendererErrorRef.current?.(message);
     }
   }, []);
 
@@ -159,7 +165,12 @@ export function DocumentCanvas({
   }, []);
 
   useEffect(() => {
-    const frame = requestAnimationFrame(() => {
+    // An occluded webview suspends rAF indefinitely (headless CI, backgrounded
+    // window), so a timer backs it up -- whichever runs first does the pass.
+    let ran = false;
+    const run = () => {
+      if (ran) return;
+      ran = true;
       try {
         const result = rendererRef.current?.render(deferredDocument);
         if (!result) return;
@@ -167,10 +178,17 @@ export function DocumentCanvas({
         setError(null);
         renderedRef.current?.(deferredDocument.canvas.width, deferredDocument.canvas.height);
       } catch (renderError) {
-        setError(renderError instanceof Error ? renderError.message : 'Preview render failed');
+        const message = renderError instanceof Error ? renderError.message : 'Preview render failed';
+        setError(message);
+        rendererErrorRef.current?.(message);
       }
-    });
-    return () => cancelAnimationFrame(frame);
+    };
+    const frame = requestAnimationFrame(run);
+    const fallback = setTimeout(run, 250);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(fallback);
+    };
   }, [deferredDocument, fontsReady]);
 
   const selectedElement = document.elements.find((element) => element.id === selectedElementId);

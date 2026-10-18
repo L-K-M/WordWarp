@@ -276,6 +276,13 @@ final class StudioModel: NSObject, ObservableObject, WKNavigationDelegate {
             if let width = event["width"] as? Int, let height = event["height"] as? Int {
                 canvasSize = "\(width) × \(height)"
             }
+        case "render-failed":
+            let message = event["message"] as? String ?? "preview renderer failed"
+            if selfTestPath != nil {
+                finishTest(false, "Stage \(testStage): \(message)")
+            } else {
+                status = message
+            }
         case "export":
             receiveExport(event)
         case "error":
@@ -807,5 +814,5 @@ final class StudioModel: NSObject, ObservableObject, WKNavigationDelegate {
 
 
 extension UTType {
-    static let wordwarpDocument = UTType(exportedAs: "app.wordwarp.document", conformingTo: .json)
+    static let wordwarpDocument = UTType(exportedAs: "ch.lkmc.wordwarp.document", conformingTo: .json)
 }

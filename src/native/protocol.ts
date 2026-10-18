@@ -132,6 +132,7 @@ export type NativeEvent =
   | { type: 'state'; state: NativeState }
   | { type: 'view'; view: NativeView }
   | { type: 'rendered'; revision: number; width: number; height: number }
+  | { type: 'render-failed'; message: string }
   | { type: 'document'; id: string; document: WordWarpDocument }
   | { type: 'restored'; id?: string }
   | { type: 'exportProgress'; id: string; progress: number }
