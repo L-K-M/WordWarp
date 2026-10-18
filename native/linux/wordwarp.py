@@ -23,7 +23,7 @@ gi.require_version("Adw", "1")
 gi.require_version("WebKit", "6.0")
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk, WebKit  # noqa: E402
 
-APP_ID = "app.wordwarp.WordWarp"
+APP_ID = "ch.lkmc.wordwarp.WordWarp"
 ENTRY = "wordwarp://app/native.html"
 LOCAL_WEB = Path(__file__).resolve().parent / "web"
 WEB = Path(os.environ.get("WORDWARP_WEB_ROOT", str(LOCAL_WEB if LOCAL_WEB.exists() else Path(__file__).resolve().parents[2] / "dist-native"))).resolve()

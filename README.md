@@ -5,6 +5,13 @@
 
 **Latest release:** v<!-- version -->0.1.0<!-- /version --> · [Download](https://github.com/L-K-M/WordWarp/releases/latest)
 
+The macOS build is ad-hoc signed and not notarized. After moving **WordWarp**
+to Applications, run:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/WordWarp.app"
+```
+
 WordWarp is a browser-based studio for warped, metallic, dimensional text with alpha-correct image
 export. The product and rendering decisions are documented in [`PLAN.md`](./PLAN.md).
 
