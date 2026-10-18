@@ -162,7 +162,7 @@ jobs:
 
       - name: Checksum verified app archive
         working-directory: artifacts/native
-        run: shasum -a 256 "WordWarp-macOS-$WORDWARP_MACOS_ARCH.zip" > "WordWarp-macOS-$WORDWARP_MACOS_ARCH.zip.sha256"
+        run: shasum -a 256 "WordWarp-macos-$WORDWARP_MACOS_ARCH.zip" > "WordWarp-macos-$WORDWARP_MACOS_ARCH.zip.sha256"
 
       # Native build downloads are deliverables; uploads are intentionally strict.
       - name: Upload verified macOS app
@@ -170,8 +170,8 @@ jobs:
         with:
           name: wordwarp-native-macos-${{ matrix.arch }}-${{ github.sha }}-${{ github.run_attempt }}
           path: |
-            artifacts/native/WordWarp-macOS-${{ matrix.arch }}.zip
-            artifacts/native/WordWarp-macOS-${{ matrix.arch }}.zip.sha256
+            artifacts/native/WordWarp-macos-${{ matrix.arch }}.zip
+            artifacts/native/WordWarp-macos-${{ matrix.arch }}.zip.sha256
           if-no-files-found: error
           retention-days: 14
 
