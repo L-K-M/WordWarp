@@ -68,9 +68,9 @@ def build() -> None:
         "usr/bin/wordwarp": (b'#!/bin/sh\nexec /usr/bin/python3 /usr/share/wordwarp/wordwarp.py "$@"\n', 0o755),
         "usr/share/wordwarp/wordwarp.py": ((ROOT / "native/linux/wordwarp.py").read_bytes(), 0o644),
         "usr/share/wordwarp/VERSION": ((version + "\n").encode(), 0o644),
-        "usr/share/applications/app.wordwarp.WordWarp.desktop": ((ROOT / "native/linux/app.wordwarp.WordWarp.desktop").read_bytes(), 0o644),
+        "usr/share/applications/ch.lkmc.wordwarp.WordWarp.desktop": ((ROOT / "native/linux/ch.lkmc.wordwarp.WordWarp.desktop").read_bytes(), 0o644),
         "usr/share/mime/packages/wordwarp.xml": ((ROOT / "native/linux/wordwarp.xml").read_bytes(), 0o644),
-        "usr/share/icons/hicolor/scalable/apps/app.wordwarp.WordWarp.svg": ((ROOT / "public/wordwarp-icon.svg").read_bytes(), 0o644),
+        "usr/share/icons/hicolor/scalable/apps/ch.lkmc.wordwarp.WordWarp.svg": ((ROOT / "public/wordwarp-icon.svg").read_bytes(), 0o644),
         "usr/share/doc/wordwarp/README.md": ((ROOT / "native/linux/README.md").read_bytes(), 0o644),
         "usr/share/doc/wordwarp/copyright": (copyright_notice, 0o644),
     }

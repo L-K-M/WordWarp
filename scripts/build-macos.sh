@@ -37,6 +37,6 @@ xcrun swift -module-cache-path "$BUILD/ModuleCache" native/macos/Sources/Generat
 iconutil -c icns "$BUILD/WordWarp.iconset" -o "$APP/Contents/Resources/WordWarp.icns"
 codesign --force --deep --sign - "$APP"
 mkdir -p "$ROOT/artifacts/native"
-ditto -c -k --sequesterRsrc --keepParent "$APP" "$ROOT/artifacts/native/WordWarp-macOS-$ARCH.zip"
+ditto -c -k --sequesterRsrc --keepParent "$APP" "$ROOT/artifacts/native/WordWarp-macos-$ARCH.zip"
 printf 'Built %s\n' "$APP"
-printf 'Archive %s\n' "$ROOT/artifacts/native/WordWarp-macOS-$ARCH.zip"
+printf 'Archive %s\n' "$ROOT/artifacts/native/WordWarp-macos-$ARCH.zip"

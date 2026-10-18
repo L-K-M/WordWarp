@@ -1,4 +1,4 @@
-package app.wordwarp.android
+package ch.lkmc.wordwarp.android
 
 import android.annotation.SuppressLint
 import android.content.Context
