@@ -1,0 +1,4 @@
+# Keep the upstream Windows wrapper usable on Windows and normalized in Git.
+native/android/gradlew.bat text eol=crlf
+# Preserve the exact upstream AndroidX license, including its final blank line.
+native/android/licenses/androidx-LICENSE.txt whitespace=-blank-at-eof
