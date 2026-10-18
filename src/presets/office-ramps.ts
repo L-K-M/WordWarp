@@ -1,78 +1,35 @@
 import type { Rgba } from '../model/types';
 
+/**
+ * Original WordWarp palettes. The historic file/API names and ramp IDs remain stable for saved
+ * documents, but these colours are independently authored, not Microsoft Office gradient data.
+ * Each short palette is sampled to 20 stops so every renderer and editor uses the same ramp.
+ */
 export const OFFICE_RAMPS: Record<string, readonly string[]> = {
-  rainbow: expandRamp(['#ff0000', '#ff7f00', '#ffff00', '#00c853', '#00b8ff', '#3d3dff', '#a000ff'], 20),
-  'rainbow-ii': expandRamp(['#7f00ff', '#0095ff', '#00d084', '#fff000', '#ff6b00', '#ff006e', '#7f00ff'], 20),
-  'early-sunset': expandRamp(['#2b1055', '#5f2c82', '#c33764', '#f2994a', '#fceabb'], 20),
-  'late-sunset': [
-    '#010400', '#01040f', '#01041f', '#01042f', '#01043f', '#0e043f', '#15053f', '#1e063f', '#2c073f', '#34083f',
-    '#3c0a40', '#4b0d40', '#621241', '#691441', '#791741', '#8f243b', '#ae3f2c', '#ce6529', '#e99335', '#f3b13e',
-  ],
-  nightfall: [
-    '#010400', '#01040f', '#01041f', '#020c2f', '#020c3f', '#020c56', '#090c66', '#0b1476', '#0b1486', '#0b148e',
-    '#11149e', '#131ca6', '#191cae', '#191cb5', '#191cbe', '#3416c6', '#4b19c6', '#6217c6', '#7124b6', '#7a3997',
-  ],
-  daybreak: [
-    '#709df8', '#709df8', '#78a4f8', '#7aacf9', '#82b4f9', '#82b4f9', '#8abcf9', '#91bcfa', '#93c5fa', '#9fc6f3',
-    '#a5c6f3', '#adcef3', '#b4ceec', '#c2d6ed', '#c9d7ed', '#d1dfed', '#d8dff5', '#dedfee', '#eee7f6', '#f4e7f6',
-  ],
-  horizon: [
-    '#d1dfed', '#a8b6d3', '#8dadbb', '#7a95b2', '#829dba', '#9fadcb', '#acc6d4', '#c0cedc', '#d1dfed', '#e8eff6',
-    '#ffffff', '#956f65', '#894136', '#a15346', '#b85c56', '#bb7975', '#c4918e', '#d1b7a7', '#e4d8c8', '#876e65',
-  ],
-  desert: [
-    '#eba9c5', '#f2aa98', '#ecb16f', '#ecb15d', '#edb95e', '#edb96a', '#eec078', '#efc98d', '#f1d0a2', '#f7d1b2',
-    '#f2d8c8', '#fae0d8', '#fbe8ef', '#e5619a', '#b6294c', '#ae3971', '#a84c82', '#b96374', '#d28a62', '#e4a961',
-  ],
-  ocean: [
-    '#61d4a8', '#62d4b6', '#63d4be', '#64d4cd', '#64d4d5', '#66d4dc', '#60ccdb', '#5dc4db', '#57bbe3', '#53b3da',
-    '#50abe2', '#4ba3e1', '#479ce1', '#4294e0', '#3e8ce0', '#3a84d7', '#367bd7', '#3273cf', '#2e6bc7', '#2a63bf',
-  ],
-  'calm-water': expandRamp(['#f1fbff', '#b7e4ec', '#76c7d4', '#4a9fb5', '#316c87'], 20),
-  fire: [
-    '#fcef50', '#fbe84d', '#f9d949', '#f6c944', '#f5c142', '#f3b13e', '#f2aa3c', '#f19b38', '#ee8432', '#ee7d30',
-    '#ec682c', '#eb4e27', '#ea4425', '#ea3b24', '#ea3423', '#c42a1c', '#ad2718', '#8f1d11', '#69140a', '#52140e',
-  ],
-  fog: expandRamp(['#fafafa', '#d9dde1', '#aeb6bf', '#d9dde1', '#ffffff'], 20),
-  moss: expandRamp(['#dbe7a7', '#9aaa55', '#536c35', '#243c2a', '#8da05d'], 20),
-  peacock: [
-    '#539cf0', '#54abe9', '#53b3da', '#5ac4cc', '#5bc4d3', '#60bbda', '#68b4da', '#6face9', '#84a5f1', '#969ef8',
-    '#7f8dd8', '#4e74a1', '#3c6c91', '#374caf', '#3234c6', '#2e5ce6', '#3573f6', '#306bd7', '#306bb7', '#2e6ba0',
-  ],
-  wheat: expandRamp(['#fff8d6', '#ead59c', '#c6a767', '#8f7143', '#e8d5a8'], 20),
-  parchment: expandRamp(['#fff5d6', '#e7d1a4', '#c4a875', '#9b7848', '#e4c994'], 20),
-  mahogany: [
-    '#c9af9e', '#d0af98', '#d0af90', '#cfa889', '#c8a781', '#c6a072', '#cfa87a', '#c5986b', '#be9062', '#bd895b',
-    '#b48053', '#a47043', '#aa693c', '#a26135', '#9b5933', '#8b512b', '#835025', '#7c4829', '#6b381a', '#64371e',
-  ],
-  gold: [
-    '#e4d8ab', '#e6dfa4', '#e4d895', '#dbcf8d', '#d3c77e', '#cab768', '#c2af5a', '#cbbf70', '#dbcf86', '#e4d895',
-    '#dbcf8d', '#d3c77e', '#d2bf76', '#cbbf70', '#cab768', '#c2af5a', '#cab76f', '#d2bf7d', '#dbcf94', '#e4d8ab',
-  ],
-  'gold-ii': [
-    '#f3e0ac', '#e2c87f', '#c6a058', '#b79845', '#b6903e', '#c09f4c', '#c1a753', '#c9af67', '#d9bf77', '#e2c87f',
-    '#ead095', '#ecdfa4', '#f4e7ad', '#b6903e', '#7f6625', '#8f763c', '#9a8e54', '#b2a66c', '#d3c793', '#ecdfb3',
-  ],
-  brass: [
-    '#7e5f1c', '#ad7f2a', '#db9a35', '#f2aa3c', '#bd892e', '#8d6720', '#8d6720', '#b4802a', '#e3a238', '#db9a35',
-    '#b4802a', '#855f1d', '#9d6f24', '#c4892e', '#eba93b', '#c49130', '#a57727', '#7e5f1c', '#b4802a', '#dca137',
-  ],
-  chrome: [
-    '#efefef', '#b5b6b5', '#6b6d6b', '#323431', '#efefef', '#bdbebd', '#a5a6a5', '#8c8e8c', '#636563', '#8c8e8c',
-    '#bdbebd', '#cecfce', '#d6d7d6', '#cecfce', '#6b6d6b', '#222421', '#efefef', '#c6c7c6', '#a5a6a5', '#8c8e8c',
-  ],
-  'chrome-ii': [
-    '#bdbebd', '#9c9e9c', '#7b7d7b', '#636563', '#5b5d5a', '#6b6d6b', '#848684', '#949694', '#adaead', '#c6c7c6',
-    '#cecfce', '#efefef', '#f7f7f7', '#adaead', '#2a2c29', '#636563', '#7b7d7b', '#949694', '#bdbebd', '#dedfde',
-  ],
-  silver: [
-    '#ffffff', '#e7e7e7', '#dedfde', '#c6c7c6', '#afb6bc', '#9c9eac', '#848693', '#8f9eab', '#bdbecd', '#e7e7e7',
-    '#dedfde', '#cecfce', '#bfc7c6', '#adaebc', '#a5a6b4', '#9496a4', '#868e9b', '#7d8693', '#b5b6c5', '#d1dfde',
-  ],
-  sapphire: [
-    '#020c86', '#0a23ae', '#163bd5', '#1a44f5', '#0e2bc6', '#020c8e', '#04148e', '#0a23b5', '#163be6', '#1233de',
-    '#0e2bb6', '#020c86', '#04149e', '#0e2bc6', '#1a44ee', '#1233ce', '#071ba6', '#01047e', '#0a23ae', '#163be6',
-  ],
+  rainbow: expandRamp(['#ef426b', '#f49c34', '#f4df63', '#65ca78', '#28b8c8', '#496ecb', '#9a55b6']),
+  'rainbow-ii': expandRamp(['#7b48bb', '#4299d9', '#4dccad', '#e0dc5d', '#f79950', '#e95489', '#7b48bb']),
+  'early-sunset': expandRamp(['#34355f', '#745582', '#c97d95', '#eca783', '#ffdbad']),
+  'late-sunset': expandRamp(['#161d3a', '#34275b', '#70426d', '#b95e68', '#eb895d', '#ffc37a']),
+  nightfall: expandRamp(['#090f2b', '#172a53', '#2c477c', '#5b5299', '#916caa']),
+  daybreak: expandRamp(['#658fc7', '#9bbfe0', '#d6e6ee', '#f7e4de', '#ffd6bd']),
+  horizon: expandRamp(['#395a7b', '#7199b5', '#c8e2ec', '#f5f3dd', '#c18a6b', '#684f55']),
+  desert: expandRamp(['#704b59', '#ba7662', '#e8ac73', '#f8d598', '#ddbf9b', '#ad8a7f']),
+  ocean: expandRamp(['#a3efda', '#4ac9ce', '#2196b6', '#23658b', '#253c63']),
+  'calm-water': expandRamp(['#e4f5f0', '#b0d8d9', '#7aafb9', '#527f9b', '#3c607e']),
+  fire: expandRamp(['#fff1bd', '#ffd364', '#f59c37', '#e05c29', '#9b3037', '#481f33']),
+  fog: expandRamp(['#faf4eb', '#d9dcdf', '#adb8c5', '#d0dce3', '#f3f9fa']),
+  moss: expandRamp(['#d3ddb0', '#91b077', '#526f4a', '#304e42', '#779364']),
+  peacock: expandRamp(['#293e85', '#437dae', '#39afaf', '#306a84', '#624e95', '#936eaa']),
+  wheat: expandRamp(['#fff0c2', '#e8c478', '#bd9453', '#8e6943', '#d7bc85']),
+  parchment: expandRamp(['#f9edcb', '#e4cda1', '#cbb184', '#ab916d', '#dfc9a1']),
+  mahogany: expandRamp(['#e1b49a', '#bd8364', '#925846', '#653d37', '#402c2d']),
+  gold: expandRamp(['#fff0af', '#d6ae4e', '#96702b', '#f7df8b', '#b58632', '#785325', '#efd09a']),
+  'gold-ii': expandRamp(['#fbe6a9', '#bb8c39', '#6f4823', '#fff3c9', '#d5a34b', '#8d5828', '#f3d884']),
+  brass: expandRamp(['#503d2c', '#bb924c', '#f3d481', '#786038', '#dac071', '#a78143', '#efe0a9']),
+  chrome: expandRamp(['#dcecf7', '#607f9a', '#13253c', '#fcffff', '#8da9bc', '#234762', '#d7e9f3', '#f5faff', '#263c50']),
+  'chrome-ii': expandRamp(['#345468', '#9ac0cf', '#eff9fa', '#7098af', '#172c45', '#d1e5ef', '#f9fbff', '#648ba5']),
+  silver: expandRamp(['#f3f7ff', '#becadd', '#727f9b', '#e0e8f2', '#9aaaca', '#506582', '#d6e1ef']),
+  sapphire: expandRamp(['#173354', '#286aaa', '#87c6f1', '#284e98', '#17265b', '#536ccb', '#b4daf7']),
 };
 
 export function officeRampColors(id: string): Rgba[] | null {
@@ -80,7 +37,8 @@ export function officeRampColors(id: string): Rgba[] | null {
   return ramp ? ramp.map(hexToRgba) : null;
 }
 
-function expandRamp(colors: string[], count: number): string[] {
+function expandRamp(colors: string[]): string[] {
+  const count = 20;
   const output: string[] = [];
   for (let index = 0; index < count; index += 1) {
     const position = (index / (count - 1)) * (colors.length - 1);

@@ -15,6 +15,8 @@ export interface AnimationExportOptions {
   fps?: number;
   scale?: number;
   onProgress?: (progress: number) => void;
+  /** Custom native URL schemes cannot create module workers. Encoding semantics stay shared. */
+  useWorker?: boolean;
 }
 
 export interface AnimationExport {
@@ -73,7 +75,9 @@ export async function exportAnimation(
   }
 
   const delays = frameDelays(options.format, duration, frameCount);
-  const bytes = await encodeInWorker(options.format, frames, width, height, delays);
+  const bytes = options.useWorker === false
+    ? new Uint8Array(options.format === 'apng' ? encodeApng(frames, width, height, delays) : encodeGif(frames, width, height, delays)).buffer
+    : await encodeInWorker(options.format, frames, width, height, delays);
   options.onProgress?.(1);
   const mime = options.format === 'apng' ? 'image/apng' : 'image/gif';
   const extension = options.format;

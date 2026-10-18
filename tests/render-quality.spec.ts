@@ -70,8 +70,9 @@ test.describe('render quality', () => {
     // Soft effects legitimately widen with resolution: a 14px blur at 4x really is 56px of
     // gradient. Turn them off so the only semi-transparent pixels left are glyph edges, whose
     // width must NOT depend on the export scale.
-    await page.getByRole('button', { name: 'Disable Drop shadow' }).click();
-    await page.getByRole('button', { name: 'Disable Bevel' }).click();
+    await page.getByRole('tab', { name: 'Effects', exact: true }).click();
+    await page.getByRole('checkbox', { name: 'Enable Drop Shadow', exact: true }).uncheck();
+    await page.getByRole('checkbox', { name: 'Enable Bevel', exact: true }).uncheck();
 
     const single = await exportAt(page, '1');
     const quadruple = await exportAt(page, '4');

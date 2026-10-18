@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Runs WordWarp's complete local quality gate: locked install, static checks,
-# unit tests, production build, and Chromium/WebKit browser tests.
+# unit tests, production build, and web/PWA + native-bridge Chromium/WebKit tests.
 #
 # Usage: scripts/check.sh [--install-browsers]
 #   --install-browsers  Install Playwright browser binaries before testing.
@@ -39,3 +39,6 @@ echo "==> Running browser tests"
 # defaults to './' for portable archives while the browser tests default to '/'.
 export VITE_BASE_PATH="${VITE_BASE_PATH:-/}"
 npm run test:e2e
+
+echo "==> Running native bridge browser tests"
+npm run test:native
