@@ -814,5 +814,5 @@ final class StudioModel: NSObject, ObservableObject, WKNavigationDelegate {
 
 
 extension UTType {
-    static let wordwarpDocument = UTType(exportedAs: "app.wordwarp.document", conformingTo: .json)
+    static let wordwarpDocument = UTType(exportedAs: "ch.lkmc.wordwarp.document", conformingTo: .json)
 }

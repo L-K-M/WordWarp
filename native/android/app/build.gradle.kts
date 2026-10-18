@@ -7,10 +7,10 @@ plugins {
 val appVersion = groovy.json.JsonSlurper().parse(rootProject.file("../../package.json")) as Map<*, *>
 
 android {
-    namespace = "app.wordwarp.android"
+    namespace = "ch.lkmc.wordwarp.android"
     compileSdk = 36
     defaultConfig {
-        applicationId = "app.wordwarp.android"
+        applicationId = "ch.lkmc.wordwarp.android"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

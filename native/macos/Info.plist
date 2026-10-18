@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleExecutable</key><string>WordWarp</string>
-    <key>CFBundleIdentifier</key><string>com.wordwarp.desktop</string>
+    <key>CFBundleIdentifier</key><string>ch.lkmc.wordwarp</string>
     <key>CFBundleName</key><string>WordWarp</string>
     <key>CFBundleDisplayName</key><string>WordWarp</string>
     <key>CFBundlePackageType</key><string>APPL</string>
@@ -20,11 +20,11 @@
         <key>CFBundleTypeName</key><string>WordWarp Document</string>
         <key>CFBundleTypeRole</key><string>Editor</string>
         <key>LSHandlerRank</key><string>Owner</string>
-        <key>LSItemContentTypes</key><array><string>app.wordwarp.document</string></array>
+        <key>LSItemContentTypes</key><array><string>ch.lkmc.wordwarp.document</string></array>
     </dict></array>
     <key>UTExportedTypeDeclarations</key>
     <array><dict>
-        <key>UTTypeIdentifier</key><string>app.wordwarp.document</string>
+        <key>UTTypeIdentifier</key><string>ch.lkmc.wordwarp.document</string>
         <key>UTTypeDescription</key><string>WordWarp Document</string>
         <key>UTTypeConformsTo</key><array><string>public.json</string></array>
         <key>UTTypeTagSpecification</key><dict>

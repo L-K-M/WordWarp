@@ -1,4 +1,4 @@
-package app.wordwarp.android
+package ch.lkmc.wordwarp.android
 
 import org.json.JSONArray
 import org.json.JSONObject
