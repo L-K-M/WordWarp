@@ -1,5 +1,13 @@
 # Contributing
 
+Original contributions are accepted under the [Unlicense](LICENSE), within the
+scope and exclusions in [LICENSING.md](LICENSING.md). Submit only work you have
+authority to dedicate, including any required employer permission. Identify
+third-party code or assets, their source and license; preserve their notices
+instead of placing them under the Unlicense. For substantial original patches,
+state in the pull request that you agree to contribute under these terms.
+An attribution alone is not permission to copy someone else's work.
+
 Use Node.js and npm versions from `.nvmrc` and `package.json`, then install with `npm ci`.
 
 Before opening a pull request, run:

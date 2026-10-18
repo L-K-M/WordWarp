@@ -1,0 +1,14 @@
+Google Material Icons
+https://github.com/google/material-design-icons
+Licensed under the Apache License, Version 2.0 (see material-icons.txt).
+
+The toolbar drawable icons are Google Material Icons. WordWarp converted the
+upstream SVG paths into Android VectorDrawable XML with a monochrome tint;
+these format/color adaptations do not change their third-party license.
+Each source drawable records its original SVG URL.
+
+Included drawables: ic_add, ic_canvas, ic_close, ic_edit, ic_effects,
+ic_expand_more, ic_layers, ic_menu, ic_more, ic_pause, ic_play, ic_redo,
+ic_remove, ic_styles, and ic_undo.
+
+The WordWarp launcher logo is original project artwork and is not a Material Icon.

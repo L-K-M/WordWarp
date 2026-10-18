@@ -1,0 +1,281 @@
+{
+  "verifiedOn": "2026-09-29",
+  "googleFontsRevision": "23e54b51ddffbc7713c583748e3bd86f62b1fa4a",
+  "verification": "Every bundled font SHA-256 equals the published Fontsource distribution file at the recorded version-pinned URL. Per-font licenses are exact copies from the same distribution. Original import download URLs were not recorded. Binary name-table metadata was read directly from each WOFF2.",
+  "fonts": [
+    {
+      "family": "Baloo 2",
+      "file": "baloo-2-var.woff2",
+      "license": "OFL-1.1",
+      "licenseFile": "licenses/baloo-2.txt",
+      "sha256": "26fb4610d4bc976d2584ca15e66c11465dbc1f267a10dca668fcb3080dfe59c1",
+      "fontVersion": "Version 1.700",
+      "binaryCopyright": "Copyright 2019 The Baloo 2 Project Authors (https://github.com/EkType/Baloo2)",
+      "binaryLicenseUrl": "http://scripts.sil.org/OFL",
+      "reservedFontNames": [],
+      "distribution": {
+        "package": "@fontsource-variable/baloo-2",
+        "version": "5.3.0",
+        "fileUrl": "https://cdn.jsdelivr.net/npm/@fontsource-variable/baloo-2@5.3.0/files/baloo-2-latin-wght-normal.woff2",
+        "licenseUrl": "https://cdn.jsdelivr.net/npm/@fontsource-variable/baloo-2@5.3.0/LICENSE",
+        "sha256": "26fb4610d4bc976d2584ca15e66c11465dbc1f267a10dca668fcb3080dfe59c1",
+        "licenseSha256": "273d4bb4d30d7f7011adfa11ee858b1d70a6b1f94cae89e6fa261ed8f1b8839a"
+      },
+      "googleFontsLicenseUrl": "https://raw.githubusercontent.com/google/fonts/23e54b51ddffbc7713c583748e3bd86f62b1fa4a/ofl/baloo2/OFL.txt"
+    },
+    {
+      "family": "Black Ops One",
+      "file": "black-ops-one-400.woff2",
+      "license": "OFL-1.1",
+      "licenseFile": "licenses/black-ops-one.txt",
+      "sha256": "6e4c5eb97c2b5a41ebe33f4462385d551dabef7aa28cae7b3d6b77e63529eee5",
+      "fontVersion": "Version 1.004; ttfautohint (v1.8.4.7-5d5b)",
+      "binaryCopyright": "Copyright 2022 The PinyonScript Project Authors (https://github.com/SorkinType/Black-Ops)",
+      "binaryLicenseUrl": "https://scripts.sil.org/OFL",
+      "reservedFontNames": [],
+      "distribution": {
+        "package": "@fontsource/black-ops-one",
+        "version": "5.3.0",
+        "fileUrl": "https://cdn.jsdelivr.net/npm/@fontsource/black-ops-one@5.3.0/files/black-ops-one-latin-400-normal.woff2",
+        "licenseUrl": "https://cdn.jsdelivr.net/npm/@fontsource/black-ops-one@5.3.0/LICENSE",
+        "sha256": "6e4c5eb97c2b5a41ebe33f4462385d551dabef7aa28cae7b3d6b77e63529eee5",
+        "licenseSha256": "da25c041ade112f78fdfb165a73c1e0b1b15fe2c26580644e4598dc4a9116460"
+      },
+      "googleFontsLicenseUrl": "https://raw.githubusercontent.com/google/fonts/23e54b51ddffbc7713c583748e3bd86f62b1fa4a/ofl/blackopsone/OFL.txt",
+      "noticeDifference": "The bundled binary and matching Fontsource license say \"The PinyonScript Project Authors\" and link to SorkinType/Black-Ops. The pinned Google Fonts license says \"The Black-Ops Project Authors\". Both upstream notices are preserved; WordWarp has not rewritten the distributor license."
+    },
+    {
+      "family": "Bungee",
+      "file": "bungee-400.woff2",
+      "license": "OFL-1.1",
+      "licenseFile": "licenses/bungee.txt",
+      "sha256": "126eec706b7931682dbcf6c6efc274132c603f181fbf912678e6cfeb341e721b",
+      "fontVersion": "Version 2.000",
+      "binaryCopyright": "Copyright 2023 The Bungee Project Authors (https://github.com/djrrb/Bungee)",
+      "binaryLicenseUrl": "https://openfontlicense.org",
+      "reservedFontNames": [],
+      "distribution": {
+        "package": "@fontsource/bungee",
+        "version": "5.3.0",
+        "fileUrl": "https://cdn.jsdelivr.net/npm/@fontsource/bungee@5.3.0/files/bungee-latin-400-normal.woff2",
+        "licenseUrl": "https://cdn.jsdelivr.net/npm/@fontsource/bungee@5.3.0/LICENSE",
+        "sha256": "126eec706b7931682dbcf6c6efc274132c603f181fbf912678e6cfeb341e721b",
+        "licenseSha256": "1256e1025d54b27c033b5a1335a5b99a64ea5e6cdfd5805829128baaf0a47804"
+      },
+      "googleFontsLicenseUrl": "https://raw.githubusercontent.com/google/fonts/23e54b51ddffbc7713c583748e3bd86f62b1fa4a/ofl/bungee/OFL.txt"
+    },
+    {
+      "family": "Chango",
+      "file": "chango-400.woff2",
+      "license": "OFL-1.1",
+      "licenseFile": "licenses/chango.txt",
+      "sha256": "850d1124738b23ae1ae0c45c95bb3402595d8b42773f470528f58f3bfac33146",
+      "fontVersion": "Version 1.001",
+      "binaryCopyright": "Copyright (c) 2011 Fontstage (info@fontstage.com), with Reserved Font Name \"Chango\"",
+      "binaryLicenseUrl": "http://scripts.sil.org/OFL",
+      "reservedFontNames": [
+        "Chango"
+      ],
+      "distribution": {
+        "package": "@fontsource/chango",
+        "version": "5.3.0",
+        "fileUrl": "https://cdn.jsdelivr.net/npm/@fontsource/chango@5.3.0/files/chango-latin-400-normal.woff2",
+        "licenseUrl": "https://cdn.jsdelivr.net/npm/@fontsource/chango@5.3.0/LICENSE",
+        "sha256": "850d1124738b23ae1ae0c45c95bb3402595d8b42773f470528f58f3bfac33146",
+        "licenseSha256": "fa52d2a9e40ec0f44a8646d55da38e3c628f5d4caecf697e5f28e17cdc1a70cd"
+      },
+      "googleFontsLicenseUrl": "https://raw.githubusercontent.com/google/fonts/23e54b51ddffbc7713c583748e3bd86f62b1fa4a/ofl/chango/OFL.txt"
+    },
+    {
+      "family": "Luckiest Guy",
+      "file": "luckiest-guy-400.woff2",
+      "license": "Apache-2.0",
+      "licenseFile": "licenses/luckiest-guy.txt",
+      "sha256": "3877b522181765adf66ba89bd68d288ecb9f2483b441baab3424646b0c7aaa0a",
+      "fontVersion": "Version 1.001",
+      "binaryCopyright": "Copyright (c) 2010 by Brian J. Bonislawsky DBA Astigmatic (AOETI). All rights reserved. Available under the Apache 2.0 licence.\rhttp://www.apache.org/licenses/LICENSE-2.0.html",
+      "binaryLicenseUrl": "http://www.apache.org/licenses/LICENSE-2.0",
+      "reservedFontNames": [],
+      "distribution": {
+        "package": "@fontsource/luckiest-guy",
+        "version": "5.3.0",
+        "fileUrl": "https://cdn.jsdelivr.net/npm/@fontsource/luckiest-guy@5.3.0/files/luckiest-guy-latin-400-normal.woff2",
+        "licenseUrl": "https://cdn.jsdelivr.net/npm/@fontsource/luckiest-guy@5.3.0/LICENSE",
+        "sha256": "3877b522181765adf66ba89bd68d288ecb9f2483b441baab3424646b0c7aaa0a",
+        "licenseSha256": "537aa64935057b48bf55502bb5662230aa2914fc8fd1d5955a786a3bb2056894"
+      },
+      "googleFontsLicenseUrl": "https://raw.githubusercontent.com/google/fonts/23e54b51ddffbc7713c583748e3bd86f62b1fa4a/apache/luckiestguy/LICENSE.txt"
+    },
+    {
+      "family": "Modak",
+      "file": "modak-400.woff2",
+      "license": "OFL-1.1",
+      "licenseFile": "licenses/modak.txt",
+      "sha256": "044310f45a5f75b5c510d535acdb78b42734c88cf31696b05c58be67e7c2219d",
+      "fontVersion": "Version 1.036;PS Version 1.000;hotconv 1.0.79;makeotf.lib2.5.61930; ttfautohint (v1.2.42-39fb)",
+      "binaryCopyright": "Copyright (c) 2014, Ek Type. All rights reserved.",
+      "binaryLicenseUrl": "http://scripts.sil.org/OFL",
+      "reservedFontNames": [],
+      "distribution": {
+        "package": "@fontsource/modak",
+        "version": "5.3.0",
+        "fileUrl": "https://cdn.jsdelivr.net/npm/@fontsource/modak@5.3.0/files/modak-latin-400-normal.woff2",
+        "licenseUrl": "https://cdn.jsdelivr.net/npm/@fontsource/modak@5.3.0/LICENSE",
+        "sha256": "044310f45a5f75b5c510d535acdb78b42734c88cf31696b05c58be67e7c2219d",
+        "licenseSha256": "d1c73e37790b00b0201983355f43825b16497e4efdff0347f702966eb4bb2be5"
+      },
+      "googleFontsLicenseUrl": "https://raw.githubusercontent.com/google/fonts/23e54b51ddffbc7713c583748e3bd86f62b1fa4a/ofl/modak/OFL.txt",
+      "noticeDifference": "The binary says Copyright (c) 2014, Ek Type. The matching distributor license says Copyright (c) 2015 Ek Type. Both notices are preserved."
+    },
+    {
+      "family": "Monoton",
+      "file": "monoton-400.woff2",
+      "license": "OFL-1.1",
+      "licenseFile": "licenses/monoton.txt",
+      "sha256": "54dd0ac1cf6c02e094ad114d3cc038baddc42e5d6ba1c0b74566cedaed765c4c",
+      "fontVersion": "Version 1.000",
+      "binaryCopyright": "Copyright (c) 2011 by vernon adams. All rights reserved.",
+      "binaryLicenseUrl": null,
+      "reservedFontNames": [
+        "Monoton"
+      ],
+      "distribution": {
+        "package": "@fontsource/monoton",
+        "version": "5.3.0",
+        "fileUrl": "https://cdn.jsdelivr.net/npm/@fontsource/monoton@5.3.0/files/monoton-latin-400-normal.woff2",
+        "licenseUrl": "https://cdn.jsdelivr.net/npm/@fontsource/monoton@5.3.0/LICENSE",
+        "sha256": "54dd0ac1cf6c02e094ad114d3cc038baddc42e5d6ba1c0b74566cedaed765c4c",
+        "licenseSha256": "c8e2b799bb49097c6146677a4958f407c9a01aa21ba40e4f6679e15e5eb70d34"
+      },
+      "googleFontsLicenseUrl": "https://raw.githubusercontent.com/google/fonts/23e54b51ddffbc7713c583748e3bd86f62b1fa4a/ofl/monoton/OFL.txt"
+    },
+    {
+      "family": "Press Start 2P",
+      "file": "press-start-2p-400.woff2",
+      "license": "OFL-1.1",
+      "licenseFile": "licenses/press-start-2p.txt",
+      "sha256": "afec86997fdaf54af1f59358fa2c1e2a0f1d04146edad18e5cd141d0384a7548",
+      "fontVersion": "Version 3.000",
+      "binaryCopyright": "Copyright 2012 The Press Start 2P Project Authors (cody@zone38.net), with Reserved Font Name \"Press Start 2P\"",
+      "binaryLicenseUrl": "http://scripts.sil.org/OFL",
+      "reservedFontNames": [
+        "Press Start 2P"
+      ],
+      "distribution": {
+        "package": "@fontsource/press-start-2p",
+        "version": "5.3.0",
+        "fileUrl": "https://cdn.jsdelivr.net/npm/@fontsource/press-start-2p@5.3.0/files/press-start-2p-latin-400-normal.woff2",
+        "licenseUrl": "https://cdn.jsdelivr.net/npm/@fontsource/press-start-2p@5.3.0/LICENSE",
+        "sha256": "afec86997fdaf54af1f59358fa2c1e2a0f1d04146edad18e5cd141d0384a7548",
+        "licenseSha256": "98e451fe911e5ee4a1a45359535dc30ea7df28b8d9a9cd1f741778efab1387ee"
+      },
+      "googleFontsLicenseUrl": "https://raw.githubusercontent.com/google/fonts/23e54b51ddffbc7713c583748e3bd86f62b1fa4a/ofl/pressstart2p/OFL.txt"
+    },
+    {
+      "family": "Ranchers",
+      "file": "ranchers-400.woff2",
+      "license": "OFL-1.1",
+      "licenseFile": "licenses/ranchers.txt",
+      "sha256": "32d496ad6d097112639d190245b34e5f6fc768d076ff22c3d723a8a114093000",
+      "fontVersion": "Version 1.000; ttfautohint (v0.8) -G 200 -r 50",
+      "binaryCopyright": "Copyright (c) 2012, Pablo Impallari (www.impallari.com|impallari@gmail.com), Brenda Gallo. (gbrenda1987@gmail.com), with Reserved Font Name Ranchers.",
+      "binaryLicenseUrl": "http://scripts.sil.org/OFL",
+      "reservedFontNames": [
+        "Ranchers"
+      ],
+      "distribution": {
+        "package": "@fontsource/ranchers",
+        "version": "5.3.0",
+        "fileUrl": "https://cdn.jsdelivr.net/npm/@fontsource/ranchers@5.3.0/files/ranchers-latin-400-normal.woff2",
+        "licenseUrl": "https://cdn.jsdelivr.net/npm/@fontsource/ranchers@5.3.0/LICENSE",
+        "sha256": "32d496ad6d097112639d190245b34e5f6fc768d076ff22c3d723a8a114093000",
+        "licenseSha256": "b0eca157cf5ac7ccbceb0bd2954e4a0d6bc7f807071377993ec7d17985b68ef2"
+      },
+      "googleFontsLicenseUrl": "https://raw.githubusercontent.com/google/fonts/23e54b51ddffbc7713c583748e3bd86f62b1fa4a/ofl/ranchers/OFL.txt"
+    },
+    {
+      "family": "Shrikhand",
+      "file": "shrikhand-400.woff2",
+      "license": "OFL-1.1",
+      "licenseFile": "licenses/shrikhand.txt",
+      "sha256": "ae958e0da508cb9c0094ce2a2cd2ce142756cc434d88ecd3f353c3f80749da9d",
+      "fontVersion": "Version 1.001;PS 1.001;hotconv 1.0.88;makeotf.lib2.5.647800",
+      "binaryCopyright": "Copyright (c) 2015 Jonny Pinhorn (jonpinhorn.typedesign@gmail.com)",
+      "binaryLicenseUrl": "http://scripts.sil.org/OFL",
+      "reservedFontNames": [],
+      "distribution": {
+        "package": "@fontsource/shrikhand",
+        "version": "5.3.0",
+        "fileUrl": "https://cdn.jsdelivr.net/npm/@fontsource/shrikhand@5.3.0/files/shrikhand-latin-400-normal.woff2",
+        "licenseUrl": "https://cdn.jsdelivr.net/npm/@fontsource/shrikhand@5.3.0/LICENSE",
+        "sha256": "ae958e0da508cb9c0094ce2a2cd2ce142756cc434d88ecd3f353c3f80749da9d",
+        "licenseSha256": "96196fe746830c3042ab04ac275f3b7b6f1749faaafa8bf84e5c8ebb3d39b6b8"
+      },
+      "googleFontsLicenseUrl": "https://raw.githubusercontent.com/google/fonts/23e54b51ddffbc7713c583748e3bd86f62b1fa4a/ofl/shrikhand/OFL.txt"
+    },
+    {
+      "family": "Slackey",
+      "file": "slackey-400.woff2",
+      "license": "Apache-2.0",
+      "licenseFile": "licenses/slackey.txt",
+      "sha256": "7301b172d19ceeb2c1847a9f195906bddf59c521b5632f1bb8f3a1ef886e83fc",
+      "fontVersion": "Version 1.001",
+      "binaryCopyright": "Copyright (c) 2010 by Font Diner, Inc DBA Sideshow. All rights reserved.",
+      "binaryLicenseUrl": "http://www.apache.org/licenses/LICENSE-2.0",
+      "reservedFontNames": [],
+      "distribution": {
+        "package": "@fontsource/slackey",
+        "version": "5.3.0",
+        "fileUrl": "https://cdn.jsdelivr.net/npm/@fontsource/slackey@5.3.0/files/slackey-latin-400-normal.woff2",
+        "licenseUrl": "https://cdn.jsdelivr.net/npm/@fontsource/slackey@5.3.0/LICENSE",
+        "sha256": "7301b172d19ceeb2c1847a9f195906bddf59c521b5632f1bb8f3a1ef886e83fc",
+        "licenseSha256": "2416f549b276f76a16a10e98695a74f48129cd3b62c9280b33e8b8ac2d7b663f"
+      },
+      "googleFontsLicenseUrl": "https://raw.githubusercontent.com/google/fonts/23e54b51ddffbc7713c583748e3bd86f62b1fa4a/apache/slackey/LICENSE.txt"
+    },
+    {
+      "family": "Spicy Rice",
+      "file": "spicy-rice-400.woff2",
+      "license": "OFL-1.1",
+      "licenseFile": "licenses/spicy-rice.txt",
+      "sha256": "4834c38818bbd7a5436dd942f963c1005e121bf291f7922c3a8cb59472ceec2d",
+      "fontVersion": "Version 1.000",
+      "binaryCopyright": "Copyright (c) 2011 by Brian J. Bonislawsky DBA Astigmatic (AOETI) (astigma@astigmatic.com), with Reserved\rFont Name \"Spicy Rice\"",
+      "binaryLicenseUrl": "http://scripts.sil.org/OFL",
+      "reservedFontNames": [
+        "Spicy Rice"
+      ],
+      "distribution": {
+        "package": "@fontsource/spicy-rice",
+        "version": "5.3.0",
+        "fileUrl": "https://cdn.jsdelivr.net/npm/@fontsource/spicy-rice@5.3.0/files/spicy-rice-latin-400-normal.woff2",
+        "licenseUrl": "https://cdn.jsdelivr.net/npm/@fontsource/spicy-rice@5.3.0/LICENSE",
+        "sha256": "4834c38818bbd7a5436dd942f963c1005e121bf291f7922c3a8cb59472ceec2d",
+        "licenseSha256": "11ee61fb9eacc16794b0f0774c88ab52d3145dc6dee942e7cad986a2f5b645cc"
+      },
+      "googleFontsLicenseUrl": "https://raw.githubusercontent.com/google/fonts/23e54b51ddffbc7713c583748e3bd86f62b1fa4a/ofl/spicyrice/OFL.txt"
+    },
+    {
+      "family": "Titan One",
+      "file": "titan-one-400.woff2",
+      "license": "OFL-1.1",
+      "licenseFile": "licenses/titan-one.txt",
+      "sha256": "2f15f138af309ad659b62246999cccc2da21759ec8619d7e6ea759e8eb5a7a53",
+      "fontVersion": "Version 1.001",
+      "binaryCopyright": "Copyright (c) 2011 Rodrigo Fuenzalida (hello@rfuenzalida.com), with Reserved Font Name \"Titan One\"",
+      "binaryLicenseUrl": "http://scripts.sil.org/OFL",
+      "reservedFontNames": [
+        "Titan One"
+      ],
+      "distribution": {
+        "package": "@fontsource/titan-one",
+        "version": "5.3.0",
+        "fileUrl": "https://cdn.jsdelivr.net/npm/@fontsource/titan-one@5.3.0/files/titan-one-latin-400-normal.woff2",
+        "licenseUrl": "https://cdn.jsdelivr.net/npm/@fontsource/titan-one@5.3.0/LICENSE",
+        "sha256": "2f15f138af309ad659b62246999cccc2da21759ec8619d7e6ea759e8eb5a7a53",
+        "licenseSha256": "0f84a55e44575db68f43fe728c8a0661e12678f3e2d9d38fa40aa2a71bb2e165"
+      },
+      "googleFontsLicenseUrl": "https://raw.githubusercontent.com/google/fonts/23e54b51ddffbc7713c583748e3bd86f62b1fa4a/ofl/titanone/OFL.txt"
+    }
+  ]
+}
