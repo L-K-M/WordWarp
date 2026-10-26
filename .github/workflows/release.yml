@@ -89,8 +89,13 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
+          for FILE in licenses/index.html licenses/npm-notices.txt licenses/manifest.json licenses/LICENSE.txt fonts/LICENSE.txt; do
+            test -s "dist/$FILE"
+          done
           mkdir -p release-artifacts
           tar -czf "release-artifacts/wordwarp-${TAG}.tar.gz" -C dist .
+          # grep reads the whole listing, so tar cannot fail on a closed pipe.
+          tar -tzf "release-artifacts/wordwarp-${TAG}.tar.gz" | grep --line-regexp --count './licenses/index.html' >/dev/null
           (
             cd release-artifacts
             sha256sum "wordwarp-${TAG}.tar.gz" > "wordwarp-${TAG}.tar.gz.sha256"

@@ -19,6 +19,14 @@ if [[ $# -ne 0 ]]; then
   echo "Usage: scripts/build-flatpak.sh [--skip-web]" >&2
   exit 2
 fi
+# --skip-web reuses whatever dist-native/ holds: refuse a bundle without its
+# license inventory, as the macOS and Debian packagers do.
+for REQUIRED in native.html licenses/index.html licenses/manifest.json licenses/npm-notices.txt fonts/SOURCES.json; do
+  if [[ ! -s "dist-native/$REQUIRED" ]]; then
+    echo "Missing dist-native/$REQUIRED; run npm run build:native before packaging." >&2
+    exit 1
+  fi
+done
 
 command -v flatpak-builder >/dev/null 2>&1 && command -v flatpak >/dev/null 2>&1 ||
   { echo "flatpak/flatpak-builder not found: install both" >&2; exit 1; }
@@ -38,6 +46,8 @@ chmod 755 "$STAGE/bin/wordwarp"
 cp native/linux/wordwarp.py "$STAGE/share/wordwarp/wordwarp.py"
 printf '%s\n' "$VERSION" > "$STAGE/share/wordwarp/VERSION"
 cp -R dist-native/. "$STAGE/share/wordwarp/web/"
+test -s "$STAGE/share/wordwarp/web/licenses/index.html" ||
+  { echo "The staged web bundle lacks licenses/index.html" >&2; exit 1; }
 cp native/linux/ch.lkmc.wordwarp.WordWarp.desktop "$STAGE/share/applications/"
 cp native/linux/wordwarp.xml "$STAGE/share/mime/packages/"
 # flatpak-builder's icon validation needs a raster (the SVG loader may not be

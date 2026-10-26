@@ -171,6 +171,10 @@ jobs:
           APP=native/macos/build/WordWarp.app
           lipo "$APP/Contents/MacOS/WordWarp" -verify_arch "$WORDWARP_MACOS_ARCH"
           codesign --verify --deep --strict "$APP"
+          test -s "$APP/Contents/Resources/Web/licenses/index.html"
+          test -s "$APP/Contents/Resources/Web/licenses/npm-notices.txt"
+          unzip -l "artifacts/native/WordWarp-macos-$WORDWARP_MACOS_ARCH.zip" \
+            WordWarp.app/Contents/Resources/Web/licenses/index.html >/dev/null
           "$APP/Contents/MacOS/WordWarp" \
             --self-test "$RUNNER_TEMP/wordwarp-macos.png" \
             --self-test-import "$GITHUB_WORKSPACE/tests/fixtures/android-roundtrip.wordwarp.json"
@@ -236,6 +240,10 @@ jobs:
         run: |
           set -euo pipefail
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose artifacts/native/WordWarp-android-debug.apk
+          # unzip -l exits non-zero when the named entry is missing.
+          for FILE in assets/licenses/index.html assets/licenses/npm-notices.txt assets/licenses/android/INDEX.txt assets/licenses/android/NOTICES.txt; do
+            unzip -l artifacts/native/WordWarp-android-debug.apk "$FILE" >/dev/null
+          done
           cd artifacts/native
           sha256sum WordWarp-android-debug.apk > WordWarp-android-debug.apk.sha256
 
@@ -288,6 +296,9 @@ jobs:
           bash scripts/build-linux.sh --skip-web
           test "$(dpkg-deb --field artifacts/native/WordWarp-linux-all.deb Architecture)" = all
           sudo apt-get install -y ./artifacts/native/WordWarp-linux-all.deb
+          test -s /usr/share/wordwarp/web/licenses/index.html
+          test -s /usr/share/wordwarp/web/licenses/npm-notices.txt
+          test -s /usr/share/doc/wordwarp/copyright
 
       - name: Exercise installed editor under WebKitGTK
         env:
@@ -354,6 +365,14 @@ jobs:
           npm ci
           bash scripts/build-flatpak.sh
 
+      # flatpak-builder's files/ directory is the bundle's /app.
+      - name: Verify notices in the Flatpak build
+        run: |
+          set -euo pipefail
+          for FILE in licenses/index.html licenses/npm-notices.txt licenses/manifest.json fonts/SOURCES.json; do
+            test -s "artifacts/flatpak/build/files/share/wordwarp/web/$FILE"
+          done
+
       - name: Checksum Flatpak bundle
         working-directory: artifacts/native
         run: sha256sum WordWarp-linux.flatpak > WordWarp-linux.flatpak.sha256
@@ -386,6 +405,8 @@ jobs:
           curl --fail --silent --show-error http://127.0.0.1:8080/nested/path | grep --quiet 'src="/assets/'
           test "$(curl --fail --silent --show-error --output /dev/null --write-out '%{content_type}' http://127.0.0.1:8080/manifest.webmanifest)" = "application/manifest+json"
           curl --fail --silent --show-error --head http://127.0.0.1:8080/sw.js | tr --delete '\r' | grep --ignore-case --quiet '^Cache-Control:.*no-cache'
+          curl --fail --silent --show-error --output /dev/null http://127.0.0.1:8080/licenses/index.html
+          curl --fail --silent --show-error http://127.0.0.1:8080/licenses/npm-notices.txt | grep --count '^vite-plugin-pwa@' >/dev/null
 
       # Notices for the base image's packages, written by scripts/os-packages.sh.
       - name: Verify notices in the container image
