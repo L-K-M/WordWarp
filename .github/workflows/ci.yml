@@ -37,6 +37,18 @@ jobs:
       - name: Run quality gate
         run: npm run check
 
+      # Bundled code keeps its own licenses: the build must ship every notice,
+      # including the plugin and service-worker code compiled into the app.
+      - name: Verify notices in the production build
+        run: |
+          set -euo pipefail
+          for FILE in licenses/index.html licenses/npm-notices.txt licenses/manifest.json licenses/LICENSE.txt fonts/LICENSE.txt fonts/SOURCES.json; do
+            test -s "dist/$FILE"
+          done
+          for PACKAGE in react vite-plugin-pwa workbox-build @trickfilm400/rollup-plugin-off-main-thread; do
+            grep --quiet "^$PACKAGE@" dist/licenses/npm-notices.txt
+          done
+
       # The README states the project's own license and where bundled notices ship.
       - name: Check README license section
         run: grep --quiet --line-regexp '## License' README.md

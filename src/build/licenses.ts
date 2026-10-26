@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { dirname, join, posix, relative, resolve } from 'node:path';
-import type { Plugin } from 'vite';
+import { dirname, isAbsolute, join, posix, relative, resolve } from 'node:path';
+import type { Plugin, Rolldown } from 'vite';
 
 type Package = { name?: string; version: string; license?: string; dev?: boolean; dependencies?: Record<string, string>; optionalDependencies?: Record<string, string> };
 type Lockfile = { packages: Record<string, Package> };
@@ -11,8 +11,24 @@ type Font = {
   distribution: { licenseSha256: string };
 };
 
-const reviewedLicenses = new Set(['MIT', 'ISC', '(MIT AND Zlib)']);
-const buildHelpers = new Set(['vite', 'rolldown', 'tailwindcss', '@babel/runtime']);
+const reviewedLicenses = new Set(['MIT', 'ISC', '(MIT AND Zlib)', 'Apache-2.0']);
+// Build-time packages whose own code ships: bundler runtime helpers, generated styles,
+// vite-plugin-pwa's registerSW client, and the generated service worker (workbox-build's
+// template plus the off-main-thread AMD loader). Their dependency closures do not ship.
+const buildHelpers = new Set([
+  'vite', 'rolldown', 'tailwindcss', '@babel/runtime', 'vite-plugin-pwa', 'workbox-build',
+  '@trickfilm400/rollup-plugin-off-main-thread',
+]);
+// Plugin-injected modules have no node_modules path. Each maps to the package whose code it
+// inlines; any other module outside node_modules and the project fails the build.
+const virtualModulePackages: [prefix: string, name: string][] = [
+  ['\0rolldown/', 'rolldown'],
+  ['\0vite/', 'vite'],
+  ['/@vite-plugin-pwa/', 'vite-plugin-pwa'],
+];
+// workbox-build writes these after generateBundle, so the chunk check cannot see them.
+const serviceWorkerFiles = /^(?:sw|workbox-[0-9a-f]+)\.js$/;
+const serviceWorkerPackages = ['workbox-build', '@trickfilm400/rollup-plugin-off-main-thread'];
 const sha256 = (value: string | Uint8Array) => createHash('sha256').update(value).digest('hex');
 const read = (path: string) => readFileSync(path, 'utf8');
 const slash = (path: string) => path.replaceAll('\\', '/');
@@ -39,6 +55,7 @@ export function collectLicenses(root: string) {
   }).map(([path]) => path));
   // Workbox emits the service worker separately. Its runtime closure can include nested
   // dependencies marked dev by npm, such as its older idb version; keep those notices too.
+  // workbox-build itself comes in through buildHelpers, without its build-tool closure.
   for (const path of selected) {
     const entry = lock.packages[path]!;
     for (const dependency of Object.keys({ ...entry.dependencies, ...entry.optionalDependencies })) {
@@ -127,15 +144,79 @@ ${sections.join('\n')}</html>\n`);
     })),
     files: Object.fromEntries([...assets].map(([path, text]) => [path, sha256(text)])),
   }, null, 2) + '\n');
-  return { assets, packagePaths: new Set(inventory.map((entry) => resolve(root, entry.path))) };
+  return {
+    assets,
+    packagePaths: new Set(inventory.map((entry) => resolve(root, entry.path))),
+    packageNames: new Set(inventory.map((entry) => entry.name)),
+  };
+}
+
+type Inventory = Pick<ReturnType<typeof collectLicenses>, 'packagePaths' | 'packageNames'>;
+
+/** Fails when a bundled module comes from a package or plugin that the inventory lacks. */
+export function checkBundledModules(root: string, moduleIds: Iterable<string>, inventory: Inventory) {
+  for (const id of moduleIds) {
+    const path = id.split('?')[0]!;
+    const virtual = virtualModulePackages.find(([prefix]) => path.startsWith(prefix));
+    if (virtual) {
+      if (!inventory.packageNames.has(virtual[1])) {
+        throw new Error(`Bundled ${virtual[1]} module is missing from the license inventory: ${id}`);
+      }
+      continue;
+    }
+    if (!path.includes('/node_modules/')) {
+      // Project sources and HTML entries are WordWarp's own code.
+      const local = slash(relative(root, path));
+      if (!path.startsWith('\0') && local && !local.startsWith('../') && !isAbsolute(local)) continue;
+      throw new Error(`Bundled module has no license inventory mapping: ${JSON.stringify(id)}`);
+    }
+    let directory = dirname(path);
+    while (directory.includes('node_modules')) {
+      const metadata = join(directory, 'package.json');
+      if (existsSync(metadata) && (JSON.parse(read(metadata)) as Package).name) break;
+      directory = dirname(directory);
+    }
+    if (!inventory.packagePaths.has(directory)) {
+      throw new Error(`Bundled package is missing from the license inventory: ${id}`);
+    }
+  }
+}
+
+function checkBundle(root: string, bundle: Rolldown.OutputBundle, inventory: Inventory) {
+  for (const output of Object.values(bundle)) {
+    if (output.type === 'chunk') checkBundledModules(root, output.moduleIds, inventory);
+  }
+}
+
+/** Fails when the generated service worker ships without its packages' notices. */
+export function checkServiceWorkerNotices(outDir: string) {
+  if (!readdirSync(outDir).some((file) => serviceWorkerFiles.test(file))) return;
+  const manifest = JSON.parse(read(join(outDir, 'licenses/manifest.json'))) as { packages: { name: string }[] };
+  const listed = new Set(manifest.packages.map((entry) => entry.name));
+  const missing = serviceWorkerPackages.filter((name) => !listed.has(name));
+  if (missing.length) {
+    throw new Error(`The service worker ships code from packages missing from licenses/manifest.json: ${missing.join(', ')}`);
+  }
+}
+
+/** Vite builds workers with worker.plugins only; check their modules without emitting notices. */
+export function workerLicenseCheck(): Plugin {
+  let root: string;
+  return {
+    name: 'wordwarp-worker-license-check',
+    configResolved(config) { root = config.root; },
+    generateBundle(_options, bundle) { checkBundle(root, bundle, collectLicenses(root)); },
+  };
 }
 
 export function licenseNotices(): Plugin {
   let root: string;
   let base: string;
+  let outDir: string;
+  let emitted = false;
   return {
     name: 'wordwarp-license-notices',
-    configResolved(config) { root = config.root; base = config.base; },
+    configResolved(config) { root = config.root; base = config.base; outDir = resolve(root, config.build.outDir); },
     configureServer(server) {
       const { assets } = collectLicenses(root);
       server.middlewares.use((request, response, next) => {
@@ -148,23 +229,17 @@ export function licenseNotices(): Plugin {
       });
     },
     generateBundle(_options, bundle) {
-      const { assets, packagePaths } = collectLicenses(root);
-      for (const output of Object.values(bundle)) {
-        if (output.type !== 'chunk') continue;
-        for (const id of output.moduleIds) {
-          if (!id.includes('/node_modules/') || id.startsWith('\0')) continue;
-          let directory = dirname(id.split('?')[0]!);
-          while (directory.includes('node_modules')) {
-            const metadata = join(directory, 'package.json');
-            if (existsSync(metadata) && (JSON.parse(read(metadata)) as Package).name) break;
-            directory = dirname(directory);
-          }
-          if (!packagePaths.has(directory)) {
-            throw new Error(`Bundled package is missing from the license inventory: ${id}`);
-          }
-        }
-      }
+      const { assets, ...inventory } = collectLicenses(root);
+      checkBundle(root, bundle, inventory);
       for (const [fileName, source] of assets) this.emitFile({ type: 'asset', fileName, source });
+      emitted = true;
+    },
+    // After vite-plugin-pwa's closeBundle has written sw.js and the Workbox chunk.
+    closeBundle: {
+      order: 'post',
+      handler(error) {
+        if (!error && emitted) checkServiceWorkerNotices(outDir);
+      },
     },
   };
 }

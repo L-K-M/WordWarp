@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import { licenseNotices } from './src/build/licenses';
+import { licenseNotices, workerLicenseCheck } from './src/build/licenses';
 
 // A separate bundle keeps native resources independent of the PWA service worker.
 // The native hosts map this directory to a local, app-owned origin.
@@ -12,4 +12,6 @@ export default defineConfig({
     emptyOutDir: true,
     rolldownOptions: { input: 'native.html' },
   },
+  // Workers are separate builds that get only these plugins.
+  worker: { plugins: () => [workerLicenseCheck()] },
 });
