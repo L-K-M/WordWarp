@@ -160,7 +160,9 @@ jobs:
               /usr/share/nginx/html/licenses/index.html /usr/share/nginx/html/licenses/npm-notices.txt; do
               test -s "$FILE"
             done
-            grep -q "^Package: busybox$" /usr/share/doc/wordwarp/OS-Packages.txt'
+            grep -q "^Package: busybox$" /usr/share/doc/wordwarp/OS-Packages.txt
+            grep -q "^Canonical license text: GPL-2.0-only$" /usr/share/doc/wordwarp/OS-Packages.txt
+            grep -q "^License file of the openssl source: " /usr/share/doc/wordwarp/OS-Packages.txt'
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
