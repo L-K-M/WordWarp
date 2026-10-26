@@ -24,16 +24,22 @@ the packages; they do not replace them.
 Most use MIT; idb uses ISC, and Pako includes both MIT and zlib-licensed code by
 Jean-loup Gailly, Mark Adler, Vitaly Puzrin and Andrey Tupitsin. Vite/Rolldown and
 Tailwind supply runtime helpers or generated styles with their own notices.
+vite-plugin-pwa (Anthony Fu, MIT) supplies the service-worker registration client
+compiled into the web app. The generated service worker contains workbox-build's
+template (Google, MIT) and the AMD loader of `@trickfilm400/rollup-plugin-off-main-thread`
+(Google, Apache-2.0).
 Development tools retain their separate licenses even when not shipped in the app.
 
 Every production build emits `licenses/npm-notices.txt` and
 `licenses/manifest.json` from the installed, lockfile-verified package files.
 The inventory conservatively includes the declared runtime dependency closure,
-Workbox runtime modules (including generated service-worker code) and generated
-helper/style notices. Some listed packages are not used by every target. Build
-checks reject missing license files, mismatched installed versions, unreviewed
-license identifiers or a bundled package absent from the inventory. Original
-license/NOTICE files are retained verbatim, including Pako's separate zlib notice.
+Workbox runtime modules, the packages that generate the service worker and its
+registration client, and generated helper/style notices. Some listed packages are
+not used by every target. Build checks reject missing license files, mismatched
+installed versions, unreviewed license identifiers, a bundled package or
+plugin-generated module absent from the inventory (workers included), or a service
+worker whose generator packages are not listed. Original license/NOTICE files are
+retained verbatim, including Pako's separate zlib notice.
 
 ## Native hosts and build tools
 
@@ -52,7 +58,12 @@ license/NOTICE files are retained verbatim, including Pako's separate zlib notic
   the system package manager. The `.deb` does not copy their libraries into the
   WordWarp package; their original licenses continue to apply.
 - Docker base images and GitHub Actions retain their own licenses. A WordWarp
-  license declaration does not relicense an entire operating-system image.
+  license declaration does not relicense an entire operating-system image. The
+  Docker image lists its nginx and Alpine packages (BusyBox, musl, OpenSSL and
+  others) with their licenses, license texts and exact source versions in
+  `/usr/share/doc/wordwarp/OS-Packages.txt`. nginx comes from nginx.org's Alpine
+  repository; its notice stays in `/usr/share/licenses/nginx/` and its source is
+  at https://nginx.org/download/.
 
 ## Original artwork and design references
 

@@ -89,8 +89,13 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
+          for FILE in licenses/index.html licenses/npm-notices.txt licenses/manifest.json licenses/LICENSE.txt fonts/LICENSE.txt; do
+            test -s "dist/$FILE"
+          done
           mkdir -p release-artifacts
           tar -czf "release-artifacts/wordwarp-${TAG}.tar.gz" -C dist .
+          # grep reads the whole listing, so tar cannot fail on a closed pipe.
+          tar -tzf "release-artifacts/wordwarp-${TAG}.tar.gz" | grep --line-regexp --count './licenses/index.html' >/dev/null
           (
             cd release-artifacts
             sha256sum "wordwarp-${TAG}.tar.gz" > "wordwarp-${TAG}.tar.gz.sha256"
@@ -136,6 +141,28 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      # The multi-platform push cannot load an image locally: build the runner's
+      # platform from the same cache and check its notices before publishing.
+      - name: Build container for notice checks
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          load: true
+          tags: wordwarp:check
+          cache-from: type=gha
+
+      - name: Verify notices in the container
+        run: |
+          docker run --rm --entrypoint sh wordwarp:check -c '
+            set -e
+            for FILE in /usr/share/doc/wordwarp/OS-Packages.txt /usr/share/doc/wordwarp/LICENSE /usr/share/licenses/nginx/COPYRIGHT \
+              /usr/share/nginx/html/licenses/index.html /usr/share/nginx/html/licenses/npm-notices.txt; do
+              test -s "$FILE"
+            done
+            grep -q "^Package: busybox$" /usr/share/doc/wordwarp/OS-Packages.txt
+            grep -q "^Canonical license text: GPL-2.0-only$" /usr/share/doc/wordwarp/OS-Packages.txt
+            grep -q "^License file of the openssl source: " /usr/share/doc/wordwarp/OS-Packages.txt'
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0

@@ -134,3 +134,27 @@ GIF transparency is one-bit and uses ordered dithering. APNG is the recommended 
 soft glows and shadows. Native system fonts use the browser raster path; exact outline-backed
 `keepUpright` warping requires an imported TTF/OTF font. Large exports that require tiling reject
 reflection effects rather than risk clipped or misaligned pixels.
+
+## License
+
+WordWarp's own code and artwork are released under the [Unlicense](LICENSE), with the
+exclusions in [LICENSING.md](LICENSING.md). The builds bundle third-party code and assets
+that keep their own licenses, listed in [THIRD_PARTY.md](THIRD_PARTY.md): the web and
+native apps bundle React and other npm packages, Vite and Rolldown runtime code, and fonts
+under the SIL Open Font License or the Apache License; the web app adds the Workbox service
+worker; the Android app adds AndroidX, Jetpack Compose and Kotlin libraries and Material
+Icons; the Docker image adds nginx and Alpine Linux packages such as BusyBox, musl and
+OpenSSL. Their notices ship inside each artifact:
+
+- Web app, release archive and Docker image: `licenses/index.html` and
+  `licenses/npm-notices.txt` at the site root (linked as Licenses in the editor), with the
+  font licenses in `fonts/`
+- macOS app: `WordWarp.app/Contents/Resources/Web/licenses/` (Help > Licenses…)
+- Linux: `/usr/share/wordwarp/web/licenses/` in the `.deb`, plus
+  `/usr/share/doc/wordwarp/copyright`; `/app/share/wordwarp/web/licenses/` in the Flatpak
+- Android: Licenses in the document menu, read from `assets/licenses/`
+- Docker image: also `/usr/share/doc/wordwarp/OS-Packages.txt`, which lists the nginx and
+  Alpine packages with their licenses, license texts and exact source versions
+
+`native/android/gradle/wrapper/LICENSE` and `NOTICE` are the Gradle wrapper's (Apache-2.0),
+and `public/fonts/` holds the bundled fonts' license texts; neither is WordWarp's.

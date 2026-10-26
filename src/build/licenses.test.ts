@@ -2,7 +2,7 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { resolve, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { collectLicenses } from './licenses';
+import { checkBundledModules, checkServiceWorkerNotices, collectLicenses } from './licenses';
 
 describe('redistribution notices', () => {
   it('preserves full secondary licenses and every verified font license in the offline page', () => {
@@ -17,6 +17,10 @@ describe('redistribution notices', () => {
     expect(npm).toContain('idb@7.1.1');
     expect(npm).toContain('node_modules/workbox-expiration/node_modules/idb');
     expect(npm).toContain('react@');
+    // Plugin code compiled into the app: the registerSW client and the generated service worker.
+    expect(npm).toContain('vite-plugin-pwa@');
+    expect(npm).toContain('workbox-build@');
+    expect(npm).toContain('@trickfilm400/rollup-plugin-off-main-thread@');
     const page = first.assets.get('licenses/index.html')!;
     expect(page).toContain('Luckiest Guy — Apache-2.0');
     expect(page).toContain('Slackey — Apache-2.0');
@@ -40,5 +44,38 @@ describe('redistribution notices', () => {
       writeFileSync(join(root, 'node_modules/example/package.json'), JSON.stringify({ name: 'example', version: installedVersion, license }));
       expect(() => collectLicenses(root)).toThrow(message);
     } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  it('maps plugin-injected modules to inventory packages and rejects unknown ones', () => {
+    const root = resolve(import.meta.dirname, '../..');
+    const inventory = collectLicenses(root);
+    checkBundledModules(root, [
+      join(root, 'index.html'), join(root, 'src/main.tsx'), join(root, 'node_modules/react/index.js'),
+      '\0rolldown/runtime.js', '\0vite/preload-helper.js', '/@vite-plugin-pwa/virtual:pwa-register',
+    ], inventory);
+    const withoutPwa = { ...inventory, packageNames: new Set([...inventory.packageNames].filter((name) => name !== 'vite-plugin-pwa')) };
+    expect(() => checkBundledModules(root, ['/@vite-plugin-pwa/virtual:pwa-register'], withoutPwa)).toThrow(/vite-plugin-pwa module is missing/);
+    expect(() => checkBundledModules(root, ['\0some-plugin/helper.js'], inventory)).toThrow(/no license inventory mapping/);
+    expect(() => checkBundledModules(root, ['/@other-plugin/virtual:thing'], inventory)).toThrow(/no license inventory mapping/);
+    // Ids that are not files on disk are plugin output, not WordWarp sources.
+    expect(() => checkBundledModules(root, ['virtual:other-plugin'], inventory)).toThrow(/no license inventory mapping/);
+    expect(() => checkBundledModules(root, [join(root, 'src/virtual-helper.js')], inventory)).toThrow(/no license inventory mapping/);
+  });
+
+  it('refuses a service worker whose generator packages are not in the shipped manifest', () => {
+    const outDir = mkdtempSync(join(tmpdir(), 'wordwarp-sw-test-'));
+    try {
+      mkdirSync(join(outDir, 'licenses'));
+      writeFileSync(join(outDir, 'licenses/manifest.json'), JSON.stringify({ packages: [{ name: 'workbox-build' }] }));
+      checkServiceWorkerNotices(outDir, 'optional');
+      // With vite-plugin-pwa enabled, a missing service worker means the check ran too early.
+      expect(() => checkServiceWorkerNotices(outDir, 'required')).toThrow(/no service worker/);
+      writeFileSync(join(outDir, 'sw.js'), '');
+      expect(() => checkServiceWorkerNotices(outDir, 'required')).toThrow(/rollup-plugin-off-main-thread/);
+      writeFileSync(join(outDir, 'licenses/manifest.json'), JSON.stringify({
+        packages: [{ name: 'workbox-build' }, { name: '@trickfilm400/rollup-plugin-off-main-thread' }],
+      }));
+      checkServiceWorkerNotices(outDir, 'required');
+    } finally { rmSync(outDir, { recursive: true, force: true }); }
   });
 });

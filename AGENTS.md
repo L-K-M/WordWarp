@@ -60,6 +60,21 @@ Its mutating commands currently require macOS/BSD `sed`; the wrapper fails close
 `dist/`, `node_modules/`, Playwright reports, local environment files, and generated secrets are not
 source. Never commit them.
 
+## Licensing
+
+- WordWarp's own code is Unlicense (`LICENSE`), scoped by `LICENSING.md`. Keep license statements in
+  manifests, packaging metadata and the README `## License` section consistent with it.
+- Before adding a dependency, Vite plugin, vendored file or bundled asset (fonts, images, icons),
+  confirm its license allows redistribution in every artifact. Android runtime dependencies are
+  reviewed in `native/android/licenses/runtime-licenses.json`.
+- `src/build/licenses.ts` writes the bundled notices from the lockfile and fails the build on a
+  bundled package, plugin-generated module (workers included) or service-worker generator missing
+  from its inventory. Map a new virtual module to its package there; never skip it.
+- `scripts/os-packages.sh` (vendored) writes the Docker image's
+  `/usr/share/doc/wordwarp/OS-Packages.txt` and fails on a base-image package without license
+  text; record gaps in `scripts/os-packages-overrides.txt` with a reason. Keep the CI and release
+  notice checks passing.
+
 <!-- shared-rules:start -->
 
 ## Working practices
