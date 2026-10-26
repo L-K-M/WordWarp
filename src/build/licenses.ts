@@ -29,6 +29,8 @@ const virtualModulePackages: [prefix: string, name: string][] = [
 // workbox-build writes these after generateBundle, so the chunk check cannot see them.
 const serviceWorkerFiles = /^(?:sw|workbox-[0-9a-f]+)\.js$/;
 const serviceWorkerPackages = ['workbox-build', '@trickfilm400/rollup-plugin-off-main-thread'];
+// 'required' when vite-plugin-pwa generates a service worker for this build.
+type ServiceWorkerMode = 'required' | 'optional';
 const sha256 = (value: string | Uint8Array) => createHash('sha256').update(value).digest('hex');
 const read = (path: string) => readFileSync(path, 'utf8');
 const slash = (path: string) => path.replaceAll('\\', '/');
@@ -165,10 +167,12 @@ export function checkBundledModules(root: string, moduleIds: Iterable<string>, i
       continue;
     }
     if (!path.includes('/node_modules/')) {
-      // Project sources and HTML entries are WordWarp's own code.
+      // Project sources and HTML entries are WordWarp's own code. Plugin-generated ids are
+      // not files on disk, even when they look like project paths.
       const local = slash(relative(root, path));
-      if (!path.startsWith('\0') && local && !local.startsWith('../') && !isAbsolute(local)) continue;
-      throw new Error(`Bundled module has no license inventory mapping: ${JSON.stringify(id)}`);
+      if (isAbsolute(path) && existsSync(path) && local && !local.startsWith('../') && !isAbsolute(local)) continue;
+      throw new Error(`Bundled module has no license inventory mapping: ${JSON.stringify(id)}. `
+        + 'Map its prefix to the providing package in virtualModulePackages.');
     }
     let directory = dirname(path);
     while (directory.includes('node_modules')) {
@@ -189,8 +193,14 @@ function checkBundle(root: string, bundle: Rolldown.OutputBundle, inventory: Inv
 }
 
 /** Fails when the generated service worker ships without its packages' notices. */
-export function checkServiceWorkerNotices(outDir: string) {
-  if (!readdirSync(outDir).some((file) => serviceWorkerFiles.test(file))) return;
+export function checkServiceWorkerNotices(outDir: string, mode: ServiceWorkerMode) {
+  if (!readdirSync(outDir).some((file) => serviceWorkerFiles.test(file))) {
+    // A changed hook order or file name in vite-plugin-pwa must not skip the check silently.
+    if (mode === 'required') {
+      throw new Error(`vite-plugin-pwa is enabled, but there is no service worker in ${outDir} to check.`);
+    }
+    return;
+  }
   const manifest = JSON.parse(read(join(outDir, 'licenses/manifest.json'))) as { packages: { name: string }[] };
   const listed = new Set(manifest.packages.map((entry) => entry.name));
   const missing = serviceWorkerPackages.filter((name) => !listed.has(name));
@@ -213,10 +223,18 @@ export function licenseNotices(): Plugin {
   let root: string;
   let base: string;
   let outDir: string;
+  let ssr = false;
+  let pwa: { api?: { disabled?: boolean } } | undefined;
   let emitted = false;
   return {
     name: 'wordwarp-license-notices',
-    configResolved(config) { root = config.root; base = config.base; outDir = resolve(root, config.build.outDir); },
+    configResolved(config) {
+      root = config.root;
+      base = config.base;
+      outDir = resolve(root, config.build.outDir);
+      ssr = Boolean(config.build.ssr);
+      pwa = config.plugins.find((plugin) => plugin.name === 'vite-plugin-pwa');
+    },
     configureServer(server) {
       const { assets } = collectLicenses(root);
       server.middlewares.use((request, response, next) => {
@@ -238,7 +256,9 @@ export function licenseNotices(): Plugin {
     closeBundle: {
       order: 'post',
       handler(error) {
-        if (!error && emitted) checkServiceWorkerNotices(outDir);
+        if (error || !emitted) return;
+        // vite-plugin-pwa resolves its options asynchronously, so read them only now.
+        checkServiceWorkerNotices(outDir, pwa && !pwa.api?.disabled && !ssr ? 'required' : 'optional');
       },
     },
   };

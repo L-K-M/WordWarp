@@ -57,6 +57,9 @@ describe('redistribution notices', () => {
     expect(() => checkBundledModules(root, ['/@vite-plugin-pwa/virtual:pwa-register'], withoutPwa)).toThrow(/vite-plugin-pwa module is missing/);
     expect(() => checkBundledModules(root, ['\0some-plugin/helper.js'], inventory)).toThrow(/no license inventory mapping/);
     expect(() => checkBundledModules(root, ['/@other-plugin/virtual:thing'], inventory)).toThrow(/no license inventory mapping/);
+    // Ids that are not files on disk are plugin output, not WordWarp sources.
+    expect(() => checkBundledModules(root, ['virtual:other-plugin'], inventory)).toThrow(/no license inventory mapping/);
+    expect(() => checkBundledModules(root, [join(root, 'src/virtual-helper.js')], inventory)).toThrow(/no license inventory mapping/);
   });
 
   it('refuses a service worker whose generator packages are not in the shipped manifest', () => {
@@ -64,9 +67,15 @@ describe('redistribution notices', () => {
     try {
       mkdirSync(join(outDir, 'licenses'));
       writeFileSync(join(outDir, 'licenses/manifest.json'), JSON.stringify({ packages: [{ name: 'workbox-build' }] }));
-      checkServiceWorkerNotices(outDir);
+      checkServiceWorkerNotices(outDir, 'optional');
+      // With vite-plugin-pwa enabled, a missing service worker means the check ran too early.
+      expect(() => checkServiceWorkerNotices(outDir, 'required')).toThrow(/no service worker/);
       writeFileSync(join(outDir, 'sw.js'), '');
-      expect(() => checkServiceWorkerNotices(outDir)).toThrow(/rollup-plugin-off-main-thread/);
+      expect(() => checkServiceWorkerNotices(outDir, 'required')).toThrow(/rollup-plugin-off-main-thread/);
+      writeFileSync(join(outDir, 'licenses/manifest.json'), JSON.stringify({
+        packages: [{ name: 'workbox-build' }, { name: '@trickfilm400/rollup-plugin-off-main-thread' }],
+      }));
+      checkServiceWorkerNotices(outDir, 'required');
     } finally { rmSync(outDir, { recursive: true, force: true }); }
   });
 });
