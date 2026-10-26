@@ -17,6 +17,10 @@ describe('redistribution notices', () => {
     expect(npm).toContain('idb@7.1.1');
     expect(npm).toContain('node_modules/workbox-expiration/node_modules/idb');
     expect(npm).toContain('react@');
+    // Plugin code compiled into the app: the registerSW client and the generated service worker.
+    expect(npm).toContain('vite-plugin-pwa@');
+    expect(npm).toContain('workbox-build@');
+    expect(npm).toContain('@trickfilm400/rollup-plugin-off-main-thread@');
     const page = first.assets.get('licenses/index.html')!;
     expect(page).toContain('Luckiest Guy — Apache-2.0');
     expect(page).toContain('Slackey — Apache-2.0');

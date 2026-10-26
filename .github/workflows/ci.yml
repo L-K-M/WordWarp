@@ -37,6 +37,10 @@ jobs:
       - name: Run quality gate
         run: npm run check
 
+      # The README states the project's own license and where bundled notices ship.
+      - name: Check README license section
+        run: grep --quiet --line-regexp '## License' README.md
+
       - name: Validate shell entry points
         run: bash -n scripts/*.sh update.sh
 
