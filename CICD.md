@@ -28,8 +28,9 @@ checkout credentials.
   The self-test covers native editing,
   compact stack headers, document save/open and recovery, and PNG/APNG/GIF export. Software-rendering
   environment variables apply only to this headless test. The package is checksummed afterward.
-- `container` builds and starts Compose, verifies SPA fallback, manifest media type, and service-worker
-  cache headers, then always tears the service down.
+- `container` builds and starts Compose, verifies SPA fallback, manifest media type, service-worker
+  cache headers, the served license notices, and the image's base-package notices, then always tears
+  the service down.
 - Diagnostic build/report/screenshot uploads use `continue-on-error`; missing diagnostic storage does
   not change a test result. Native package uploads are strict because the downloadable packages and
   checksums are CI deliverables. Native packages are retained for 14 days; diagnostic evidence for
@@ -41,7 +42,10 @@ locked npm packages, and verify bundled font hashes against their recorded prove
 Missing or unreviewed licenses fail the build. The PWA offline test also opens the
 license page. Android packaging verifies the reviewed Maven artifact inventory and
 preserves upstream and embedded notices. All native packages include these notices;
-Ubuntu also installs `/usr/share/doc/wordwarp/copyright`.
+Ubuntu also installs `/usr/share/doc/wordwarp/copyright`. The Docker image adds
+`/usr/share/doc/wordwarp/OS-Packages.txt` for its nginx and Alpine packages, written by
+`scripts/os-packages.sh`. CI checks the notice files inside the built site, each native
+package, and the image.
 
 Local web/bridge/container checks:
 
@@ -75,11 +79,12 @@ for the production health check, prune dangling images, and print final Compose 
 - The tag must match `package.json`, both lockfile version locations, and a commit in `main` history.
 - The reusable CI workflow re-proves source, browser behavior, all native packages, and the container
   at the tagged SHA.
-- The static package job builds with relative URLs and uploads `wordwarp-vX.Y.Z.tar.gz` plus a SHA-256
-  checksum using a read-only token.
+- The static package job builds with relative URLs, checks the license notices in the site and the
+  archive, and uploads `wordwarp-vX.Y.Z.tar.gz` plus a SHA-256 checksum using a read-only token.
 - One `release`-environment-gated publisher receives `contents: write` and `packages: write`, publishes
-  the immutable full-version `ghcr.io/l-k-m/wordwarp` image for `linux/amd64` and `linux/arm64`, then
-  creates the GitHub Release. Release runs are globally serialized and never cancelled.
+  the immutable full-version `ghcr.io/l-k-m/wordwarp` image for `linux/amd64` and `linux/arm64` after
+  checking the notices in a locally loaded build, then creates the GitHub Release. Release runs are
+  globally serialized and never cancelled.
 - Native files remain CI downloads. This workflow does not attach them to GitHub Releases. The
   [native publication proposal](native/RELEASE-PROPOSAL.md) specifies same-run artifact verification,
   versioned names and signing labels for a future, separately authorized change.
