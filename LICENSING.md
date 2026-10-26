@@ -28,7 +28,9 @@ is **excluded from the Unlicense** and retains its own terms:
 See [THIRD_PARTY.md](THIRD_PARTY.md) for component locations and provenance.
 Distributions include the dedication, this scope statement and readable notices
 at `licenses/index.html`. Android also includes its resolved native dependency
-notices under `assets/licenses/android/`.
+notices under `assets/licenses/android/`. The Docker image lists its nginx and
+Alpine packages, with their license texts and source versions, in
+`/usr/share/doc/wordwarp/OS-Packages.txt`.
 
 References to other products describe inspiration or compatibility. They do not
 imply endorsement or grant rights to third-party trademarks, patents or assets.

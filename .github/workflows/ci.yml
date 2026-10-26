@@ -387,6 +387,18 @@ jobs:
           test "$(curl --fail --silent --show-error --output /dev/null --write-out '%{content_type}' http://127.0.0.1:8080/manifest.webmanifest)" = "application/manifest+json"
           curl --fail --silent --show-error --head http://127.0.0.1:8080/sw.js | tr --delete '\r' | grep --ignore-case --quiet '^Cache-Control:.*no-cache'
 
+      # Notices for the base image's packages, written by scripts/os-packages.sh.
+      - name: Verify notices in the container image
+        run: |
+          docker compose exec -T wordwarp sh -c '
+            set -e
+            for FILE in /usr/share/doc/wordwarp/OS-Packages.txt /usr/share/doc/wordwarp/LICENSE /usr/share/licenses/nginx/COPYRIGHT; do
+              test -s "$FILE"
+            done
+            grep -q "^Package: busybox$" /usr/share/doc/wordwarp/OS-Packages.txt
+            grep -q "^Canonical license text: GPL-2.0-only$" /usr/share/doc/wordwarp/OS-Packages.txt
+            grep -q "^License file of the openssl source: " /usr/share/doc/wordwarp/OS-Packages.txt'
+
       - name: Show container logs after failure
         if: failure()
         run: docker compose logs

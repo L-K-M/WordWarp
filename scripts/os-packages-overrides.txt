@@ -1,0 +1,7 @@
+# Overrides for scripts/os-packages.sh (Docker image notices): one package per
+# line, a reason after "#". Every Alpine image needs these three: their
+# sources carry no license file or copyright notice, so the canonical SPDX
+# texts of their declared licenses suffice.
+alpine-keys            canonical  # Alpine's signing keys, kept in aports: no license file or copyright notice exists
+alpine-release         canonical  # files the alpine-base APKBUILD generates: no license file or copyright notice exists
+ca-certificates-bundle canonical  # only the CA bundle built from Mozilla's certdata.txt (MPL-2.0); the MIT tools are in ca-certificates

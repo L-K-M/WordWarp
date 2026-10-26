@@ -58,7 +58,12 @@ retained verbatim, including Pako's separate zlib notice.
   the system package manager. The `.deb` does not copy their libraries into the
   WordWarp package; their original licenses continue to apply.
 - Docker base images and GitHub Actions retain their own licenses. A WordWarp
-  license declaration does not relicense an entire operating-system image.
+  license declaration does not relicense an entire operating-system image. The
+  Docker image lists its nginx and Alpine packages (BusyBox, musl, OpenSSL and
+  others) with their licenses, license texts and exact source versions in
+  `/usr/share/doc/wordwarp/OS-Packages.txt`. nginx comes from nginx.org's Alpine
+  repository; its notice stays in `/usr/share/licenses/nginx/` and its source is
+  at https://nginx.org/download/.
 
 ## Original artwork and design references
 
